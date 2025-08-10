@@ -40,19 +40,20 @@ struct ContentView: View {
                     .frame(width: 80, height: 80)
                     .clipShape(Circle())
                     
-                    ZStack {
-                        Color(.green)
-                        Text(.init(systemName: "phone.fill"))
-                            .foregroundStyle(Color.white)
-                            .font(Font.system(size: 48).bold())
-                    }
-                    .frame(width: 80, height: 80)
-                    .clipShape(Circle())
+//                    ZStack {
+//                        Color(.green)
+//                        Text(.init(systemName: "phone.fill"))
+//                            .foregroundStyle(Color.white)
+//                            .font(Font.system(size: 48).bold())
+//                    }
+//                    .frame(width: 80, height: 80)
+//                    .clipShape(Circle())
                 }
             }
             .padding(.top, 48)
             .padding(.bottom, 24)
         }
+        .navigationBarHidden(true)
         .onAppear {
             viewModel.onAppear()
         }
