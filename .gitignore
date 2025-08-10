@@ -106,3 +106,8 @@ xcuserdata
 
 # End of https://www.toptal.com/developers/gitignore/api/swift,swiftpackagemanager,xcode
 
+
+**/voicevox_core.xcframework/*
+**/voicevox_onnxruntime.xcframework/*
+
+
