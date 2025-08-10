@@ -1,10 +1,3 @@
-//
-//  ContactView.swift
-//  ZunTalk
-//
-//  Created by jumpei ono on 2025/08/10.
-//
-
 import SwiftUI
 
 struct Contact {
@@ -15,14 +8,7 @@ struct Contact {
 
 struct ContactView: View {
     let contacts = [
-        Contact(name: "田中太郎", imageName: "person.circle.fill"),
-        Contact(name: "佐藤花子", imageName: "person.circle.fill"),
-        Contact(name: "鈴木一郎", imageName: "person.circle.fill"),
-        Contact(name: "山田美咲", imageName: "person.circle.fill"),
-        Contact(name: "中村健太", imageName: "person.circle.fill"),
-        Contact(name: "高橋由美", imageName: "person.circle.fill"),
-        Contact(name: "渡辺翔太", imageName: "person.circle.fill"),
-        Contact(name: "小林麻美", imageName: "person.circle.fill")
+        Contact(name: "ずんだもん", imageName: "person.circle.fill"),
     ]
     
     var body: some View {
@@ -72,7 +58,7 @@ struct ContactRowView: View {
             
             ZStack {
                 NavigationLink(
-                    destination: ContentView(),
+                    destination: CallView(),
                     isActive: $isNavigatingToCall
                 ) {
                     EmptyView()

@@ -1,7 +1,7 @@
 import SwiftUI
 
-struct ContentView: View {
-    @StateObject private var viewModel = ContentViewModel()
+struct CallView: View {
+    @StateObject private var viewModel = CallViewModel()
 
     var body: some View {
         ZStack {
@@ -61,5 +61,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    CallView()
 }

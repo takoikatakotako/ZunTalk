@@ -2,7 +2,7 @@ import SwiftUI
 import Speech
 import Accelerate
 
-class ContentViewModel: ObservableObject {
+class CallViewModel: ObservableObject {
     
     @Published var text = ""
     @Published var isRecording = false
@@ -46,13 +46,13 @@ class ContentViewModel: ObservableObject {
         
         
         
-        guard let url = Bundle.main.url(forResource: "sample", withExtension: "wav") else {
-            print("wavファイルが見つかりません")
+        guard let asset = NSDataAsset(name: "maou_se_sound_phone02") else {
+            print("音声ファイルが見つかりません")
             return
         }
 
         do {
-            audioPlayer = try AVAudioPlayer(contentsOf: url)
+            audioPlayer = try AVAudioPlayer(data: asset.data)
             audioPlayer?.prepareToPlay()
             audioPlayer?.play()
             print("再生開始")
