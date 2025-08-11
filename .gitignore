@@ -112,4 +112,8 @@ xcuserdata
 **/open_jtalk_dic_utf_8-1.11/*
 **/vvms/*
 
+# API Keys and Temporary files
+TempKey
+TempKey.*
+
 
