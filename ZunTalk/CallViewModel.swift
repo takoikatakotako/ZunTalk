@@ -21,9 +21,9 @@ class CallViewModel: ObservableObject {
     
     // Repository
     private let voicevoxRepository: TextToSpeechRepository
-    private let textGenerationRepository: TextGenerationRepository?
+    private let textGenerationRepository: TextGenerationRepository
     
-    init(voicevoxRepository: TextToSpeechRepository = VoicevoxRepository(), textGenerationRepository: TextGenerationRepository? = nil) {
+    init(voicevoxRepository: TextToSpeechRepository = VoicevoxRepository(), textGenerationRepository: TextGenerationRepository = OpenAITextGenerationRepository(apiKey: tempAPIKey)) {
         self.voicevoxRepository = voicevoxRepository
         self.textGenerationRepository = textGenerationRepository
     }
@@ -53,6 +53,7 @@ class CallViewModel: ObservableObject {
                 
                 // 着信音再生
                 audioPlayer = try AVAudioPlayer(data: asset.data)
+                audioPlayer?.numberOfLoops = -1 
                 audioPlayer?.prepareToPlay()
                 audioPlayer?.play()
                 
@@ -63,13 +64,8 @@ class CallViewModel: ObservableObject {
                 
                 
                 // テキスト生成
-                let responseText: String
-                if let textGenRepo = textGenerationRepository {
-                    responseText = try await textGenRepo.generateResponse(userMessage: "こんにちは")
-                    print("生成されたテキスト: \(responseText)")
-                } else {
-                    responseText = "こんにちは、ずんだもんなのだ！"
-                }
+                let responseText = try await textGenerationRepository.generateResponse(userMessage: "")
+                print(responseText)
                 
                 // 音声合成
                 let data = try await voicevoxRepository.synthesize(text: responseText)
