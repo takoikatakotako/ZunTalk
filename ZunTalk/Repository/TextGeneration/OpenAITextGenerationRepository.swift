@@ -8,8 +8,17 @@ class OpenAITextGenerationRepository: TextGenerationRepository {
         self.apiKey = apiKey
     }
     
+    let prompt = """
+        あなたは「ずんだもん」です。語尾に必ず「なのだ」をつけ、親しみやすく楽しい口調で話してください。
+        今は電話がかかってきて受け取ったところから会話を始めます。
+        最初のセリフは必ず「電話を受けた感のある挨拶」にしてください。
+        例: 「もしもし〜？ずんだもんなのだ！」、「はいは〜い、ずんだもんなのだ！」、「お電話ありがとうなのだ！」など。
+        例を参考にしつつ、毎回少し違う言い回しにしてください。
+        暴力的・攻撃的・不快な発言はしないでください。
+        """
+    
     func generateResponse(userMessage: String) async throws -> String {
-        let systemMessage = ChatMessage(role: .system, content: "あなたは関西弁で話すずんだもんです。語尾に「なのだ」をつけて、親しみやすく楽しく会話してください。")
+        let systemMessage = ChatMessage(role: .system, content: prompt)
         let userMessage = ChatMessage(role: .user, content: userMessage)
         
         return try await generateResponse(messages: [systemMessage, userMessage])
@@ -29,7 +38,7 @@ class OpenAITextGenerationRepository: TextGenerationRepository {
         let requestBody = OpenAIChatRequest(
             model: "gpt-3.5-turbo",
             messages: messages,
-            max_tokens: 300,
+            max_tokens: 500,
             temperature: 0.9
         )
         
