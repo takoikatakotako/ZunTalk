@@ -2,7 +2,7 @@ import SwiftUI
 import Speech
 import Accelerate
 
-class CallViewModel: ObservableObject {
+class CallViewModel: NSObject, ObservableObject {
     
     @Published var text = ""
     @Published var isRecording = false
@@ -62,219 +62,160 @@ class CallViewModel: ObservableObject {
                 print("Voicevoxセットアップ完了")
                 try voicevoxRepository.setupSynthesizer()
                 
-                
-                // テキスト生成
-                let responseText = try await textGenerationRepository.generateResponse(userMessage: "")
-                print(responseText)
-                
-                // 音声合成
-                let data = try await voicevoxRepository.synthesize(text: responseText)
-                
-                // 音声再生
-                audioPlayer = try AVAudioPlayer(data: data)
-                audioPlayer?.prepareToPlay()
-                audioPlayer?.play()
+                // main
+                try await main()
             } catch {
                 print("Voicevoxセットアップエラー: \(error)")
             }
         }
-        
-        //        switch SFSpeechRecognizer.authorizationStatus() {
-        //        case .authorized:
-        //            print("認証済み")
-        //        case .denied:
-        //            print("許可が得られませんでした")
-        //            return
-        //        case .restricted:
-        //            print("利用制限があります")
-        //            return
-        //        case .notDetermined:
-        //            print("認証が未決定")
-        //            return
-        //        @unknown default:
-        //            print("不明")
-        //            return
-        //        }
-        //
-        //
-        //
-        //        guard let asset = NSDataAsset(name: "maou_se_sound_phone02") else {
-        //            print("音声ファイルが見つかりません")
-        //            return
-        //        }
-        //
-        
-        //
-        //
-        //
-        //
-        //        let audioSession = AVAudioSession.sharedInstance()
-        //        do {
-        //            try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .mixWithOthers])
-        //            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-        //        } catch let error {
-        //            print(error)
-        //        }
-        //
-        //        let input = engine.inputNode
-        //
-        //
-        ////
-        ////        let input = engine.inputNode
-        ////        let format = input.outputFormat(forBus: 0)
-        ////        input.removeTap(onBus: 0)
-        ////        input.installTap(onBus: 0, bufferSize: 1024, format: format) { buf, _ in
-        ////            self.request?.append(buf)
-        ////            self.detectSilence(buf)
-        ////        }
-        ////
-        //
-        ////
-        //
-        //        //
-        //        request = SFSpeechAudioBufferRecognitionRequest()
-        //        guard let request = request else { fatalError("Unable to create a SFSpeechAudioBufferRecognitionRequest object") }
-        //        request.shouldReportPartialResults = true // 発話ごとに中間結果を返すかどうか
-        //
-        //        // requiresOnDeviceRecognition を true に設定すると、音声データがネットワークで送られない
-        //        // ただし精度は下がる
-        //        request.requiresOnDeviceRecognition = false
-        //
-        //
-        //
-        //
-        //        // 既存のタスクがあればキャンセルしておく
-        //        self.task?.cancel()
-        //        self.task = nil
-        //
-        //        self.task = recognizer?.recognitionTask(with: request) { result, error in
-        //
-        //            // 取得した認識結の処理
-        //
-        //            var isFinal = false
-        //
-        //            if let result = result {
-        //                isFinal = result.isFinal
-        //
-        //
-        //                // 認識結果をプリント
-        //                print("RecognizedText: \(result.bestTranscription.formattedString)")
-        //
-        //                Task { @MainActor in
-        //                    self.text = result.bestTranscription.formattedString
-        //                    self.audioPlayer?.volume = 0
-        //
-        //                    // 音声合成を実行
-        //                    self.synthesizeSpeech(text: result.bestTranscription.formattedString)
-        //                }
-        //            }
-        //
-        //            if error != nil || isFinal {
-        //                // 終了時、もしくはエラーが出た場合は、音声取得と認識をストップする
-        //                self.engine.stop()
-        //                input.removeTap(onBus: 0)
-        //
-        //                self.request = nil
-        //                self.task = nil
-        //            }
-        //        }
-        //
-        //
-        //
-        //
-        //        let recordingFormat = input.outputFormat(forBus: 0)
-        //        input.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { (buffer: AVAudioPCMBuffer, when: AVAudioTime) in
-        ////          // 音声を取得したら
-        ////            func isSpeaking(buffer: AVAudioPCMBuffer, threshold: Float = 0.05) -> Bool {
-        ////                // buffer.floatChannelData は [チャネル][サンプル]
-        ////                guard let channelData = buffer.floatChannelData?[0] else {
-        ////                    return false
-        ////                }
-        ////                let frameLength = Int(buffer.frameLength)
-        ////
-        ////                // 平均絶対値（RMSでも可）
-        ////                var avg: Float = 0.0
-        ////                vDSP_meamgv(channelData, 1, &avg, vDSP_Length(frameLength))
-        ////
-        ////                return avg > threshold
-        ////            }
-        ////
-        ////            if isSpeaking(buffer: buffer) {
-        ////                print("min")
-        ////                self.audioPlayer?.volume = 0
-        ////            }
-        ////
-        ////
-        //
-        //
-        //
-        //            print("hellohello")
-        //            self.request?.append(buffer) // 認識リクエストに取得した音声を加える
-        //        }
-        //
-        //
-        //        engine.prepare()
-        //
-        //
-        //        do {
-        //            try engine.start()
-        //        } catch {
-        //            print("エラー: \(error.localizedDescription)")
-        //        }
-        //
-        
+    }
+    
+    private func main() async throws {
+        let script = try await generateScript()
+        let voice = try await generateVoice(script: script)
+        try playVoice(data: voice)
     }
     
     
+    // スクリプト生成
+    func generateScript() async throws -> String {
+        print("スクリプト生成")
+        let script = try await textGenerationRepository.generateResponse(userMessage: "")
+        print(script)
+        return script
+    }
+
+    // 音声合成
+    func generateVoice(script: String) async throws -> Data {
+        print("音声合成")
+        let data = try await voicevoxRepository.synthesize(text: script)
+        return data
+    }
     
+    // 音声再生
+    func playVoice(data: Data) throws {
+        print("音声再生")
+        audioPlayer = try AVAudioPlayer(data: data)
+        audioPlayer?.delegate = self
+        audioPlayer?.prepareToPlay()
+        audioPlayer?.play()
+    }
     
-    
-    
-    func startOrStop() {
-        if isRecording { stop(); return }
+    // 音声認識開始
+    func startSpeachRecognition() {
+        print("🎤 音声認識開始")
         
+        // 音声セッションの設定
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .mixWithOthers])
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+            print("✅ 音声セッション設定完了")
+        } catch {
+            print("❌ 音声セッション設定エラー: \(error)")
+            return
+        }
+        
+        // 音声認識リクエストの作成
         request = SFSpeechAudioBufferRecognitionRequest()
         request?.shouldReportPartialResults = true
+        print("✅ 音声認識リクエスト作成完了")
         
         let input = engine.inputNode
         let format = input.outputFormat(forBus: 0)
+        
+        print("📊 音声フォーマット - サンプルレート: \(format.sampleRate)Hz, チャネル数: \(format.channelCount)")
+        
         input.removeTap(onBus: 0)
         input.installTap(onBus: 0, bufferSize: 1024, format: format) { buf, _ in
             self.request?.append(buf)
             self.detectSilence(buf)
         }
+        print("✅ 音声タップ設定完了")
         
+        // 音声認識タスクの開始
         task = recognizer?.recognitionTask(with: request!) { result, error in
-            if let r = result { DispatchQueue.main.async { self.text = r.bestTranscription.formattedString } }
-            if error != nil || result?.isFinal == true { self.stop() }
+            if let error = error {
+                print("❌ 音声認識エラー: \(error.localizedDescription)")
+                return
+            }
+            
+            if let result = result {
+                let recognizedText = result.bestTranscription.formattedString
+                print("🗣️ 認識結果: \(recognizedText)")
+                print("📝 認識状態: \(result.isFinal ? "最終" : "途中")")
+                
+                DispatchQueue.main.async { 
+                    self.text = recognizedText
+                }
+                
+                if result.isFinal {
+                    print("✅ 音声認識完了")
+                    self.stop()
+                }
+            }
+        }
+        print("✅ 音声認識タスク開始")
+        
+        // 音声エンジンの開始
+        do {
+            try engine.start()
+            print("✅ 音声エンジン開始成功")
+            isRecording = true
+        } catch {
+            print("❌ 音声エンジン開始エラー: \(error)")
+        }
+    }
+    
+    /// 音声バッファから無音を検出し、一定時間無音が続いたら処理を実行する
+    /// - Parameter buffer: 音声データを含むPCMバッファ
+    /// 
+    /// 動作:
+    /// 1. RMS（Root Mean Square）を計算して音声の振幅レベルを測定
+    /// 2. silenceThreshold (0.01) 未満なら無音と判定
+    /// 3. 無音が silenceTime (2.0秒) 続いたら処理実行
+    /// 4. 音声が検出されたらタイマーをリセット
+    private func detectSilence(_ buffer: AVAudioPCMBuffer) {
+        guard let data = buffer.floatChannelData?[0] else { 
+            print("⚠️ 音声データの取得に失敗")
+            return 
         }
         
-        try? AVAudioSession.sharedInstance().setCategory(.record, mode: .measurement, options: .duckOthers)
-        try? AVAudioSession.sharedInstance().setActive(true)
-        try? engine.start()
-        isRecording = true
+        // RMS (Root Mean Square) 計算: 音声の振幅レベルを0.0〜1.0で表現
+        let rms = sqrt(stride(from: 0, to: Int(buffer.frameLength), by: buffer.stride)
+            .map { data[$0] * data[$0] }.reduce(0,+) / Float(buffer.frameLength))
+        
+        // 音声レベルをログ出力（デバッグ用、必要に応じてコメントアウト）
+        // print("🔊 音声レベル: \(String(format: "%.4f", rms)) (閾値: \(silenceThreshold))")
+        
+        if rms < silenceThreshold {
+            // 無音検出: silenceTime秒後に処理実行
+            print("🔇 無音検出 - タイマー開始（\(silenceTime)秒後に処理実行）")
+            silenceTimer?.invalidate()
+            silenceTimer = Timer.scheduledTimer(withTimeInterval: silenceTime, repeats: false) { _ in
+                print("⏰ 2秒以上の無音が発生しました - 音声認識を停止します")
+                self.stop()
+            }
+        } else {
+            // 音声検出: タイマーをリセット
+            if silenceTimer != nil {
+                print("🎤 音声検出 - 無音タイマーをリセット")
+            }
+            silenceTimer?.invalidate()
+        }
     }
     
     func stop() {
+        print("⏹️ 音声認識停止")
         engine.stop()
         engine.inputNode.removeTap(onBus: 0)
         request?.endAudio()
         task?.cancel()
         isRecording = false
         silenceTimer?.invalidate()
+        print("✅ 音声認識停止完了")
     }
     
-    private func detectSilence(_ buffer: AVAudioPCMBuffer) {
-        guard let data = buffer.floatChannelData?[0] else { return }
-        let rms = sqrt(stride(from: 0, to: Int(buffer.frameLength), by: buffer.stride)
-            .map { data[$0] * data[$0] }.reduce(0,+) / Float(buffer.frameLength))
-        if rms < silenceThreshold {
-            silenceTimer?.invalidate()
-            silenceTimer = Timer.scheduledTimer(withTimeInterval: silenceTime, repeats: false) { _ in self.stop() }
-        } else {
-            silenceTimer?.invalidate()
-        }
-    }
     
     // 音声合成メソッド
     private func synthesizeSpeech(text: String) {
@@ -288,5 +229,22 @@ class CallViewModel: ObservableObject {
         }
     }
     
+}
+
+// MARK: - AVAudioPlayerDelegate
+extension CallViewModel: AVAudioPlayerDelegate {
+    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        if flag {
+            print("音声再生が終了しました")
+            // ここで次のアクションを実行
+            startSpeachRecognition()
+        } else {
+            print("音声再生に失敗しました")
+        }
+    }
+    
+    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        print("音声デコードエラー: \(error?.localizedDescription ?? "不明なエラー")")
+    }
 }
 
