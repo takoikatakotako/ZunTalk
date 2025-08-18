@@ -73,6 +73,9 @@ class CallViewModel: NSObject, ObservableObject {
     private func main() async throws {
         let script = try await generateScript()
         let voice = try await generateVoice(script: script)
+        Task { @MainActor in
+            self.text = script
+        }
         try playVoice(data: voice)
     }
     
