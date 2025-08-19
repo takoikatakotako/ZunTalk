@@ -132,7 +132,7 @@ class CallViewModel: NSObject, ObservableObject {
         input.removeTap(onBus: 0)
         input.installTap(onBus: 0, bufferSize: 1024, format: format) { buf, _ in
             self.request?.append(buf)
-            self.detectSilence(buf)
+//            self.detectSilence(buf)
         }
         print("✅ 音声タップ設定完了")
         
@@ -152,8 +152,16 @@ class CallViewModel: NSObject, ObservableObject {
                     self.text = recognizedText
                 }
                 
-                if result.isFinal {
-                    print("✅ 音声認識完了")
+//                if result.isFinal {
+//                    print("✅ 音声認識完了")
+//                    self.stop()
+//                }
+                
+                
+                print("🔇 無音検出 - タイマー開始（\(self.silenceTime)秒後に処理実行）")
+                self.silenceTimer?.invalidate()
+                self.silenceTimer = Timer.scheduledTimer(withTimeInterval: self.silenceTime, repeats: false) { _ in
+                    print("⏰ 2秒以上の無音が発生しました - 音声認識を停止します")
                     self.stop()
                 }
             }
@@ -170,43 +178,44 @@ class CallViewModel: NSObject, ObservableObject {
         }
     }
     
-    /// 音声バッファから無音を検出し、一定時間無音が続いたら処理を実行する
-    /// - Parameter buffer: 音声データを含むPCMバッファ
-    /// 
-    /// 動作:
-    /// 1. RMS（Root Mean Square）を計算して音声の振幅レベルを測定
-    /// 2. silenceThreshold (0.01) 未満なら無音と判定
-    /// 3. 無音が silenceTime (2.0秒) 続いたら処理実行
-    /// 4. 音声が検出されたらタイマーをリセット
-    private func detectSilence(_ buffer: AVAudioPCMBuffer) {
-        guard let data = buffer.floatChannelData?[0] else { 
-            print("⚠️ 音声データの取得に失敗")
-            return 
-        }
-        
-        // RMS (Root Mean Square) 計算: 音声の振幅レベルを0.0〜1.0で表現
-        let rms = sqrt(stride(from: 0, to: Int(buffer.frameLength), by: buffer.stride)
-            .map { data[$0] * data[$0] }.reduce(0,+) / Float(buffer.frameLength))
-        
-        // 音声レベルをログ出力（デバッグ用、必要に応じてコメントアウト）
-        // print("🔊 音声レベル: \(String(format: "%.4f", rms)) (閾値: \(silenceThreshold))")
-        
-        if rms < silenceThreshold {
-            // 無音検出: silenceTime秒後に処理実行
-            print("🔇 無音検出 - タイマー開始（\(silenceTime)秒後に処理実行）")
-            silenceTimer?.invalidate()
-            silenceTimer = Timer.scheduledTimer(withTimeInterval: silenceTime, repeats: false) { _ in
-                print("⏰ 2秒以上の無音が発生しました - 音声認識を停止します")
-                self.stop()
-            }
-        } else {
-            // 音声検出: タイマーをリセット
-            if silenceTimer != nil {
-                print("🎤 音声検出 - 無音タイマーをリセット")
-            }
-            silenceTimer?.invalidate()
-        }
-    }
+//    /// 音声バッファから無音を検出し、一定時間無音が続いたら処理を実行する
+//    /// - Parameter buffer: 音声データを含むPCMバッファ
+//    /// 
+//    /// 動作:
+//    /// 1. RMS（Root Mean Square）を計算して音声の振幅レベルを測定
+//    /// 2. silenceThreshold (0.01) 未満なら無音と判定
+//    /// 3. 無音が silenceTime (2.0秒) 続いたら処理実行
+//    /// 4. 音声が検出されたらタイマーをリセット
+//    private func detectSilence(_ buffer: AVAudioPCMBuffer) {
+//        return
+//        guard let data = buffer.floatChannelData?[0] else {
+//            print("⚠️ 音声データの取得に失敗")
+//            return 
+//        }
+//        
+//        // RMS (Root Mean Square) 計算: 音声の振幅レベルを0.0〜1.0で表現
+//        let rms = sqrt(stride(from: 0, to: Int(buffer.frameLength), by: buffer.stride)
+//            .map { data[$0] * data[$0] }.reduce(0,+) / Float(buffer.frameLength))
+//        
+//        // 音声レベルをログ出力（デバッグ用、必要に応じてコメントアウト）
+//        // print("🔊 音声レベル: \(String(format: "%.4f", rms)) (閾値: \(silenceThreshold))")
+//        
+//        if rms < silenceThreshold {
+//            // 無音検出: silenceTime秒後に処理実行
+//            print("🔇 無音検出 - タイマー開始（\(silenceTime)秒後に処理実行）")
+//            silenceTimer?.invalidate()
+//            silenceTimer = Timer.scheduledTimer(withTimeInterval: silenceTime, repeats: false) { _ in
+//                print("⏰ 2秒以上の無音が発生しました - 音声認識を停止します")
+//                self.stop()
+//            }
+//        } else {
+//            // 音声検出: タイマーをリセット
+//            if silenceTimer != nil {
+//                print("🎤 音声検出 - 無音タイマーをリセット")
+//            }
+//            silenceTimer?.invalidate()
+//        }
+//    }
     
     func stop() {
         print("⏹️ 音声認識停止")
