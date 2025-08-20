@@ -148,14 +148,17 @@ class CallViewModel: NSObject, ObservableObject {
                 print("🗣️ 認識結果: \(recognizedText)")
                 print("📝 認識状態: \(result.isFinal ? "最終" : "途中")")
                 
-                DispatchQueue.main.async { 
+                                if result.isFinal {
+                                    print("✅ 音声認識完了")
+                                    return
+                                }
+                
+                DispatchQueue.main.async {
                     self.text = recognizedText
+                    print("XXX: \(self.text)")
                 }
                 
-//                if result.isFinal {
-//                    print("✅ 音声認識完了")
-//                    self.stop()
-//                }
+
                 
                 
                 print("🔇 無音検出 - タイマー開始（\(self.silenceTime)秒後に処理実行）")
@@ -219,13 +222,15 @@ class CallViewModel: NSObject, ObservableObject {
     
     func stop() {
         print("⏹️ 音声認識停止")
-        engine.stop()
-        engine.inputNode.removeTap(onBus: 0)
         request?.endAudio()
         task?.cancel()
-        isRecording = false
+        engine.inputNode.removeTap(onBus: 0)
+        engine.stop()
         silenceTimer?.invalidate()
+        isRecording = false
         print("✅ 音声認識停止完了")
+        
+        
     }
     
     
