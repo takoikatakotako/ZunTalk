@@ -5,7 +5,8 @@ import Accelerate
 class CallViewModel: NSObject, ObservableObject {
     
     @Published var text = ""
-    @Published var isRecording = false
+
+    private var history = ""
     
     private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "ja-JP"))
     private let engine = AVAudioEngine()
@@ -75,6 +76,7 @@ class CallViewModel: NSObject, ObservableObject {
         let voice = try await generateVoice(script: script)
         Task { @MainActor in
             self.text = script
+            self.history += "ずんだもん「\(script)」\n"
         }
         try playVoice(data: voice)
     }
@@ -83,7 +85,7 @@ class CallViewModel: NSObject, ObservableObject {
     // スクリプト生成
     func generateScript() async throws -> String {
         print("スクリプト生成")
-        let script = try await textGenerationRepository.generateResponse(userMessage: "")
+        let script = try await textGenerationRepository.generateResponse(userMessage: history)
         print(script)
         return script
     }
@@ -107,6 +109,11 @@ class CallViewModel: NSObject, ObservableObject {
     // 音声認識開始
     func startSpeachRecognition() {
         print("🎤 音声認識開始")
+        
+        // 新しい録音のためにtextをクリア
+        DispatchQueue.main.async {
+            self.text = ""
+        }
         
         // 音声セッションの設定
         do {
@@ -158,9 +165,6 @@ class CallViewModel: NSObject, ObservableObject {
                     print("XXX: \(self.text)")
                 }
                 
-
-                
-                
                 print("🔇 無音検出 - タイマー開始（\(self.silenceTime)秒後に処理実行）")
                 self.silenceTimer?.invalidate()
                 self.silenceTimer = Timer.scheduledTimer(withTimeInterval: self.silenceTime, repeats: false) { _ in
@@ -175,77 +179,39 @@ class CallViewModel: NSObject, ObservableObject {
         do {
             try engine.start()
             print("✅ 音声エンジン開始成功")
-            isRecording = true
         } catch {
             print("❌ 音声エンジン開始エラー: \(error)")
         }
     }
-    
-//    /// 音声バッファから無音を検出し、一定時間無音が続いたら処理を実行する
-//    /// - Parameter buffer: 音声データを含むPCMバッファ
-//    /// 
-//    /// 動作:
-//    /// 1. RMS（Root Mean Square）を計算して音声の振幅レベルを測定
-//    /// 2. silenceThreshold (0.01) 未満なら無音と判定
-//    /// 3. 無音が silenceTime (2.0秒) 続いたら処理実行
-//    /// 4. 音声が検出されたらタイマーをリセット
-//    private func detectSilence(_ buffer: AVAudioPCMBuffer) {
-//        return
-//        guard let data = buffer.floatChannelData?[0] else {
-//            print("⚠️ 音声データの取得に失敗")
-//            return 
-//        }
-//        
-//        // RMS (Root Mean Square) 計算: 音声の振幅レベルを0.0〜1.0で表現
-//        let rms = sqrt(stride(from: 0, to: Int(buffer.frameLength), by: buffer.stride)
-//            .map { data[$0] * data[$0] }.reduce(0,+) / Float(buffer.frameLength))
-//        
-//        // 音声レベルをログ出力（デバッグ用、必要に応じてコメントアウト）
-//        // print("🔊 音声レベル: \(String(format: "%.4f", rms)) (閾値: \(silenceThreshold))")
-//        
-//        if rms < silenceThreshold {
-//            // 無音検出: silenceTime秒後に処理実行
-//            print("🔇 無音検出 - タイマー開始（\(silenceTime)秒後に処理実行）")
-//            silenceTimer?.invalidate()
-//            silenceTimer = Timer.scheduledTimer(withTimeInterval: silenceTime, repeats: false) { _ in
-//                print("⏰ 2秒以上の無音が発生しました - 音声認識を停止します")
-//                self.stop()
-//            }
-//        } else {
-//            // 音声検出: タイマーをリセット
-//            if silenceTimer != nil {
-//                print("🎤 音声検出 - 無音タイマーをリセット")
-//            }
-//            silenceTimer?.invalidate()
-//        }
-//    }
-    
+
     func stop() {
         print("⏹️ 音声認識停止")
-        request?.endAudio()
-        task?.cancel()
-        engine.inputNode.removeTap(onBus: 0)
+        
         engine.stop()
-        silenceTimer?.invalidate()
-        isRecording = false
+        engine.inputNode.removeTap(onBus: 0)
+        request?.endAudio()
+        task?.finish()
+
+        
+
         print("✅ 音声認識停止完了")
         
-        
-    }
-    
-    
-    // 音声合成メソッド
-    private func synthesizeSpeech(text: String) {
+        self.history += "ユーザー「\(self.text)」\n"
         Task {
             do {
-                let audioData = try await voicevoxRepository.synthesize(text: text)
-                print("音声合成完了: \(audioData.count) bytes")
+                let script = try await generateScript()
+                let voice = try await generateVoice(script: script)
+                Task { @MainActor in
+                    self.text = script
+                    self.history += "ずんだもん「\(script)」\n"
+                }
+                try playVoice(data: voice)
             } catch {
-                print("音声合成エラー: \(error)")
+                print("Error: \(error)")
             }
         }
+
     }
-    
 }
 
 // MARK: - AVAudioPlayerDelegate

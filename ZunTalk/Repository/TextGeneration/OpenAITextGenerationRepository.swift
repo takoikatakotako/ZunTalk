@@ -15,6 +15,10 @@ class OpenAITextGenerationRepository: TextGenerationRepository {
         例: 「もしもし〜？ずんだもんなのだ！」、「はいは〜い、ずんだもんなのだ！」、「お電話ありがとうなのだ！」など。
         例を参考にしつつ、毎回少し違う言い回しにしてください。
         暴力的・攻撃的・不快な発言はしないでください。
+        ユーザーメッセージにはずんだもんとユーザーのやり取りが記録されています。
+        参考にしながら話を続けてください。
+        ずんだもんのセリフのみ出力してください。
+        レスポンスにずんだもん「」は不要です。
         """
     
     func generateResponse(userMessage: String) async throws -> String {
