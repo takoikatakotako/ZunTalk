@@ -11,32 +11,74 @@ struct ContactView: View {
         Contact(name: "ずんだもん", imageName: "person.circle.fill"),
     ]
     
+    @State private var isNavigatingToText = false
+    @State private var isNavigatingToCall = false
+    
     var body: some View {
         NavigationView {
-            ZStack {
-                Color(.callBackground)
-                    .ignoresSafeArea()
-                
-                VStack {
-                    Text("連絡先")
-                        .foregroundStyle(Color.white)
-                        .font(Font.system(size: 32).bold())
-                        .padding(.top, 24)
+            List(contacts, id: \.id) { contact in
+                HStack(spacing: 16) {
+                    Image(.thumbnail)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 40, height: 40)
+                        .clipShape(Circle())
                     
-                    List(contacts, id: \.id) { contact in
-                        ContactRowView(contact: contact)
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(contact.name)
+                            .font(.headline)
+                        
+                        Text("携帯電話")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                     }
-                    .listStyle(PlainListStyle())
-                    .scrollContentBackground(.hidden)
+                    
+                    Spacer()
+                    
+                    HStack(spacing: 12) {
+                        Button(action: {
+                            isNavigatingToText = true
+                        }) {
+                            Image(systemName: "message.fill")
+                                .foregroundColor(.white)
+                                .font(.system(size: 16))
+                                .frame(width: 32, height: 32)
+                                .background(Color.blue)
+                                .clipShape(Circle())
+                        }
+                        
+                        Button(action: {
+                            isNavigatingToCall = true
+                        }) {
+                            Image(systemName: "phone.fill")
+                                .foregroundColor(.white)
+                                .font(.system(size: 16))
+                                .frame(width: 32, height: 32)
+                                .background(Color.green)
+                                .clipShape(Circle())
+                        }
+                    }
+                }
+                .padding(.vertical, 8)
+            }
+            .listStyle(.plain)
+            .buttonStyle(PlainButtonStyle())
+            .background(Color.white)
+            .navigationTitle("連絡先")
+            .navigationBarTitleDisplayMode(.large)
+            .background {
+                NavigationLink(destination: Text("XXXX"), isActive: $isNavigatingToText) {
+                    EmptyView()
+                }
+                NavigationLink(destination: CallView(), isActive: $isNavigatingToCall) {
+                    EmptyView()
                 }
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NavigationLink(destination: ConfigView()) {
-                        Image(systemName: "plus")
-                            .foregroundStyle(Color.white)
+                        Image(systemName: "gearshape")
+                            .foregroundStyle(Color.black)
                             .font(Font.system(size: 18).bold())
                     }
                 }
@@ -45,55 +87,6 @@ struct ContactView: View {
     }
 }
 
-struct ContactRowView: View {
-    let contact: Contact
-    @State private var isNavigatingToCall = false
-    
-    var body: some View {
-        HStack(spacing: 16) {
-            Image(.thumbnail)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 60, height: 60)
-                .foregroundStyle(Color.white)
-                .background(Color.gray.opacity(0.3))
-                .clipShape(Circle())
-            
-            Text(contact.name)
-                .foregroundStyle(Color.white)
-                .font(Font.system(size: 20).bold())
-            
-            Spacer()
-            
-            ZStack {
-                NavigationLink(
-                    destination: CallView(),
-                    isActive: $isNavigatingToCall
-                ) {
-                    EmptyView()
-                }
-                .opacity(0)
-                
-                Button(action: {
-                    isNavigatingToCall = true
-                }) {
-                    Image(systemName: "phone.fill")
-                        .foregroundStyle(Color.white)
-                        .font(Font.system(size: 24))
-                        .frame(width: 44, height: 44)
-                        .background(Color.green)
-                        .clipShape(Circle())
-                }
-            }
-            .frame(width: 44, height: 44)
-        }
-        .padding(.leading, 16)
-        .padding(.trailing, 16)
-        .padding(.vertical, 12)
-        .background(Color.black.opacity(0.1))
-        .cornerRadius(12)
-    }
-}
 
 #Preview {
     ContactView()
