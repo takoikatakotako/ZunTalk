@@ -79,7 +79,7 @@ struct ContactView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NavigationLink(destination: ConfigView()) {
                         Image(systemName: "gearshape")
-                            .foregroundStyle(Color.black)
+                            .foregroundStyle(Color.blue)
                             .font(Font.system(size: 18).bold())
                     }
                 }
