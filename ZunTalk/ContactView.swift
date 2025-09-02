@@ -32,6 +32,15 @@ struct ContactView: View {
                     .scrollContentBackground(.hidden)
                 }
             }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    NavigationLink(destination: ConfigView()) {
+                        Image(systemName: "plus")
+                            .foregroundStyle(Color.white)
+                            .font(Font.system(size: 18).bold())
+                    }
+                }
+            }
         }
     }
 }
