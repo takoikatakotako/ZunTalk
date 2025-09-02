@@ -21,14 +21,14 @@ struct ContactView: View {
                     Image(.thumbnail)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: 40, height: 40)
+                        .frame(width: 48, height: 48)
                         .clipShape(Circle())
                     
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: 4) {
                         Text(contact.name)
                             .font(.headline)
                         
-                        Text("携帯電話")
+                        Text("ずんだの妖精")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -42,7 +42,7 @@ struct ContactView: View {
                             Image(systemName: "message.fill")
                                 .foregroundColor(.white)
                                 .font(.system(size: 16))
-                                .frame(width: 32, height: 32)
+                                .frame(width: 36, height: 36)
                                 .background(Color.blue)
                                 .clipShape(Circle())
                         }
@@ -53,13 +53,14 @@ struct ContactView: View {
                             Image(systemName: "phone.fill")
                                 .foregroundColor(.white)
                                 .font(.system(size: 16))
-                                .frame(width: 32, height: 32)
+                                .frame(width: 36, height: 36)
                                 .background(Color.green)
                                 .clipShape(Circle())
                         }
                     }
                 }
-                .padding(.vertical, 8)
+                .padding(.vertical, 4)
+                .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
             }
             .listStyle(.plain)
             .buttonStyle(PlainButtonStyle())
