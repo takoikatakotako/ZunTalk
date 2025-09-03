@@ -15,7 +15,7 @@ struct ContactView: View {
     @State private var isNavigatingToCall = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List(contacts, id: \.id) { contact in
                 HStack(spacing: 16) {
                     Image(.thumbnail)
@@ -67,13 +67,11 @@ struct ContactView: View {
             .background(Color.white)
             .navigationTitle("連絡先")
             .navigationBarTitleDisplayMode(.large)
-            .background {
-                NavigationLink(destination: Text("XXXX"), isActive: $isNavigatingToText) {
-                    EmptyView()
-                }
-                NavigationLink(destination: CallView(), isActive: $isNavigatingToCall) {
-                    EmptyView()
-                }
+            .navigationDestination(isPresented: $isNavigatingToText) {
+                Text("XXXX")
+            }
+            .navigationDestination(isPresented: $isNavigatingToCall) {
+                CallView()
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
