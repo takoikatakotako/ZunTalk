@@ -35,13 +35,7 @@ class CallViewModel: NSObject, ObservableObject {
         self.init(voicevoxRepository: VoicevoxRepository(), textGenerationRepository: textGenRepo)
     }
     
-    
-    //
-    //    var speechRecognizer:SFSpeechRecognizer?
-    ////    var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-    //    var recognitionTask: SFSpeechRecognitionTask?
-    //
-    
+
     func onAppear() {
         Task {
             do {

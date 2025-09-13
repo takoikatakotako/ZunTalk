@@ -6,7 +6,8 @@ struct CallView: View {
 
     var body: some View {
         ZStack {
-            Color(.callBackground)
+
+            Color.white
                 .ignoresSafeArea()
             
             VStack(spacing: 0) {
@@ -15,18 +16,11 @@ struct CallView: View {
                     .scaledToFill()
                     .frame(width: 240, height: 240)
                     .clipShape(Circle())
-                
-                Text("ずんだもん")
-                    .foregroundStyle(Color.white)
-                    .font(Font.system(size: 48).bold())
-                    .padding(.top, 36)
-                
-                
-                Spacer()
-                
+
                 Text(viewModel.text)
-                    .foregroundStyle(Color.white)
+                    .foregroundStyle(Color.gray)
                     .font(Font.system(size: 24))
+                    .padding(.top, 24)
                     .padding(.horizontal, 36)
                 
                 Spacer()
