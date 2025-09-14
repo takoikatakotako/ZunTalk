@@ -24,19 +24,31 @@ class CallViewModel: NSObject, ObservableObject {
     private let voicevoxRepository: TextToSpeechRepository
     private let textGenerationRepository: TextGenerationRepository
     
+    
+    
+    var chatMaggee: [ChatMessage] = []
+    
+    private let prompt = """
+        あなたはずんだの妖精のずんだもんです。語尾に「なのだ」をつけ、親しみやすく楽しい口調で話してください。
+        今は電話がかかってきて受け取ったところから会話を始めます。
+        最初のセリフは必ず「電話を受けた感のある挨拶」にしてください。
+        例: 「もしもし〜？ずんだもんなのだ！」、「はいは〜い、ずんだもんなのだ！」、「お電話ありがとうなのだ！」など。
+        例を参考にしつつ、毎回少し違う言い回しにしてください。
+        暴力的・攻撃的・不快な発言はしないでください。
+        """
+    
+    
     init(voicevoxRepository: TextToSpeechRepository = VoicevoxRepository(), textGenerationRepository: TextGenerationRepository = OpenAITextGenerationRepository(apiKey: tempAPIKey)) {
         self.voicevoxRepository = voicevoxRepository
         self.textGenerationRepository = textGenerationRepository
     }
     
-    // OpenAI LLM統合用の初期化メソッド
-    convenience init(openAIAPIKey: String) {
-        let textGenRepo = OpenAITextGenerationRepository(apiKey: openAIAPIKey)
-        self.init(voicevoxRepository: VoicevoxRepository(), textGenerationRepository: textGenRepo)
-    }
-    
 
     func onAppear() {
+        if chatMaggee.isEmpty {
+            chatMaggee.append(ChatMessage(role: .system, content: prompt))
+        }
+        
         Task {
             do {
                 // 音声の読み込み
@@ -79,7 +91,7 @@ class CallViewModel: NSObject, ObservableObject {
     // スクリプト生成
     func generateScript() async throws -> String {
         print("スクリプト生成")
-        let script = try await textGenerationRepository.generateResponse(userMessage: history)
+        let script = try await textGenerationRepository.generateResponse(inputs: chatMaggee)
         print(script)
         return script
     }
@@ -190,11 +202,14 @@ class CallViewModel: NSObject, ObservableObject {
 
         print("✅ 音声認識停止完了")
         
-        self.history += "ユーザー「\(self.text)」\n"
+        chatMaggee.append(ChatMessage(role: .user, content: self.text))
+        
         Task {
             do {
                 let script = try await generateScript()
                 let voice = try await generateVoice(script: script)
+                
+                chatMaggee.append(ChatMessage(role: .assistant, content: script))
                 Task { @MainActor in
                     self.text = script
                     self.history += "ずんだもん「\(script)」\n"
