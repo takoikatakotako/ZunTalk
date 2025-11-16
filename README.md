@@ -21,3 +21,27 @@ flowchart TD
     SilenceTimeout -->|30文字以上 OR 末尾が !, ?, 。| ScriptGeneration
     SilenceTimeout -->|継続| SpeechRecognition
 ```
+
+### CallStatus 状態遷移図
+
+```mermaid
+stateDiagram-v2
+    [*] --> idle
+    idle --> initializingVoiceVox: 初期化開始
+    initializingVoiceVox --> requestingPermission: VoiceVoxセットアップ完了
+    requestingPermission --> permissionGranted: 許可
+    requestingPermission --> permissionDenied: 不許可
+    permissionDenied --> [*]
+
+    permissionGranted --> generatingScript: 最初のスクリプト生成
+    generatingScript --> synthesizingVoice: スクリプト生成完了
+    synthesizingVoice --> playingVoice: 音声合成完了
+    playingVoice --> recognizingSpeech: 音声再生完了
+    recognizingSpeech --> processingResponse: 音声認識完了
+    processingResponse --> generatingScript: 応答スクリプト生成
+
+    idle --> ended: 通話終了
+    recognizingSpeech --> ended: 通話終了
+    playingVoice --> ended: 通話終了
+    ended --> [*]
+```
