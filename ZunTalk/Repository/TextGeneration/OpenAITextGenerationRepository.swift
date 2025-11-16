@@ -16,12 +16,7 @@ class OpenAITextGenerationRepository: TextGenerationRepository {
         例を参考にしつつ、毎回少し違う言い回しにしてください。
         暴力的・攻撃的・不快な発言はしないでください。
         """
-    
-//    func generateResponse(userMessage: String) async throws -> String {
-//        let combinedInput = "\(prompt)\n\nUser: \(userMessage)"
-//        return try await generateResponseWithInput(input: combinedInput)
-//    }
-//    
+
     func generateResponse(inputs: [ChatMessage]) async throws -> String {
         guard !apiKey.isEmpty else {
             throw OpenAITextGenerationError.invalidAPIKey
@@ -41,9 +36,6 @@ class OpenAITextGenerationRepository: TextGenerationRepository {
         )
 
         do {
-            let xxx = try JSONEncoder().encode(requestBody)
-            print(String(data: xxx, encoding: .utf8))
-            
             request.httpBody = try JSONEncoder().encode(requestBody)
         } catch {
             throw OpenAITextGenerationError.encodingError
@@ -51,12 +43,6 @@ class OpenAITextGenerationRepository: TextGenerationRepository {
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-
-            
-            print(String(data: data, encoding: .utf8))
-
-            
-            
             if let httpResponse = response as? HTTPURLResponse {
                 guard httpResponse.statusCode == 200 else {
                     print("OpenAI API Error: \(httpResponse.statusCode)")
@@ -68,7 +54,6 @@ class OpenAITextGenerationRepository: TextGenerationRepository {
             }
 
             let responsesResponse = try JSONDecoder().decode(OpenAIResponsesResponse.self, from: data)
-            
             
             // message の text をオプショナルで取り出す
             var firstMessageText: String? = nil

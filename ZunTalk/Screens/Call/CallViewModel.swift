@@ -5,8 +5,6 @@ import Accelerate
 class CallViewModel: NSObject, ObservableObject {
     
     @Published var text = ""
-
-    private var history = ""
     
     private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "ja-JP"))
     private let engine = AVAudioEngine()
@@ -14,8 +12,7 @@ class CallViewModel: NSObject, ObservableObject {
     private var task: SFSpeechRecognitionTask?
     private var silenceTimer: Timer?
     
-    private let silenceThreshold: Float = 0.01
-    private let silenceTime: TimeInterval = 2.0
+    private let silenceTime: TimeInterval = 2
     
     
     private var audioPlayer: AVAudioPlayer?
@@ -82,7 +79,6 @@ class CallViewModel: NSObject, ObservableObject {
         let voice = try await generateVoice(script: script)
         Task { @MainActor in
             self.text = script
-            self.history += "ずんだもん「\(script)」\n"
         }
         try playVoice(data: voice)
     }
@@ -212,7 +208,6 @@ class CallViewModel: NSObject, ObservableObject {
                 chatMaggee.append(ChatMessage(role: .assistant, content: script))
                 Task { @MainActor in
                     self.text = script
-                    self.history += "ずんだもん「\(script)」\n"
                 }
                 try playVoice(data: voice)
             } catch {
