@@ -317,23 +317,29 @@ class CallViewModel: NSObject, ObservableObject {
     private func startConversationTimer() {
         conversationTimer?.invalidate()
         conversationTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self, let startTime = self.speechRecognitionStartTime else { return }
-            self.conversationDuration = Date().timeIntervalSince(startTime)
+            Task { @MainActor [weak self] in
+                guard let self = self, let startTime = self.speechRecognitionStartTime else { return }
+                self.conversationDuration = Date().timeIntervalSince(startTime)
+            }
         }
     }
 }
 
 // MARK: - AVAudioPlayerDelegate
 extension CallViewModel: AVAudioPlayerDelegate {
-    func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        playbackContinuation?.resume(returning: flag)
-        playbackContinuation = nil
+    nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        Task { @MainActor in
+            playbackContinuation?.resume(returning: flag)
+            playbackContinuation = nil
+        }
     }
 
-    func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
-        print("音声デコードエラー: \(error?.localizedDescription ?? "不明なエラー")")
-        playbackContinuation?.resume(returning: false)
-        playbackContinuation = nil
+    nonisolated func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
+        Task { @MainActor in
+            print("音声デコードエラー: \(error?.localizedDescription ?? "不明なエラー")")
+            playbackContinuation?.resume(returning: false)
+            playbackContinuation = nil
+        }
     }
 }
 
