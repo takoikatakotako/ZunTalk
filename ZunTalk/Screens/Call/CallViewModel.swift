@@ -18,7 +18,8 @@ class CallViewModel: NSObject, ObservableObject {
 
     private var audioPlayer: AVAudioPlayer?
     private var playbackContinuation: CheckedContinuation<Bool, Never>?
-    
+    private var speechRecognitionStartTime: Date?
+
     // Repository
     private let voicevoxRepository: TextToSpeechRepository
     private let textGenerationRepository: TextGenerationRepository
@@ -84,6 +85,9 @@ class CallViewModel: NSObject, ObservableObject {
         
         // Stop Incomint Call
         stopIncomingCall()
+        
+        // 会話時間測定開始
+        speechRecognitionStartTime = Date()
 
         // Play Voice
         try await playVoice(data: voice)
@@ -251,7 +255,9 @@ class CallViewModel: NSObject, ObservableObject {
             self.silenceTimer?.invalidate()
             self.silenceTimer = Timer.scheduledTimer(withTimeInterval: self.silenceTime, repeats: false) { _ in
                 print("⏰ 2秒以上の無音が発生しました - 音声認識を停止します")
-                self.stop()
+                Task {
+                    try? await self.stop()
+                }
             }
         }
         print("✅ 音声認識タスク開始")
@@ -261,37 +267,40 @@ class CallViewModel: NSObject, ObservableObject {
         print("✅ 音声エンジン開始成功")
     }
 
-    func stop() {
-        Task { @MainActor in
-            print("⏹️ 音声認識停止")
+    @MainActor
+    func stop() async throws {
+        print("⏹️ 音声認識停止")
 
-            engine.stop()
-            engine.inputNode.removeTap(onBus: 0)
-            request?.endAudio()
-            task?.finish()
+        engine.stop()
+        engine.inputNode.removeTap(onBus: 0)
+        request?.endAudio()
+        task?.finish()
 
-            print("✅ 音声認識停止完了")
-            
-            status = .processingResponse
-            chatMaggee.append(ChatMessage(role: .user, content: text))
+        print("✅ 音声認識停止完了")
 
-            do {
-                status = .generatingScript
-                let script = try await generateScript(inputs: chatMaggee)
-
-                let voice = try await generateVoice(script: script)
-
-                chatMaggee.append(ChatMessage(role: .assistant, content: script))
-                text = script
-
-                try await playVoice(data: voice)
-
-                // Start Speech Recognition
-                try await startSpeachRecognition()
-            } catch {
-                print("Error: \(error)")
+        // 会話時間を確認
+        if let startTime = speechRecognitionStartTime {
+            let elapsedTime = Date().timeIntervalSince(startTime)
+            if elapsedTime >= 60 {
+                print("⏱️ 会話時間が1分以上です: \(Int(elapsedTime))秒")
             }
         }
+
+        status = .processingResponse
+        chatMaggee.append(ChatMessage(role: .user, content: text))
+
+        status = .generatingScript
+        let script = try await generateScript(inputs: chatMaggee)
+
+        let voice = try await generateVoice(script: script)
+
+        chatMaggee.append(ChatMessage(role: .assistant, content: script))
+        text = script
+
+        try await playVoice(data: voice)
+
+        // Start Speech Recognition
+        try await startSpeachRecognition()
     }
 }
 
