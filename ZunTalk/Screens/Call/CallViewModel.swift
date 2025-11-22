@@ -9,6 +9,8 @@ class CallViewModel: NSObject, ObservableObject {
     @Published var status: CallStatus = .idle
     @Published var conversationDuration: TimeInterval = 0
     @Published var shouldDismiss = false
+    
+    private var chatMessages: [ChatMessage] = []
 
     private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "ja-JP"))
     private let engine = AVAudioEngine()
@@ -29,10 +31,6 @@ class CallViewModel: NSObject, ObservableObject {
     // Repository
     private let voicevoxRepository: TextToSpeechRepository
     private let textGenerationRepository: TextGenerationRepository
-    
-    
-    
-    var chatMaggee: [ChatMessage] = []
     
     private let prompt = """
         あなたはずんだの妖精のずんだもんです。語尾に「なのだ」をつけ、親しみやすく楽しい口調で話してください。
@@ -91,7 +89,7 @@ class CallViewModel: NSObject, ObservableObject {
         audioPlayer?.stop()
 
         // 会話履歴を削除
-        chatMaggee.removeAll()
+        chatMessages.removeAll()
 
         // VOICEVOXをクリーンナップ
         voicevoxRepository.cleanupSynthesizer()
@@ -122,9 +120,9 @@ class CallViewModel: NSObject, ObservableObject {
 
         // Generate Script
         status = .generatingScript
-        assert(chatMaggee.isEmpty)
-        chatMaggee.append(ChatMessage(role: .system, content: prompt))
-        let script = try await generateScript(inputs: chatMaggee)
+        assert(chatMessages.isEmpty)
+        chatMessages.append(ChatMessage(role: .system, content: prompt))
+        let script = try await generateScript(inputs: chatMessages)
         guard !shouldDismiss else { return }
 
         // Generate Voice
@@ -169,16 +167,16 @@ class CallViewModel: NSObject, ObservableObject {
         }
 
         status = .processingResponse
-        chatMaggee.append(ChatMessage(role: .user, content: recognizedText))
+        chatMessages.append(ChatMessage(role: .user, content: recognizedText))
 
         status = .generatingScript
-        let script = try await generateScript(inputs: chatMaggee)
+        let script = try await generateScript(inputs: chatMessages)
         guard !shouldDismiss else { return }
 
         let voice = try await generateVoice(script: script)
         guard !shouldDismiss else { return }
 
-        chatMaggee.append(ChatMessage(role: .assistant, content: script))
+        chatMessages.append(ChatMessage(role: .assistant, content: script))
         text = script
 
         try await playVoice(data: voice)
@@ -192,14 +190,14 @@ class CallViewModel: NSObject, ObservableObject {
         print("🔚 会話を終了します")
 
         // 終了メッセージを生成するためのプロンプトを追加
-        chatMaggee.append(ChatMessage(role: .system, content: "会話時間が1分を超えたので、ずんだもんらしく親しみやすい挨拶で会話を終了してください。"))
+        chatMessages.append(ChatMessage(role: .system, content: "会話時間が1分を超えたので、ずんだもんらしく親しみやすい挨拶で会話を終了してください。"))
 
         status = .generatingScript
-        let script = try await generateScript(inputs: chatMaggee)
+        let script = try await generateScript(inputs: chatMessages)
 
         let voice = try await generateVoice(script: script)
 
-        chatMaggee.append(ChatMessage(role: .assistant, content: script))
+        chatMessages.append(ChatMessage(role: .assistant, content: script))
         text = script
 
         try await playVoice(data: voice)
