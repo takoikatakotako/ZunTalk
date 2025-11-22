@@ -35,71 +35,19 @@ class CallViewModel: NSObject, ObservableObject {
         暴力的・攻撃的・不快な発言はしないでください。
         """
     
-    
     init(voicevoxRepository: TextToSpeechRepository = VoicevoxRepository(), textGenerationRepository: TextGenerationRepository = OpenAITextGenerationRepository(apiKey: tempAPIKey)) {
         self.voicevoxRepository = voicevoxRepository
         self.textGenerationRepository = textGenerationRepository
     }
-    
 
     func onAppear() {
-        if chatMaggee.isEmpty {
-            chatMaggee.append(ChatMessage(role: .system, content: prompt))
+        guard status == .idle else {
+            print("idle以外から呼ばれました")
+            return
         }
-
+        
         Task {
             do {
-                // 音声の読み込み
-                guard let asset = NSDataAsset(name: "maou_se_sound_phone02") else {
-                    // TODO: エラーハンドリング
-                    print("音声ファイルが見つかりません")
-                    return
-                }
-
-                // 着信音再生
-                audioPlayer = try AVAudioPlayer(data: asset.data)
-                audioPlayer?.numberOfLoops = -1
-                audioPlayer?.prepareToPlay()
-                audioPlayer?.play()
-
-                // Voicevoxの初期化
-                await MainActor.run {
-                    status = .initializingVoiceVox
-                }
-                try await voicevoxRepository.installVoicevox()
-                print("Voicevoxセットアップ完了")
-                try voicevoxRepository.setupSynthesizer()
-
-                // 音声認識の許可をリクエスト
-                await MainActor.run {
-                    status = .requestingPermission
-                }
-                let authStatus = SFSpeechRecognizer.authorizationStatus()
-                if authStatus == .authorized {
-                    await MainActor.run {
-                        status = .permissionGranted
-                    }
-                } else if authStatus == .denied || authStatus == .restricted {
-                    await MainActor.run {
-                        status = .permissionDenied
-                    }
-                    return
-                } else {
-                    // 許可をリクエスト
-                    let granted = await withCheckedContinuation { continuation in
-                        SFSpeechRecognizer.requestAuthorization { status in
-                            continuation.resume(returning: status == .authorized)
-                        }
-                    }
-                    await MainActor.run {
-                        status = granted ? .permissionGranted : .permissionDenied
-                    }
-                    if !granted {
-                        return
-                    }
-                }
-
-                // main
                 try await main()
             } catch {
                 print("Voicevoxセットアップエラー: \(error)")
@@ -108,28 +56,108 @@ class CallViewModel: NSObject, ObservableObject {
     }
     
     private func main() async throws {
-        let script = try await generateScript()
-        let voice = try await generateVoice(script: script)
-        Task { @MainActor in
-            self.text = script
+        // initializingVoiceVox
+        status = .initializingVoiceVox
+        try await initializingVoiceVox()
+        
+        // requestingPermission
+        status = .requestingPermission
+        let result = await requestSpeechRecognitionPermission()
+        guard result else {
+            // 許可得られなかった
+            print("許可得られなかったです")
+            return
         }
-        try playVoice(data: voice)
+        
+        // Play Incoming Call
+        try playIncomingCall()
+        
+        // Generate Script
+        status = .generatingScript
+        assert(chatMaggee.isEmpty)
+        chatMaggee.append(ChatMessage(role: .system, content: prompt))
+        let script = try await generateScript(inputs: chatMaggee)
+
+        // Generate Voice
+        let voice = try await generateVoice(script: script)
+        
+        // Stop Incomint Call
+        stopIncomingCall()
+        
+        // Play Voice
+        try await playVoice(data: voice)
+    }
+
+    @MainActor
+    private func initializingVoiceVox() async throws {
+        // ステータス確認
+        guard status == .initializingVoiceVox else {
+            fatalError("initializingVoiceVox以外のステータスです")
+        }
+        
+        // VOICEVOXのインストール
+        try await voicevoxRepository.installVoicevox()
+        print("VoiceVoxの初期化完了")
+        
+        // VOICEVOXのシンセサイザーのセットアップ
+        try voicevoxRepository.setupSynthesizer()
+        print("VOICEVOXのシンセサイザー初期化完了")
     }
     
-    
-    // スクリプト生成
-    func generateScript() async throws -> String {
-        print("スクリプト生成")
-        await MainActor.run {
-            status = .generatingScript
+    @MainActor
+    private func requestSpeechRecognitionPermission() async -> Bool {
+        // ステータス確認
+        guard status == .requestingPermission else {
+            fatalError("requestingPermission以外のステータスです")
         }
-        let script = try await textGenerationRepository.generateResponse(inputs: chatMaggee)
+
+        let authStatus = SFSpeechRecognizer.authorizationStatus()
+
+        switch authStatus {
+        case .authorized:
+            return true
+        case .denied, .restricted:
+            return false
+        case .notDetermined:
+            return await withCheckedContinuation { continuation in
+                SFSpeechRecognizer.requestAuthorization { status in
+                    continuation.resume(returning: status == .authorized)
+                }
+            }
+        @unknown default:
+            return false
+        }
+    }
+    
+    private func playIncomingCall() throws {
+        // 音声の読み込み
+        guard let asset = NSDataAsset(name: "maou_se_sound_phone02") else {
+            // TODO: エラーハンドリング
+            fatalError("音声ファイルが見つかりません")
+            return
+        }
+
+        // 着信音再生
+        audioPlayer = try AVAudioPlayer(data: asset.data)
+        audioPlayer?.numberOfLoops = -1
+        audioPlayer?.prepareToPlay()
+        audioPlayer?.play()
+    }
+    
+    @MainActor
+    private func generateScript(inputs: [ChatMessage]) async throws -> String {
+        // ステータス確認
+        guard status == .generatingScript else {
+            fatalError("generatingScript以外のステータスです")
+        }
+
+        let script = try await textGenerationRepository.generateResponse(inputs: inputs)
         print(script)
         return script
     }
 
-    // 音声合成
-    func generateVoice(script: String) async throws -> Data {
+    @MainActor
+    private func generateVoice(script: String) async throws -> Data {
         print("音声合成")
         await MainActor.run {
             status = .synthesizingVoice
@@ -137,13 +165,13 @@ class CallViewModel: NSObject, ObservableObject {
         let data = try await voicevoxRepository.synthesize(text: script)
         return data
     }
-
-    // 音声再生
-    func playVoice(data: Data) throws {
-        print("音声再生")
-        DispatchQueue.main.async {
-            self.status = .playingVoice
-        }
+    
+    private func stopIncomingCall() {
+        audioPlayer?.stop()
+    }
+    
+    @MainActor
+    private func playVoice(data: Data) throws {
         audioPlayer = try AVAudioPlayer(data: data)
         audioPlayer?.delegate = self
         audioPlayer?.prepareToPlay()
@@ -151,129 +179,121 @@ class CallViewModel: NSObject, ObservableObject {
     }
     
     // 音声認識開始
-    func startSpeachRecognition() {
-        print("🎤 音声認識開始")
+    private func startSpeachRecognition() {
+        Task { @MainActor in
+            print("🎤 音声認識開始")
 
-        // 状態を更新
-        DispatchQueue.main.async {
-            self.status = .recognizingSpeech
-            self.text = ""
-        }
-        
-        // 音声セッションの設定
-        do {
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .mixWithOthers])
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-            print("✅ 音声セッション設定完了")
-        } catch {
-            print("❌ 音声セッション設定エラー: \(error)")
-            return
-        }
-        
-        // 音声認識リクエストの作成
-        request = SFSpeechAudioBufferRecognitionRequest()
-        request?.shouldReportPartialResults = true
-        print("✅ 音声認識リクエスト作成完了")
-        
-        let input = engine.inputNode
-        let format = input.outputFormat(forBus: 0)
-        
-        print("📊 音声フォーマット - サンプルレート: \(format.sampleRate)Hz, チャネル数: \(format.channelCount)")
-        
-        input.removeTap(onBus: 0)
-        input.installTap(onBus: 0, bufferSize: 1024, format: format) { buf, _ in
-            self.request?.append(buf)
-//            self.detectSilence(buf)
-        }
-        print("✅ 音声タップ設定完了")
-        
-        // 音声認識タスクの開始
-        task = recognizer?.recognitionTask(with: request!) { result, error in
-            if let error = error {
-                print("❌ 音声認識エラー: \(error.localizedDescription)")
+            status = .recognizingSpeech
+            text = ""
+            
+            // 音声セッションの設定
+            do {
+                let audioSession = AVAudioSession.sharedInstance()
+                try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .mixWithOthers])
+                try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+                print("✅ 音声セッション設定完了")
+            } catch {
+                print("❌ 音声セッション設定エラー: \(error)")
                 return
             }
             
-            if let result = result {
-                let recognizedText = result.bestTranscription.formattedString
-                print("🗣️ 認識結果: \(recognizedText)")
-                print("📝 認識状態: \(result.isFinal ? "最終" : "途中")")
-                
-                                if result.isFinal {
-                                    print("✅ 音声認識完了")
-                                    return
-                                }
-                
-                DispatchQueue.main.async {
-                    self.text = recognizedText
-                    print("XXX: \(self.text)")
+            // 音声認識リクエストの作成
+            request = SFSpeechAudioBufferRecognitionRequest()
+            request?.shouldReportPartialResults = true
+            print("✅ 音声認識リクエスト作成完了")
+            
+            let input = engine.inputNode
+            let format = input.outputFormat(forBus: 0)
+            
+            print("📊 音声フォーマット - サンプルレート: \(format.sampleRate)Hz, チャネル数: \(format.channelCount)")
+            
+            input.removeTap(onBus: 0)
+            input.installTap(onBus: 0, bufferSize: 1024, format: format) { buf, _ in
+                self.request?.append(buf)
+    //            self.detectSilence(buf)
+            }
+            print("✅ 音声タップ設定完了")
+            
+            // 音声認識タスクの開始
+            task = recognizer?.recognitionTask(with: request!) { result, error in
+                if let error = error {
+                    print("❌ 音声認識エラー: \(error.localizedDescription)")
+                    return
                 }
                 
-                print("🔇 無音検出 - タイマー開始（\(self.silenceTime)秒後に処理実行）")
-                self.silenceTimer?.invalidate()
-                self.silenceTimer = Timer.scheduledTimer(withTimeInterval: self.silenceTime, repeats: false) { _ in
-                    print("⏰ 2秒以上の無音が発生しました - 音声認識を停止します")
-                    self.stop()
+                if let result = result {
+                    let recognizedText = result.bestTranscription.formattedString
+                    print("🗣️ 認識結果: \(recognizedText)")
+                    print("📝 認識状態: \(result.isFinal ? "最終" : "途中")")
+                    
+                                    if result.isFinal {
+                                        print("✅ 音声認識完了")
+                                        return
+                                    }
+                    
+                    DispatchQueue.main.async {
+                        self.text = recognizedText
+                        print("XXX: \(self.text)")
+                    }
+                    
+                    print("🔇 無音検出 - タイマー開始（\(self.silenceTime)秒後に処理実行）")
+                    self.silenceTimer?.invalidate()
+                    self.silenceTimer = Timer.scheduledTimer(withTimeInterval: self.silenceTime, repeats: false) { _ in
+                        print("⏰ 2秒以上の無音が発生しました - 音声認識を停止します")
+                        self.stop()
+                    }
                 }
             }
-        }
-        print("✅ 音声認識タスク開始")
-        
-        // 音声エンジンの開始
-        do {
-            try engine.start()
-            print("✅ 音声エンジン開始成功")
-        } catch {
-            print("❌ 音声エンジン開始エラー: \(error)")
+            print("✅ 音声認識タスク開始")
+            
+            // 音声エンジンの開始
+            do {
+                try engine.start()
+                print("✅ 音声エンジン開始成功")
+            } catch {
+                print("❌ 音声エンジン開始エラー: \(error)")
+            }
         }
     }
 
     func stop() {
-        print("⏹️ 音声認識停止")
+        Task { @MainActor in
+            print("⏹️ 音声認識停止")
 
-        engine.stop()
-        engine.inputNode.removeTap(onBus: 0)
-        request?.endAudio()
-        task?.finish()
+            engine.stop()
+            engine.inputNode.removeTap(onBus: 0)
+            request?.endAudio()
+            task?.finish()
 
-        print("✅ 音声認識停止完了")
+            print("✅ 音声認識停止完了")
 
-        // 音声認識完了後の処理中
-        DispatchQueue.main.async {
+            
             self.status = .processingResponse
-        }
 
-        chatMaggee.append(ChatMessage(role: .user, content: self.text))
+            
+            chatMaggee.append(ChatMessage(role: .user, content: self.text))
 
-        Task {
             do {
-                let script = try await generateScript()
+                status = .generatingScript
+                let script = try await generateScript(inputs: chatMaggee)
+                
                 let voice = try await generateVoice(script: script)
 
                 chatMaggee.append(ChatMessage(role: .assistant, content: script))
-                Task { @MainActor in
-                    self.text = script
-                }
+                self.text = script
+
                 try playVoice(data: voice)
             } catch {
                 print("Error: \(error)")
             }
         }
-
     }
 }
 
 // MARK: - AVAudioPlayerDelegate
 extension CallViewModel: AVAudioPlayerDelegate {
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        if flag {
-            print("音声再生が終了しました")
-            // ここで次のアクションを実行
-            startSpeachRecognition()
-        } else {
-            print("音声再生に失敗しました")
-        }
+        startSpeachRecognition()
     }
     
     func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
