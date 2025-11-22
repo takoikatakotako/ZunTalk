@@ -14,9 +14,10 @@ class CallViewModel: NSObject, ObservableObject {
     private var silenceTimer: Timer?
     
     private let silenceTime: TimeInterval = 2
-    
-    
+
+
     private var audioPlayer: AVAudioPlayer?
+    private var playbackContinuation: CheckedContinuation<Bool, Never>?
     
     // Repository
     private let voicevoxRepository: TextToSpeechRepository
@@ -83,9 +84,12 @@ class CallViewModel: NSObject, ObservableObject {
         
         // Stop Incomint Call
         stopIncomingCall()
-        
+
         // Play Voice
         try await playVoice(data: voice)
+
+        // Start Speech Recognition
+        startSpeachRecognition()
     }
 
     @MainActor
@@ -134,7 +138,6 @@ class CallViewModel: NSObject, ObservableObject {
         guard let asset = NSDataAsset(name: "maou_se_sound_phone02") else {
             // TODO: エラーハンドリング
             fatalError("音声ファイルが見つかりません")
-            return
         }
 
         // 着信音再生
@@ -171,11 +174,22 @@ class CallViewModel: NSObject, ObservableObject {
     }
     
     @MainActor
-    private func playVoice(data: Data) throws {
+    private func playVoice(data: Data) async throws {
+        status = .playingVoice
+
         audioPlayer = try AVAudioPlayer(data: data)
         audioPlayer?.delegate = self
         audioPlayer?.prepareToPlay()
         audioPlayer?.play()
+
+        // 再生終了を待つ
+        let success = await withCheckedContinuation { continuation in
+            playbackContinuation = continuation
+        }
+
+        if !success {
+            print("音声再生に失敗しました")
+        }
     }
     
     // 音声認識開始
@@ -271,18 +285,21 @@ class CallViewModel: NSObject, ObservableObject {
             self.status = .processingResponse
 
             
-            chatMaggee.append(ChatMessage(role: .user, content: self.text))
+            chatMaggee.append(ChatMessage(role: .user, content: text))
 
             do {
                 status = .generatingScript
                 let script = try await generateScript(inputs: chatMaggee)
-                
+
                 let voice = try await generateVoice(script: script)
 
                 chatMaggee.append(ChatMessage(role: .assistant, content: script))
                 self.text = script
 
-                try playVoice(data: voice)
+                try await playVoice(data: voice)
+
+                // Start Speech Recognition
+                startSpeachRecognition()
             } catch {
                 print("Error: \(error)")
             }
@@ -293,11 +310,14 @@ class CallViewModel: NSObject, ObservableObject {
 // MARK: - AVAudioPlayerDelegate
 extension CallViewModel: AVAudioPlayerDelegate {
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
-        startSpeachRecognition()
+        playbackContinuation?.resume(returning: flag)
+        playbackContinuation = nil
     }
-    
+
     func audioPlayerDecodeErrorDidOccur(_ player: AVAudioPlayer, error: Error?) {
         print("音声デコードエラー: \(error?.localizedDescription ?? "不明なエラー")")
+        playbackContinuation?.resume(returning: false)
+        playbackContinuation = nil
     }
 }
 
