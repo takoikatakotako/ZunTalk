@@ -1,24 +1,5 @@
 import Foundation
 
-// MARK: - Request/Response Models
-//
-//struct OpenAIChatRequest: Codable {
-//    let model: String
-//    let messages: [ChatMessage]
-//    let max_tokens: Int
-//    let temperature: Double
-//}
-//
-//struct OpenAIChatResponse: Codable {
-//    let id: String
-//    let choices: [ChatChoice]
-//}
-//
-//struct ChatChoice: Codable {
-//    let message: ChatMessage?
-//    let finish_reason: String?
-//}
-
 // MARK: - Responses API Models
 
 struct OpenAIResponsesRequest: Codable {
@@ -27,39 +8,6 @@ struct OpenAIResponsesRequest: Codable {
 //    let instructions: String?
 //    let temperature: Double?
 }
-//
-//struct OpenAIResponsesResponse: Codable {
-//    let id: String
-//    let output: [OpenAIResponsesResponseOutput]
-////    let model: String
-////    let created_at: String
-////    let status: String
-////    let usage: ResponseUsage?
-//}
-//
-////struct ResponseUsage: Codable {
-////    let prompt_tokens: Int?
-////    let completion_tokens: Int?
-////    let total_tokens: Int?
-////}
-//
-//
-//struct OpenAIResponsesResponseOutput: Codable {
-//    let content: [OpenAIResponsesResponseOutputContent]
-//}
-//
-//
-//struct OpenAIResponsesResponseOutputContent: Codable {
-//    let text: String
-//}
-//
-//
-
-
-
-
-
-
 
 struct OpenAIResponsesResponse: Decodable {
     let id: String
@@ -144,6 +92,3 @@ struct OpenAIResponsesOutputMessageContentRefusalResponse: Decodable {
     let type: OpenAIResponsesOutputMessageContentType
     let refusal: String
 }
-    
-    
-    

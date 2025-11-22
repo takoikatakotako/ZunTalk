@@ -146,10 +146,10 @@ class CallViewModel: NSObject, ObservableObject {
         guard !shouldDismiss else { return }
 
         //
-        try await convasiation()
+        try await conversation()
     }
-    
-    private func convasiation() async throws {
+
+    private func conversation() async throws {
         guard !shouldDismiss else { return }
 
         // Start Speech Recognition
@@ -185,7 +185,7 @@ class CallViewModel: NSObject, ObservableObject {
         guard !shouldDismiss else { return }
 
         // 次の会話へ
-        try await convasiation()
+        try await conversation()
     }
 
     private func endConversation() async throws {
