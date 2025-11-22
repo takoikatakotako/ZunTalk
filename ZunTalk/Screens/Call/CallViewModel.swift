@@ -3,9 +3,10 @@ import Speech
 import Accelerate
 
 class CallViewModel: NSObject, ObservableObject {
-    
+
     @Published var text = ""
-    
+    @Published var status: CallStatus = .idle
+
     private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "ja-JP"))
     private let engine = AVAudioEngine()
     private var request: SFSpeechAudioBufferRecognitionRequest?
@@ -45,7 +46,7 @@ class CallViewModel: NSObject, ObservableObject {
         if chatMaggee.isEmpty {
             chatMaggee.append(ChatMessage(role: .system, content: prompt))
         }
-        
+
         Task {
             do {
                 // 音声の読み込み
@@ -54,18 +55,50 @@ class CallViewModel: NSObject, ObservableObject {
                     print("音声ファイルが見つかりません")
                     return
                 }
-                
+
                 // 着信音再生
                 audioPlayer = try AVAudioPlayer(data: asset.data)
-                audioPlayer?.numberOfLoops = -1 
+                audioPlayer?.numberOfLoops = -1
                 audioPlayer?.prepareToPlay()
                 audioPlayer?.play()
-                
+
                 // Voicevoxの初期化
+                await MainActor.run {
+                    status = .initializingVoiceVox
+                }
                 try await voicevoxRepository.installVoicevox()
                 print("Voicevoxセットアップ完了")
                 try voicevoxRepository.setupSynthesizer()
-                
+
+                // 音声認識の許可をリクエスト
+                await MainActor.run {
+                    status = .requestingPermission
+                }
+                let authStatus = SFSpeechRecognizer.authorizationStatus()
+                if authStatus == .authorized {
+                    await MainActor.run {
+                        status = .permissionGranted
+                    }
+                } else if authStatus == .denied || authStatus == .restricted {
+                    await MainActor.run {
+                        status = .permissionDenied
+                    }
+                    return
+                } else {
+                    // 許可をリクエスト
+                    let granted = await withCheckedContinuation { continuation in
+                        SFSpeechRecognizer.requestAuthorization { status in
+                            continuation.resume(returning: status == .authorized)
+                        }
+                    }
+                    await MainActor.run {
+                        status = granted ? .permissionGranted : .permissionDenied
+                    }
+                    if !granted {
+                        return
+                    }
+                }
+
                 // main
                 try await main()
             } catch {
@@ -87,6 +120,9 @@ class CallViewModel: NSObject, ObservableObject {
     // スクリプト生成
     func generateScript() async throws -> String {
         print("スクリプト生成")
+        await MainActor.run {
+            status = .generatingScript
+        }
         let script = try await textGenerationRepository.generateResponse(inputs: chatMaggee)
         print(script)
         return script
@@ -95,13 +131,19 @@ class CallViewModel: NSObject, ObservableObject {
     // 音声合成
     func generateVoice(script: String) async throws -> Data {
         print("音声合成")
+        await MainActor.run {
+            status = .synthesizingVoice
+        }
         let data = try await voicevoxRepository.synthesize(text: script)
         return data
     }
-    
+
     // 音声再生
     func playVoice(data: Data) throws {
         print("音声再生")
+        DispatchQueue.main.async {
+            self.status = .playingVoice
+        }
         audioPlayer = try AVAudioPlayer(data: data)
         audioPlayer?.delegate = self
         audioPlayer?.prepareToPlay()
@@ -111,9 +153,10 @@ class CallViewModel: NSObject, ObservableObject {
     // 音声認識開始
     func startSpeachRecognition() {
         print("🎤 音声認識開始")
-        
-        // 新しい録音のためにtextをクリア
+
+        // 状態を更新
         DispatchQueue.main.async {
+            self.status = .recognizingSpeech
             self.text = ""
         }
         
@@ -188,23 +231,26 @@ class CallViewModel: NSObject, ObservableObject {
 
     func stop() {
         print("⏹️ 音声認識停止")
-        
+
         engine.stop()
         engine.inputNode.removeTap(onBus: 0)
         request?.endAudio()
         task?.finish()
 
-        
-
         print("✅ 音声認識停止完了")
-        
+
+        // 音声認識完了後の処理中
+        DispatchQueue.main.async {
+            self.status = .processingResponse
+        }
+
         chatMaggee.append(ChatMessage(role: .user, content: self.text))
-        
+
         Task {
             do {
                 let script = try await generateScript()
                 let voice = try await generateVoice(script: script)
-                
+
                 chatMaggee.append(ChatMessage(role: .assistant, content: script))
                 Task { @MainActor in
                     self.text = script
