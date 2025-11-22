@@ -6,12 +6,14 @@ class CallViewModel: NSObject, ObservableObject {
 
     @Published var text = ""
     @Published var status: CallStatus = .idle
+    @Published var conversationDuration: TimeInterval = 0
 
     private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "ja-JP"))
     private let engine = AVAudioEngine()
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
     private var silenceTimer: Timer?
+    private var conversationTimer: Timer?
     
     private let silenceTime: TimeInterval = 2
 
@@ -90,6 +92,7 @@ class CallViewModel: NSObject, ObservableObject {
         
         // 会話時間測定開始
         speechRecognitionStartTime = Date()
+        startConversationTimer()
 
         // Play Voice
         try await playVoice(data: voice)
@@ -317,6 +320,15 @@ class CallViewModel: NSObject, ObservableObject {
         // 認識結果を返す
         recognitionContinuation?.resume(returning: text)
         recognitionContinuation = nil
+    }
+
+    @MainActor
+    private func startConversationTimer() {
+        conversationTimer?.invalidate()
+        conversationTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self = self, let startTime = self.speechRecognitionStartTime else { return }
+            self.conversationDuration = Date().timeIntervalSince(startTime)
+        }
     }
 }
 

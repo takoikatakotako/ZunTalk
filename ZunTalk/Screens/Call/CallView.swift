@@ -23,6 +23,14 @@ struct CallView: View {
                         .font(Font.system(size: 18, weight: .semibold))
                         .padding(.top, 24)
 
+                    // 会話時間表示
+                    if viewModel.conversationDuration > 0 {
+                        Text(formattedDuration)
+                            .foregroundStyle(.gray)
+                            .font(Font.system(size: 24, weight: .medium))
+                            .padding(.top, 8)
+                    }
+                    
                     if !viewModel.text.isEmpty {
                         Text(viewModel.text)
                             .foregroundStyle(Color.gray)
@@ -103,6 +111,12 @@ struct CallView: View {
         case .ended:
             return .gray
         }
+    }
+
+    private var formattedDuration: String {
+        let minutes = Int(viewModel.conversationDuration) / 60
+        let seconds = Int(viewModel.conversationDuration) % 60
+        return String(format: "%02d:%02d", minutes, seconds)
     }
 }
 
