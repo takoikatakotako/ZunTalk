@@ -2,6 +2,7 @@ import SwiftUI
 import Speech
 import Accelerate
 
+@MainActor
 class CallViewModel: NSObject, ObservableObject {
 
     @Published var text = ""
@@ -60,7 +61,6 @@ class CallViewModel: NSObject, ObservableObject {
         }
     }
     
-    @MainActor
     private func main() async throws {
         // initializingVoiceVox
         status = .initializingVoiceVox
@@ -101,7 +101,6 @@ class CallViewModel: NSObject, ObservableObject {
         try await convasiation()
     }
     
-    @MainActor
     private func convasiation() async throws {
         // Start Speech Recognition
         let recognizedText = try await startSpeachRecognition()
@@ -132,7 +131,6 @@ class CallViewModel: NSObject, ObservableObject {
         try await convasiation()
     }
 
-    @MainActor
     private func initializingVoiceVox() async throws {
         // ステータス確認
         guard status == .initializingVoiceVox else {
@@ -148,7 +146,6 @@ class CallViewModel: NSObject, ObservableObject {
         print("VOICEVOXのシンセサイザー初期化完了")
     }
     
-    @MainActor
     private func requestSpeechRecognitionPermission() async -> Bool {
         // ステータス確認
         guard status == .requestingPermission else {
@@ -190,7 +187,6 @@ class CallViewModel: NSObject, ObservableObject {
         audioPlayer?.play()
     }
     
-    @MainActor
     private func generateScript(inputs: [ChatMessage]) async throws -> String {
         // ステータス確認
         guard status == .generatingScript else {
@@ -202,7 +198,6 @@ class CallViewModel: NSObject, ObservableObject {
         return script
     }
 
-    @MainActor
     private func generateVoice(script: String) async throws -> Data {
         print("音声合成")
         status = .synthesizingVoice
@@ -215,7 +210,6 @@ class CallViewModel: NSObject, ObservableObject {
         audioPlayer?.stop()
     }
     
-    @MainActor
     private func playVoice(data: Data) async throws {
         status = .playingVoice
 
@@ -235,7 +229,6 @@ class CallViewModel: NSObject, ObservableObject {
     }
     
     // 音声認識開始
-    @MainActor
     private func startSpeachRecognition() async throws -> String {
         print("🎤 音声認識開始")
 
@@ -308,7 +301,6 @@ class CallViewModel: NSObject, ObservableObject {
         }
     }
 
-    @MainActor
     private func stopRecognition() {
         engine.stop()
         engine.inputNode.removeTap(onBus: 0)
@@ -322,7 +314,6 @@ class CallViewModel: NSObject, ObservableObject {
         recognitionContinuation = nil
     }
 
-    @MainActor
     private func startConversationTimer() {
         conversationTimer?.invalidate()
         conversationTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
