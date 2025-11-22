@@ -42,7 +42,7 @@ struct CallView: View {
 
                 HStack(spacing: 112) {
                     Button(action: {
-                        dismiss()
+                        viewModel.requestDismiss()
                     }) {
                         ZStack {
                             Color(.red)
@@ -62,6 +62,11 @@ struct CallView: View {
         .navigationBarHidden(true)
         .onAppear {
             viewModel.onAppear()
+        }
+        .onChange(of: viewModel.shouldDismiss) { shouldDismiss in
+            if shouldDismiss {
+                dismiss()
+            }
         }
     }
 

@@ -8,6 +8,7 @@ class CallViewModel: NSObject, ObservableObject {
     @Published var text = ""
     @Published var status: CallStatus = .idle
     @Published var conversationDuration: TimeInterval = 0
+    @Published var shouldDismiss = false
 
     private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "ja-JP"))
     private let engine = AVAudioEngine()
@@ -23,6 +24,7 @@ class CallViewModel: NSObject, ObservableObject {
     private var playbackContinuation: CheckedContinuation<Bool, Never>?
     private var recognitionContinuation: CheckedContinuation<String, Never>?
     private var speechRecognitionStartTime: Date?
+    private var mainTask: Task<Void, Never>?
 
     // Repository
     private let voicevoxRepository: TextToSpeechRepository
@@ -51,8 +53,8 @@ class CallViewModel: NSObject, ObservableObject {
             print("idle以外から呼ばれました")
             return
         }
-        
-        Task {
+
+        mainTask = Task {
             do {
                 try await main()
             } catch {
@@ -60,12 +62,50 @@ class CallViewModel: NSObject, ObservableObject {
             }
         }
     }
+
+    func requestDismiss() {
+        print("📱 通話終了リクエスト")
+
+        // 会話タスクをキャンセル
+        mainTask?.cancel()
+        mainTask = nil
+
+        // タイマーを停止
+        silenceTimer?.invalidate()
+        conversationTimer?.invalidate()
+
+        // 音声認識タスクを停止
+        task?.cancel()
+        task?.finish()
+        task = nil
+        request?.endAudio()
+        request = nil
+
+        // 音声エンジンを停止
+        if engine.isRunning {
+            engine.stop()
+            engine.inputNode.removeTap(onBus: 0)
+        }
+
+        // 音声再生を停止
+        audioPlayer?.stop()
+
+        // 会話履歴を削除
+        chatMaggee.removeAll()
+
+        // VOICEVOXをクリーンナップ
+        voicevoxRepository.cleanupSynthesizer()
+
+        // dismissをトリガー
+        shouldDismiss = true
+    }
     
     private func main() async throws {
         // initializingVoiceVox
         status = .initializingVoiceVox
         try await initializingVoiceVox()
-        
+        guard !shouldDismiss else { return }
+
         // requestingPermission
         status = .requestingPermission
         let result = await requestSpeechRecognitionPermission()
@@ -74,40 +114,48 @@ class CallViewModel: NSObject, ObservableObject {
             print("許可得られなかったです")
             return
         }
-        
+        guard !shouldDismiss else { return }
+
         // Play Incoming Call
         try playIncomingCall()
-        
+        guard !shouldDismiss else { return }
+
         // Generate Script
         status = .generatingScript
         assert(chatMaggee.isEmpty)
         chatMaggee.append(ChatMessage(role: .system, content: prompt))
         let script = try await generateScript(inputs: chatMaggee)
+        guard !shouldDismiss else { return }
 
         // Generate Voice
         let voice = try await generateVoice(script: script)
-        
+        guard !shouldDismiss else { return }
+
         // Stop Incomint Call
         stopIncomingCall()
-        
+
         // テキストを変更
         text = script
-        
+
         // 会話時間測定開始
         speechRecognitionStartTime = Date()
         startConversationTimer()
 
         // Play Voice
         try await playVoice(data: voice)
+        guard !shouldDismiss else { return }
 
         //
         try await convasiation()
     }
     
     private func convasiation() async throws {
+        guard !shouldDismiss else { return }
+
         // Start Speech Recognition
         let recognizedText = try await startSpeachRecognition()
         print("認識テキスト: \(recognizedText)")
+        guard !shouldDismiss else { return }
 
         // 会話時間を確認
         if let startTime = speechRecognitionStartTime {
@@ -125,13 +173,16 @@ class CallViewModel: NSObject, ObservableObject {
 
         status = .generatingScript
         let script = try await generateScript(inputs: chatMaggee)
+        guard !shouldDismiss else { return }
 
         let voice = try await generateVoice(script: script)
+        guard !shouldDismiss else { return }
 
         chatMaggee.append(ChatMessage(role: .assistant, content: script))
         text = script
 
         try await playVoice(data: voice)
+        guard !shouldDismiss else { return }
 
         // 次の会話へ
         try await convasiation()
