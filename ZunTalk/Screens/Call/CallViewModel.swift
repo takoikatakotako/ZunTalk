@@ -90,6 +90,9 @@ class CallViewModel: NSObject, ObservableObject {
         // Stop Incomint Call
         stopIncomingCall()
         
+        // テキストを変更
+        text = script
+        
         // 会話時間測定開始
         speechRecognitionStartTime = Date()
         startConversationTimer()
@@ -111,6 +114,9 @@ class CallViewModel: NSObject, ObservableObject {
             let elapsedTime = Date().timeIntervalSince(startTime)
             if elapsedTime >= 60 {
                 print("⏱️ 会話時間が1分以上です: \(Int(elapsedTime))秒")
+                // 終了メッセージを生成
+                try await endConversation()
+                return
             }
         }
 
@@ -129,6 +135,28 @@ class CallViewModel: NSObject, ObservableObject {
 
         // 次の会話へ
         try await convasiation()
+    }
+
+    private func endConversation() async throws {
+        print("🔚 会話を終了します")
+
+        // 終了メッセージを生成するためのプロンプトを追加
+        chatMaggee.append(ChatMessage(role: .system, content: "会話時間が1分を超えたので、ずんだもんらしく親しみやすい挨拶で会話を終了してください。"))
+
+        status = .generatingScript
+        let script = try await generateScript(inputs: chatMaggee)
+
+        let voice = try await generateVoice(script: script)
+
+        chatMaggee.append(ChatMessage(role: .assistant, content: script))
+        text = script
+
+        try await playVoice(data: voice)
+
+        // 会話終了
+        status = .ended
+        conversationTimer?.invalidate()
+        print("✅ 会話が終了しました")
     }
 
     private func initializingVoiceVox() async throws {
