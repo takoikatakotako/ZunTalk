@@ -23,14 +23,12 @@ struct CallView: View {
                         .font(Font.system(size: 18, weight: .semibold))
                         .padding(.top, 24)
 
-                    // 会話時間表示
-                    if viewModel.conversationDuration > 0 {
-                        Text(formattedDuration)
-                            .foregroundStyle(.gray)
-                            .font(Font.system(size: 24, weight: .medium))
-                            .padding(.top, 8)
-                    }
-                    
+                    // 会話時間表示（常に表示）
+                    Text(formattedDuration)
+                        .foregroundStyle(.gray)
+                        .font(Font.system(size: 24, weight: .medium))
+                        .padding(.top, 8)
+
                     if !viewModel.text.isEmpty {
                         Text(viewModel.text)
                             .foregroundStyle(Color.gray)
