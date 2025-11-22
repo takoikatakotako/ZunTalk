@@ -18,6 +18,7 @@ class CallViewModel: NSObject, ObservableObject {
 
     private var audioPlayer: AVAudioPlayer?
     private var playbackContinuation: CheckedContinuation<Bool, Never>?
+    private var recognitionContinuation: CheckedContinuation<String, Never>?
     private var speechRecognitionStartTime: Date?
 
     // Repository
@@ -57,6 +58,7 @@ class CallViewModel: NSObject, ObservableObject {
         }
     }
     
+    @MainActor
     private func main() async throws {
         // initializingVoiceVox
         status = .initializingVoiceVox
@@ -92,8 +94,39 @@ class CallViewModel: NSObject, ObservableObject {
         // Play Voice
         try await playVoice(data: voice)
 
+        //
+        try await convasiation()
+    }
+    
+    @MainActor
+    private func convasiation() async throws {
         // Start Speech Recognition
-        try await startSpeachRecognition()
+        let recognizedText = try await startSpeachRecognition()
+        print("認識テキスト: \(recognizedText)")
+
+        // 会話時間を確認
+        if let startTime = speechRecognitionStartTime {
+            let elapsedTime = Date().timeIntervalSince(startTime)
+            if elapsedTime >= 60 {
+                print("⏱️ 会話時間が1分以上です: \(Int(elapsedTime))秒")
+            }
+        }
+
+        status = .processingResponse
+        chatMaggee.append(ChatMessage(role: .user, content: recognizedText))
+
+        status = .generatingScript
+        let script = try await generateScript(inputs: chatMaggee)
+
+        let voice = try await generateVoice(script: script)
+
+        chatMaggee.append(ChatMessage(role: .assistant, content: script))
+        text = script
+
+        try await playVoice(data: voice)
+
+        // 次の会話へ
+        try await convasiation()
     }
 
     @MainActor
@@ -200,7 +233,7 @@ class CallViewModel: NSObject, ObservableObject {
     
     // 音声認識開始
     @MainActor
-    private func startSpeachRecognition() async throws {
+    private func startSpeachRecognition() async throws -> String {
         print("🎤 音声認識開始")
 
         status = .recognizingSpeech
@@ -255,8 +288,8 @@ class CallViewModel: NSObject, ObservableObject {
             self.silenceTimer?.invalidate()
             self.silenceTimer = Timer.scheduledTimer(withTimeInterval: self.silenceTime, repeats: false) { _ in
                 print("⏰ 2秒以上の無音が発生しました - 音声認識を停止します")
-                Task {
-                    try? await self.stop()
+                Task { @MainActor in
+                    self.stopRecognition()
                 }
             }
         }
@@ -265,12 +298,15 @@ class CallViewModel: NSObject, ObservableObject {
         // 音声エンジンの開始
         try engine.start()
         print("✅ 音声エンジン開始成功")
+
+        // 音声認識の終了を待つ
+        return await withCheckedContinuation { continuation in
+            recognitionContinuation = continuation
+        }
     }
 
     @MainActor
-    func stop() async throws {
-        print("⏹️ 音声認識停止")
-
+    private func stopRecognition() {
         engine.stop()
         engine.inputNode.removeTap(onBus: 0)
         request?.endAudio()
@@ -278,29 +314,9 @@ class CallViewModel: NSObject, ObservableObject {
 
         print("✅ 音声認識停止完了")
 
-        // 会話時間を確認
-        if let startTime = speechRecognitionStartTime {
-            let elapsedTime = Date().timeIntervalSince(startTime)
-            if elapsedTime >= 60 {
-                print("⏱️ 会話時間が1分以上です: \(Int(elapsedTime))秒")
-            }
-        }
-
-        status = .processingResponse
-        chatMaggee.append(ChatMessage(role: .user, content: text))
-
-        status = .generatingScript
-        let script = try await generateScript(inputs: chatMaggee)
-
-        let voice = try await generateVoice(script: script)
-
-        chatMaggee.append(ChatMessage(role: .assistant, content: script))
-        text = script
-
-        try await playVoice(data: voice)
-
-        // Start Speech Recognition
-        try await startSpeachRecognition()
+        // 認識結果を返す
+        recognitionContinuation?.resume(returning: text)
+        recognitionContinuation = nil
     }
 }
 

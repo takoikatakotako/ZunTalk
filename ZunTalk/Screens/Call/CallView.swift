@@ -13,7 +13,7 @@ struct CallView: View {
                 Image(.thumbnail)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 240, height: 240)
+                    .frame(width: 200, height: 200)
                     .clipShape(Circle())
 
                 // ステータス表示
