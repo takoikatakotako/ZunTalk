@@ -8,49 +8,39 @@ class VoicevoxRepository: TextToSpeechRepository {
     // MARK: - TextToSpeechRepository Implementation
     
     func installVoicevox() async throws {
-        // TODO: 実装予定 - 辞書ファイルやモデルファイルの配置処理
-        
         // Resource URL
         let resourcePath = Bundle.main.resourcePath!
         let resourceURL = URL(fileURLWithPath: resourcePath)
-        
+
         // Documents URL
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        
-        // リソースURL
-        print("ResourcePath: \(resourceURL.path())")
-        print("DocumentsPath: \(documentsURL.path())")
-        
+
         // Create Voice Model Directory
         let voiceModelDirectoryName = "vvms"
         let vvmsDirectory = documentsURL.appendingPathComponent(voiceModelDirectoryName)
-        try! createDirectoryIfNotExist(at: vvmsDirectory)
-        print("VoiceModelDirectoryPath: \(vvmsDirectory.path())")
-        
-        // Copy to Voice Model File
+        try createDirectoryIfNotExist(at: vvmsDirectory)
+
+        // Copy Voice Model File
         let voiceModelFileName = "0.vvm"
         let voiceModelFileURL = vvmsDirectory.appendingPathComponent(voiceModelFileName)
-        try! copyFile(
+        try copyFile(
             from: resourceURL.appendingPathComponent(voiceModelFileName),
             to: voiceModelFileURL
         )
-        print("VoiceFilePath: \(voiceModelFileURL.path())")
-        
-        // Copy to Open JTalk
+
+        // Create Open JTalk Directory
         let openJTalkDirectoryName = "open_jtalk_dic_utf_8-1.11"
         let openJTalkDirectory = documentsURL.appendingPathComponent(openJTalkDirectoryName)
-        try! createDirectoryIfNotExist(at: openJTalkDirectory)
-        print("OpenJTalkDirectoryPath: \(openJTalkDirectory.path())")
-        
-        // Copy to Open JTalkFiles
+        try createDirectoryIfNotExist(at: openJTalkDirectory)
+
+        // Copy Open JTalk Files
         let openJTalkFilenames = ["char.bin", "COPYING", "left-id.def", "matrix.bin", "pos-id.def", "rewrite.def", "right-id.def", "sys.dic", "unk.dic"]
         for filename in openJTalkFilenames {
             let fileURL = openJTalkDirectory.appendingPathComponent(filename)
-            try! copyFile(
+            try copyFile(
                 from: resourceURL.appendingPathComponent(filename),
                 to: fileURL
             )
-            print("OpenJTalkFilePath(\(filename): \(fileURL.path())")
         }
     }
     
