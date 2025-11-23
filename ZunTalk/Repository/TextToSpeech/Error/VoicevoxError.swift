@@ -6,7 +6,7 @@ enum VoicevoxError: Error, LocalizedError {
     case synthesizerNewFailed
     case voiceModelFileOpenFailed
     case synthesizerLoadVoiceModelFailed
-    case synthesizerTextToSpeachFailed
+    case synthesizerTextToSpeechFailed
     case waveBufferNil
     
     var errorDescription: String? {
@@ -21,8 +21,8 @@ enum VoicevoxError: Error, LocalizedError {
             "Voice Model File Open Failed"
         case .synthesizerLoadVoiceModelFailed:
             "Synthesizer Load Voice Model Failed"
-        case .synthesizerTextToSpeachFailed:
-            "Synthesizer Text to Speach Failed"
+        case .synthesizerTextToSpeechFailed:
+            "Synthesizer Text to Speech Failed"
         case .waveBufferNil:
             "Wave Buffer is nil"
         }

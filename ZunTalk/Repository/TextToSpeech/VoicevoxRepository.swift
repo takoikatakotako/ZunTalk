@@ -127,8 +127,8 @@ class VoicevoxRepository: TextToSpeechRepository {
         var wavBuffer: UnsafeMutablePointer<UInt8>? = nil
         let synthesizerTtsResultCode = voicevox_synthesizer_tts(synthesizer, cText, VoicevoxStyleId(styleId), VoicevoxTtsOptions, &wavLength, &wavBuffer)
         guard synthesizerTtsResultCode == 0 else {
-            print("Synthesizer Text to Speach Failed")
-            throw VoicevoxError.synthesizerTextToSpeachFailed
+            print("Synthesizer Text to Speech Failed")
+            throw VoicevoxError.synthesizerTextToSpeechFailed
         }
         
         // Load WAV Data
