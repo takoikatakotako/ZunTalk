@@ -3,19 +3,10 @@ import Foundation
 class OpenAITextGenerationRepository: TextGenerationRepository {
     private let apiKey: String
     private let baseURL = "https://api.openai.com/v1/responses"
-    
+
     init(apiKey: String) {
         self.apiKey = apiKey
     }
-    
-    let prompt = """
-        あなたはずんだの妖精のずんだもんです。語尾に「なのだ」をつけ、親しみやすく楽しい口調で話してください。
-        今は電話がかかってきて受け取ったところから会話を始めます。
-        最初のセリフは必ず「電話を受けた感のある挨拶」にしてください。
-        例: 「もしもし〜？ずんだもんなのだ！」、「はいは〜い、ずんだもんなのだ！」、「お電話ありがとうなのだ！」など。
-        例を参考にしつつ、毎回少し違う言い回しにしてください。
-        暴力的・攻撃的・不快な発言はしないでください。
-        """
 
     func generateResponse(inputs: [ChatMessage]) async throws -> String {
         guard !apiKey.isEmpty else {
