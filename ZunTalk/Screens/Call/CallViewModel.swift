@@ -81,7 +81,11 @@ class CallViewModel: NSObject, ObservableObject {
             do {
                 try await startCall()
             } catch {
-                print("通話エラー: \(error)")
+                switch error {
+                default:
+                    print("通話エラー: \(error)")
+                    // 「ごめんなさいなのだ。エラーが発生してしまったのだ。ちょっと時間をあけて、またリトライしてくれると嬉しいのだ〜。」
+                }
             }
         }
     }
@@ -94,75 +98,97 @@ class CallViewModel: NSObject, ObservableObject {
     // MARK: - Private Methods - Call Flow
 
     private func startCall() async throws {
+        // VOICEVOX初期化
         try await initializeVoiceVox()
         guard !shouldDismiss else { return }
 
+        // 音声認識の許可をリクエスト
         guard await requestSpeechRecognitionPermission() else {
             print("音声認識の許可が得られませんでした")
             return
         }
         guard !shouldDismiss else { return }
 
+        // 着信音を再生
         try playRingtone()
         guard !shouldDismiss else { return }
 
+        // 初回の応答を生成
         let initialScript = try await generateInitialResponse()
         guard !shouldDismiss else { return }
 
+        // 音声を合成
         let initialVoice = try await synthesizeVoice(from: initialScript)
         guard !shouldDismiss else { return }
 
+        // 着信音を停止
         stopRingtone()
         text = initialScript
         startConversationTracking()
 
+        // 音声を再生
         try await playVoice(initialVoice)
         guard !shouldDismiss else { return }
 
+        // 会話ループを開始
         try await conversationLoop()
     }
 
     private func conversationLoop() async throws {
         guard !shouldDismiss else { return }
 
+        // ユーザーの音声を認識
         let userInput = try await recognizeUserSpeech()
         guard !shouldDismiss else { return }
 
+        // 会話時間を確認
         if shouldEndConversation() {
             try await endConversation()
             return
         }
 
+        // ユーザーの発言を会話履歴に追加
         chatMessages.append(ChatMessage(role: .user, content: userInput))
 
+        // 応答を生成
         let response = try await generateResponse()
         guard !shouldDismiss else { return }
 
+        // 音声を合成
         let voice = try await synthesizeVoice(from: response)
         guard !shouldDismiss else { return }
 
+        // 応答を会話履歴に追加
         chatMessages.append(ChatMessage(role: .assistant, content: response))
         text = response
 
+        // 音声を再生
         try await playVoice(voice)
         guard !shouldDismiss else { return }
 
+        // 次の会話へ
         try await conversationLoop()
     }
 
     private func endConversation() async throws {
+        // 終了メッセージを生成するためのプロンプトを追加
         chatMessages.append(ChatMessage(role: .system, content: Constants.endConversationPrompt))
 
+        // 終了メッセージを生成
         status = .generatingScript
         let farewellScript = try await textGenerationRepository.generateResponse(inputs: chatMessages)
 
+        // 音声を合成
         let farewellVoice = try await synthesizeVoice(from: farewellScript)
 
+        // 終了メッセージを会話履歴に追加
         chatMessages.append(ChatMessage(role: .assistant, content: farewellScript))
         text = farewellScript
 
+        // 音声を再生
         try await playVoice(farewellVoice)
 
+        // 会話終了
         status = .ended
         conversationTimer?.invalidate()
     }
