@@ -9,9 +9,17 @@ struct ConfigView: View {
 
     var body: some View {
         List {
-            Section("アプリ設定") {
-                NavigationLink(destination: Text("アプリ設定画面")) {
-                    Label("その他アプリ設定", systemImage: "gear")
+            Section("AI設定") {
+                NavigationLink(destination: ModelSelectionView()) {
+                    Label("モデル選択", systemImage: "brain")
+                }
+
+                NavigationLink(destination: APIKeyManagementView()) {
+                    Label("APIキー管理", systemImage: "key")
+                }
+
+                NavigationLink(destination: Text("プロンプト設定画面")) {
+                    Label("プロンプト設定", systemImage: "text.bubble")
                 }
             }
 
