@@ -20,12 +20,13 @@ class CallViewModel: NSObject, ObservableObject {
         static let conversationTimerInterval: TimeInterval = 1.0
         static let locale = Locale(identifier: "ja-JP")
         static let ringtoneAssetName = "maou_se_sound_phone02"
+        static let errorVoiceAssetName = "zundamon-error"
 
         static let systemPrompt = """
             あなたはずんだの妖精のずんだもんです。語尾に「なのだ」をつけ、親しみやすく楽しい口調で話してください。
             今は電話がかかってきて受け取ったところから会話を始めます。
             最初のセリフは必ず「電話を受けた感のある挨拶」にしてください。
-            例: 「もしもし〜？ずんだもんなのだ！」、「はいは〜い、ずんだもんなのだ！」、「お電話ありがとうなのだ！」など。
+            例: 「もしもし〜？ずんだもんなのだ！」、「は〜い、ずんだもんなのだ！」、「お電話ありがとうなのだ！」など。
             例を参考にしつつ、毎回少し違う言い回しにしてください。
             暴力的・攻撃的・不快な発言はしないでください。
             """
@@ -44,7 +45,7 @@ class CallViewModel: NSObject, ObservableObject {
     private let engine = AVAudioEngine()
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
-    private var recognitionContinuation: CheckedContinuation<String, Never>?
+    private var recognitionContinuation: CheckedContinuation<String, Error>?
 
     // MARK: - Private Properties - Audio Playback
 
@@ -84,7 +85,15 @@ class CallViewModel: NSObject, ObservableObject {
                 switch error {
                 default:
                     print("通話エラー: \(error)")
-                    // 「ごめんなさいなのだ。エラーが発生してしまったのだ。ちょっと時間をあけて、またリトライしてくれると嬉しいのだ〜。」
+                    await MainActor.run {
+                        if let asset = NSDataAsset(name: Constants.errorVoiceAssetName) {
+                            audioPlayer = try? AVAudioPlayer(data: asset.data)
+                            audioPlayer?.prepareToPlay()
+                            audioPlayer?.play()
+                        }
+
+                        text = "ごめんなさいなのだ。エラーが発生してしまったのだ。ちょっと時間をあけて、またリトライしてくれると嬉しいのだ〜。"
+                    }
                 }
             }
         }
@@ -104,8 +113,7 @@ class CallViewModel: NSObject, ObservableObject {
 
         // 音声認識の許可をリクエスト
         guard await requestSpeechRecognitionPermission() else {
-            print("音声認識の許可が得られませんでした")
-            return
+            throw CallError.speechRecognitionPermissionDenied
         }
         guard !shouldDismiss else { return }
 
@@ -253,6 +261,10 @@ class CallViewModel: NSObject, ObservableObject {
 
             if let error = error {
                 print("音声認識エラー: \(error.localizedDescription)")
+                Task { @MainActor in
+                    self.recognitionContinuation?.resume(throwing: CallError.speechRecognitionFailed(error))
+                    self.recognitionContinuation = nil
+                }
                 return
             }
 
@@ -277,7 +289,7 @@ class CallViewModel: NSObject, ObservableObject {
 
         try engine.start()
 
-        return await withCheckedContinuation { continuation in
+        return try await withCheckedThrowingContinuation { continuation in
             recognitionContinuation = continuation
         }
     }
@@ -309,7 +321,7 @@ class CallViewModel: NSObject, ObservableObject {
 
     private func playRingtone() throws {
         guard let asset = NSDataAsset(name: Constants.ringtoneAssetName) else {
-            throw NSError(domain: "CallViewModel", code: 1, userInfo: [NSLocalizedDescriptionKey: "着信音ファイルが見つかりません"])
+            throw CallError.ringtoneNotFound
         }
 
         audioPlayer = try AVAudioPlayer(data: asset.data)
@@ -335,7 +347,7 @@ class CallViewModel: NSObject, ObservableObject {
         }
 
         if !success {
-            print("音声再生に失敗しました")
+            throw CallError.audioPlaybackFailed
         }
     }
 
