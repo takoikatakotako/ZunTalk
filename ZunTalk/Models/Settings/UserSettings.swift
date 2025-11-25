@@ -15,9 +15,9 @@ class UserSettings: ObservableObject {
         didSet {
             do {
                 if openAIAPIKey.isEmpty {
-                    try? KeychainManager.shared.delete(key: Self.openAIAPIKeyKeychainKey)
+                    try? KeychainRepository.shared.delete(key: Self.openAIAPIKeyKeychainKey)
                 } else {
-                    try KeychainManager.shared.save(key: Self.openAIAPIKeyKeychainKey, value: openAIAPIKey)
+                    try KeychainRepository.shared.save(key: Self.openAIAPIKeyKeychainKey, value: openAIAPIKey)
                 }
             } catch {
                 print("Keychainへの保存エラー: \(error.localizedDescription)")
@@ -36,17 +36,17 @@ class UserSettings: ObservableObject {
         // UserDefaultsからの移行処理
         if let oldAPIKey = UserDefaults.standard.string(forKey: "openAIAPIKey"), !oldAPIKey.isEmpty {
             // 古いUserDefaultsのデータをKeychainに移行
-            try? KeychainManager.shared.save(key: Self.openAIAPIKeyKeychainKey, value: oldAPIKey)
+            try? KeychainRepository.shared.save(key: Self.openAIAPIKeyKeychainKey, value: oldAPIKey)
             UserDefaults.standard.removeObject(forKey: "openAIAPIKey")
             self.openAIAPIKey = oldAPIKey
         } else {
             // Keychainから読み込み
-            self.openAIAPIKey = (try? KeychainManager.shared.get(key: Self.openAIAPIKeyKeychainKey)) ?? ""
+            self.openAIAPIKey = (try? KeychainRepository.shared.get(key: Self.openAIAPIKeyKeychainKey)) ?? ""
         }
     }
 
     func deleteOpenAIAPIKey() {
         openAIAPIKey = ""
-        try? KeychainManager.shared.delete(key: Self.openAIAPIKeyKeychainKey)
+        try? KeychainRepository.shared.delete(key: Self.openAIAPIKeyKeychainKey)
     }
 }

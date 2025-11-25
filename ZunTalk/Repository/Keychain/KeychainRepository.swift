@@ -1,8 +1,8 @@
 import Foundation
 import Security
 
-class KeychainManager {
-    static let shared = KeychainManager()
+class KeychainRepository {
+    static let shared = KeychainRepository()
 
     private init() {}
 
