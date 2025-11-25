@@ -35,7 +35,7 @@ struct OpenAIAPIKeySettingView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("OpenAIのAPIキーを入力してください。APIキーは「sk-proj-」で始まります。")
 
-                    Text("APIキーはアプリ内でのみ使われ、外部サーバーには送信されません。")
+                    Text("APIキーはアプリ内でのみ使われ、外部サーバーには送信されません。APIキーはKeychainに安全に保存されます。")
                         .foregroundColor(.secondary)
 
                     Link(destination: URL(string: "https://platform.openai.com/api-keys")!) {
