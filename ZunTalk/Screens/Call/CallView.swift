@@ -63,8 +63,8 @@ struct CallView: View {
         .onAppear {
             viewModel.onAppear()
         }
-        .onChange(of: viewModel.shouldDismiss) { shouldDismiss in
-            if shouldDismiss {
+        .onChange(of: viewModel.shouldDismiss) { oldValue, newValue in
+            if newValue {
                 dismiss()
             }
         }

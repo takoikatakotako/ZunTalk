@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct ConfigView: View {
+    @State private var showResetAlert = false
+
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "不明"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "不明"
@@ -9,9 +11,17 @@ struct ConfigView: View {
 
     var body: some View {
         List {
-            Section("アプリ設定") {
-                NavigationLink(destination: Text("アプリ設定画面")) {
-                    Label("その他アプリ設定", systemImage: "gear")
+            Section("AI設定") {
+                NavigationLink(destination: ModelSelectionView()) {
+                    Label("モデル選択", systemImage: "brain")
+                }
+
+                NavigationLink(destination: APIKeyManagementView()) {
+                    Label("APIキー管理", systemImage: "key")
+                }
+
+                NavigationLink(destination: Text("プロンプト設定画面")) {
+                    Label("プロンプト設定", systemImage: "text.bubble")
                 }
             }
 
@@ -48,8 +58,40 @@ struct ConfigView: View {
                         .foregroundColor(.secondary)
                 }
             }
+
+            Section {
+                Button(action: {
+                    showResetAlert = true
+                }) {
+                    HStack {
+                        Label("すべての設定をリセット", systemImage: "arrow.counterclockwise")
+                        Spacer()
+                    }
+                }
+                .foregroundColor(.red)
+            } footer: {
+                Text("すべての設定をデフォルト値に戻します。APIキーやモデル選択などがリセットされます。")
+            }
         }
         .navigationTitle("設定")
+        .alert("すべての設定をリセット", isPresented: $showResetAlert) {
+            Button("キャンセル", role: .cancel) {}
+            Button("リセット", role: .destructive) {
+                resetAllSettings()
+            }
+        } message: {
+            Text("すべての設定がデフォルト値に戻ります。この操作は取り消せません。")
+        }
+    }
+
+    private func resetAllSettings() {
+        // APIキーを削除
+        UserSettings.shared.deleteOpenAIAPIKey()
+
+        // モデル選択をデフォルトに戻す
+        UserSettings.shared.selectedModelType = .freeServer
+
+        // 他の設定もここに追加
     }
 }
 
