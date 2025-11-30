@@ -43,6 +43,7 @@ func setupServer(cfg *config.Config) *echo.Echo {
 	chatHandler := handler.NewChatHandler(openAIService)
 
 	// ルーティング
+	e.GET("/", chatHandler.HandleRoot)
 	e.POST("/api/chat", chatHandler.HandleChat)
 	e.GET("/health", chatHandler.HandleHealth)
 

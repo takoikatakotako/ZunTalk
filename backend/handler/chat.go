@@ -53,3 +53,9 @@ func (h *ChatHandler) HandleHealth(c echo.Context) error {
 		"status": "ok",
 	})
 }
+
+func (h *ChatHandler) HandleRoot(c echo.Context) error {
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "running",
+	})
+}
