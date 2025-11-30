@@ -1,0 +1,14 @@
+# IDE
+.idea/
+
+# Environment variables
+.env
+
+# Temporary files
+tmp/
+
+# Binary files
+*.exe
+
+# Dependencies
+vendor/
