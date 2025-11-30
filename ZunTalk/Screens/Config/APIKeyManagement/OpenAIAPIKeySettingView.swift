@@ -4,6 +4,7 @@ struct OpenAIAPIKeySettingView: View {
     @StateObject private var viewModel = OpenAIAPIKeySettingViewModel()
     @Environment(\.dismiss) private var dismiss
     @State private var showSaveSuccess = false
+    @State private var showKeychainError = false
 
     var body: some View {
         List {
@@ -51,7 +52,11 @@ struct OpenAIAPIKeySettingView: View {
             Section {
                 Button(action: {
                     viewModel.saveAPIKey()
-                    showSaveSuccess = true
+                    if viewModel.keychainError != nil {
+                        showKeychainError = true
+                    } else {
+                        showSaveSuccess = true
+                    }
                 }) {
                     HStack {
                         Spacer()
@@ -74,6 +79,15 @@ struct OpenAIAPIKeySettingView: View {
             }
         } message: {
             Text("OpenAI APIキーが正常に保存されました。")
+        }
+        .alert("保存エラー", isPresented: $showKeychainError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            if let error = viewModel.keychainError {
+                Text("Keychainへの保存に失敗しました。\n\n\(error.localizedDescription)")
+            } else {
+                Text("Keychainへの保存に失敗しました。")
+            }
         }
     }
 }

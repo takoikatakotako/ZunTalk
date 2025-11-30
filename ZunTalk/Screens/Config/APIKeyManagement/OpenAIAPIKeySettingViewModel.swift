@@ -4,6 +4,7 @@ import Foundation
 class OpenAIAPIKeySettingViewModel: ObservableObject {
     @Published var apiKey: String = ""
     @Published var showPassword: Bool = false
+    @Published var keychainError: Error?
 
     private let settings = UserSettings.shared
 
@@ -13,6 +14,7 @@ class OpenAIAPIKeySettingViewModel: ObservableObject {
 
     func saveAPIKey() {
         settings.openAIAPIKey = apiKey
+        keychainError = settings.keychainError
     }
 
     func togglePasswordVisibility() {

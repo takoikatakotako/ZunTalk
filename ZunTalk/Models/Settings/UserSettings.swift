@@ -13,17 +13,22 @@ class UserSettings: ObservableObject {
 
     @Published var openAIAPIKey: String {
         didSet {
+            keychainError = nil
             do {
                 if openAIAPIKey.isEmpty {
-                    try? KeychainRepository.shared.delete(key: Self.openAIAPIKeyKeychainKey)
+                    try KeychainRepository.shared.delete(key: Self.openAIAPIKeyKeychainKey)
                 } else {
                     try KeychainRepository.shared.save(key: Self.openAIAPIKeyKeychainKey, value: openAIAPIKey)
                 }
             } catch {
                 print("Keychainへの保存エラー: \(error.localizedDescription)")
+                keychainError = error
+                openAIAPIKey = "" // 失敗時は空にする
             }
         }
     }
+
+    @Published var keychainError: Error?
 
     var hasOpenAIAPIKey: Bool {
         !openAIAPIKey.isEmpty
