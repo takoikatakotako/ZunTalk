@@ -1,8 +1,25 @@
-# ZunTalk ドキュメント
+# ZunTalk
 
 ## 概要
 
-ZunTalkプロジェクトのドキュメントです。
+ZunTalkは、AIを活用した音声通話アプリケーションです。
+
+## プロジェクト構成
+
+このリポジトリはモノレポ構成になっています：
+
+- `ios/` - iOSアプリケーション（Swift）
+- `backend/` - バックエンドAPI（Go + Echo）
+
+## 開発環境
+
+### iOS
+- Xcode 15.0以上
+- iOS 17.0以上
+
+### Backend
+- Go 1.21以上
+- Echo v4
 
 ## Mermaidフローチャートテンプレート
 
