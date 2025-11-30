@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/takoikatakotako/ZunTalk/backend/config"
@@ -11,6 +12,9 @@ import (
 )
 
 func main() {
+	// .envファイルを読み込み（エラーは無視 - 本番環境では環境変数が直接設定される）
+	_ = godotenv.Load()
+
 	// 設定の読み込み
 	cfg := config.Load()
 
