@@ -126,5 +126,7 @@ backend/*.dylib
 backend/*.test
 backend/*.out
 backend/vendor/
+backend/.env
+backend/.idea/
 
 
