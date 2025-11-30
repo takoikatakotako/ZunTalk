@@ -1,5 +1,5 @@
-# Build stage
-FROM golang:1.21-alpine AS builder
+# AWS Lambda Web Adapter使用
+FROM public.ecr.aws/docker/library/golang:1.21-alpine AS builder
 
 WORKDIR /app
 
@@ -14,17 +14,14 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 # Runtime stage
-FROM alpine:latest
-
-RUN apk --no-cache add ca-certificates
-
-WORKDIR /root/
+FROM public.ecr.aws/awsguru/aws-lambda-adapter:0.8.1
 
 # Copy the binary from builder
-COPY --from=builder /app/main .
+COPY --from=builder /app/main /var/task/main
 
-# Expose port
-EXPOSE 8080
+# Lambda Web Adapter の設定
+ENV PORT=8080
+ENV AWS_LWA_INVOKE_MODE=response_stream
 
 # Run the application
-CMD ["./main"]
+CMD ["/var/task/main"]

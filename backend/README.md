@@ -27,8 +27,7 @@ backend/
 │   └── chat.go
 ├── config/              # 設定管理
 │   └── config.go
-├── Dockerfile           # 通常のDocker用
-├── Dockerfile.lambda    # AWS Lambda用
+├── Dockerfile           # AWS Lambda用（Lambda Web Adapter使用）
 ├── .env.example
 ├── go.mod
 └── README.md
@@ -68,17 +67,11 @@ export $(cat .env | xargs) && go run main.go
 
 ## Docker
 
-### 通常のDockerビルド
+### ローカルテスト用
 
 ```bash
 docker build -t zuntalk-backend .
 docker run -p 8080:8080 -e OPENAI_API_KEY=your_key zuntalk-backend
-```
-
-### AWS Lambda用ビルド
-
-```bash
-docker build -f Dockerfile.lambda -t zuntalk-backend-lambda .
 ```
 
 ## AWS Lambdaデプロイ
@@ -95,12 +88,8 @@ aws ecr create-repository --repository-name zuntalk-backend
 aws ecr get-login-password --region ap-northeast-1 | \
   docker login --username AWS --password-stdin <account-id>.dkr.ecr.ap-northeast-1.amazonaws.com
 
-# ビルド
-docker build -f Dockerfile.lambda -t zuntalk-backend-lambda .
-
-# タグ付け
-docker tag zuntalk-backend-lambda:latest \
-  <account-id>.dkr.ecr.ap-northeast-1.amazonaws.com/zuntalk-backend:latest
+# ビルド & タグ付け
+docker build -t <account-id>.dkr.ecr.ap-northeast-1.amazonaws.com/zuntalk-backend:latest .
 
 # プッシュ
 docker push <account-id>.dkr.ecr.ap-northeast-1.amazonaws.com/zuntalk-backend:latest
