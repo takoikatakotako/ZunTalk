@@ -44,10 +44,11 @@ func setupServer(cfg *config.Config) *echo.Echo {
 	openAIService := service.NewOpenAIService(cfg.OpenAIAPIKey)
 
 	// ハンドラーの初期化
-	chatHandler := handler.NewChatHandler(openAIService)
+	chatHandler := handler.NewChatHandler(openAIService, cfg)
 
 	// ルーティング
 	e.GET("/", chatHandler.HandleRoot)
+	e.GET("/api/info", chatHandler.HandleInfo)
 	e.POST("/api/chat", chatHandler.HandleChat)
 	e.GET("/health", chatHandler.HandleHealth)
 

@@ -4,17 +4,20 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/takoikatakotako/ZunTalk/backend/config"
 	"github.com/takoikatakotako/ZunTalk/backend/model"
 	"github.com/takoikatakotako/ZunTalk/backend/service"
 )
 
 type ChatHandler struct {
 	openAIService *service.OpenAIService
+	config        *config.Config
 }
 
-func NewChatHandler(openAIService *service.OpenAIService) *ChatHandler {
+func NewChatHandler(openAIService *service.OpenAIService, cfg *config.Config) *ChatHandler {
 	return &ChatHandler{
 		openAIService: openAIService,
+		config:        cfg,
 	}
 }
 
@@ -58,4 +61,13 @@ func (h *ChatHandler) HandleRoot(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": "running",
 	})
+}
+
+func (h *ChatHandler) HandleInfo(c echo.Context) error {
+	response := model.AppConfigResponse{
+		Maintenance:    h.config.Maintenance,
+		MinimumVersion: h.config.MinimumVersion,
+	}
+
+	return c.JSON(http.StatusOK, response)
 }
