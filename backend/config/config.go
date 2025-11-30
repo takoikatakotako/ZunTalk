@@ -5,14 +5,20 @@ import (
 )
 
 type Config struct {
-	Port         string
-	OpenAIAPIKey string
+	Port           string
+	OpenAIAPIKey   string
+	Maintenance    bool
+	MinimumVersion string
 }
 
 func Load() *Config {
+	maintenance := getEnv("MAINTENANCE", "false") == "true"
+
 	return &Config{
-		Port:         getEnv("PORT", "8080"),
-		OpenAIAPIKey: getEnv("OPENAI_API_KEY", ""),
+		Port:           getEnv("PORT", "8080"),
+		OpenAIAPIKey:   getEnv("OPENAI_API_KEY", ""),
+		Maintenance:    maintenance,
+		MinimumVersion: getEnv("MINIMUM_VERSION", "1.0.0"),
 	}
 }
 
