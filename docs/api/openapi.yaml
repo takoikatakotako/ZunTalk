@@ -1,0 +1,134 @@
+openapi: 3.0.3
+info:
+  title: ZunTalk API
+  description: AI音声通話アプリケーションのバックエンドAPI
+  version: 1.0.0
+  contact:
+    name: ZunTalk
+    url: https://github.com/takoikatakotako/ZunTalk
+
+servers:
+  - url: http://localhost:8080
+    description: ローカル開発環境
+  - url: https://api.zuntalk.example.com
+    description: 本番環境
+
+tags:
+  - name: chat
+    description: AI会話生成
+
+paths:
+  /api/chat:
+    post:
+      summary: AI会話生成
+      description: ユーザーのメッセージに対してAIが応答を生成します
+      tags:
+        - chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          description: リクエストが不正
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: サーバーエラー
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /health:
+    get:
+      summary: ヘルスチェック
+      description: サーバーの稼働状態を確認します
+      responses:
+        '200':
+          description: 正常稼働中
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+components:
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - messages
+      properties:
+        messages:
+          type: array
+          description: 会話履歴
+          items:
+            $ref: '#/components/schemas/Message'
+        model:
+          type: string
+          description: 使用するAIモデル
+          enum:
+            - gpt-4o-mini
+            - gpt-4o
+          default: gpt-4o-mini
+          example: gpt-4o-mini
+        maxTokens:
+          type: integer
+          description: 最大生成トークン数
+          default: 500
+          example: 500
+
+    Message:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum:
+            - system
+            - user
+            - assistant
+          description: メッセージの送信者
+          example: user
+        content:
+          type: string
+          description: メッセージ内容
+          example: "こんにちは！"
+
+    ChatResponse:
+      type: object
+      properties:
+        message:
+          $ref: '#/components/schemas/Message'
+        tokensUsed:
+          type: integer
+          description: 使用したトークン数
+          example: 150
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: エラーコード
+          example: INSUFFICIENT_CREDITS
+        message:
+          type: string
+          description: エラーメッセージ
+          example: クレジットが不足しています
