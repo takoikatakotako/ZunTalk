@@ -29,7 +29,7 @@ resource "aws_cloudwatch_log_group" "lambda" {
   tags = var.tags
 }
 
-resource "aws_lambda_function" "this" {
+resource "aws_lambda_function" "default" {
   function_name = var.function_name
   role          = aws_iam_role.lambda.arn
   package_type  = "Image"
@@ -49,9 +49,9 @@ resource "aws_lambda_function" "this" {
   ]
 }
 
-resource "aws_lambda_function_url" "this" {
+resource "aws_lambda_function_url" "default" {
   count              = var.enable_function_url ? 1 : 0
-  function_name      = aws_lambda_function.this.function_name
+  function_name      = aws_lambda_function.default.function_name
   authorization_type = var.function_url_auth_type
 
   cors {
