@@ -1,17 +1,3 @@
-terraform {
-  required_version = ">= 1.0"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
-provider "aws" {
-  region = var.region
-}
-
 # S3 bucket for storing Terraform state
 resource "aws_s3_bucket" "terraform_state" {
   bucket = "zuntalk-terraform-state"
