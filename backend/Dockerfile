@@ -1,5 +1,5 @@
 # AWS Lambda Web Adapter使用
-FROM public.ecr.aws/docker/library/golang:1.21-alpine AS builder
+FROM public.ecr.aws/docker/library/golang:1.24-alpine AS builder
 
 WORKDIR /app
 
