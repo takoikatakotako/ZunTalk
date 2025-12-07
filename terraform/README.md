@@ -30,7 +30,7 @@ terraform plan
 terraform apply
 ```
 
-### 2. 共有リソース（ECR）のデプロイ
+### 2. 共有リソース（ECR + GitHub Actions IAM）のデプロイ
 
 ```bash
 cd terraform/environments/shared
@@ -38,6 +38,17 @@ terraform init
 terraform plan
 terraform apply
 ```
+
+デプロイ後、GitHub Actions Role ARNが出力されるので、GitHubリポジトリのSecretsに設定します：
+
+```bash
+# ARNを確認
+terraform output github_actions_role_arn
+```
+
+GitHubリポジトリの Settings > Secrets and variables > Actions で以下を追加：
+- Name: `AWS_ROLE_ARN`
+- Value: `terraform output`で取得したARN
 
 ### 3. 環境別リソースのデプロイ
 
@@ -116,6 +127,7 @@ terraform apply
 
 ### Shared環境
 - ECRリポジトリ（全環境で共有）
+- GitHub Actions用IAMロール（OIDC認証）
 
 ### 各環境（Dev/Stg/Prod）
 - Lambda関数（コンテナイメージ）
