@@ -1,0 +1,2 @@
+region = "ap-northeast-1"
+# openai_api_key = "sk-proj-your_api_key_here"  # Set via environment variable TF_VAR_openai_api_key

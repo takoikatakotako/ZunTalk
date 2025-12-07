@@ -129,4 +129,7 @@ backend/vendor/
 backend/.env
 backend/.idea/
 
+# Terraform
+**/.terraform/*
+
 
