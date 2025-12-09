@@ -1,12 +1,8 @@
-data "aws_ecr_repository" "backend" {
-  name = "zuntalk-backend"
-}
-
 module "lambda" {
   source = "../../modules/lambda"
 
   function_name = "zuntalk-backend-dev"
-  image_uri     = "${data.aws_ecr_repository.backend.repository_url}:dev-latest"
+  image_uri     = "448049807848.dkr.ecr.ap-northeast-1.amazonaws.com/zuntalk-backend:latest"
   timeout       = 30
   memory_size   = 512
 

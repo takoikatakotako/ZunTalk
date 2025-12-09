@@ -26,3 +26,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "allowed_account_ids" {
+  description = "List of AWS account IDs allowed to pull images"
+  type        = list(string)
+  default     = []
+}
