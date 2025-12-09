@@ -29,3 +29,44 @@ resource "aws_ecr_lifecycle_policy" "default" {
     ]
   })
 }
+
+# ECR Repository Policy for cross-account access
+resource "aws_ecr_repository_policy" "default" {
+  count      = length(var.allowed_account_ids) > 0 ? 1 : 0
+  repository = aws_ecr_repository.default.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "AllowCrossAccountPull"
+        Effect = "Allow"
+        Principal = {
+          AWS = [for account_id in var.allowed_account_ids : "arn:aws:iam::${account_id}:root"]
+        }
+        Action = [
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability"
+        ]
+      },
+      {
+        Sid    = "AllowCrossAccountLambda"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+        Condition = {
+          StringLike = {
+            "aws:sourceAccount" = var.allowed_account_ids
+          }
+        }
+        Action = [
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability"
+        ]
+      }
+    ]
+  })
+}
