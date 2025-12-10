@@ -14,14 +14,20 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 # Runtime stage
-FROM public.ecr.aws/awsguru/aws-lambda-adapter:0.8.1
+FROM public.ecr.aws/docker/library/golang:1.24-alpine
+
+WORKDIR /app
 
 # Copy the binary from builder
-COPY --from=builder /app/main /var/task/main
+COPY --from=builder /app/main .
+
+# Copy Lambda Web Adapter
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1 /lambda-adapter /opt/extensions/lambda-adapter
 
 # Lambda Web Adapter の設定
 ENV PORT=8080
-ENV AWS_LWA_INVOKE_MODE=response_stream
+
+EXPOSE 8080
 
 # Run the application
-CMD ["/var/task/main"]
+CMD ["/app/main"]
