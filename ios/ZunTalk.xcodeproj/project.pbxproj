@@ -11,6 +11,8 @@
 		176AC9AD2E48FB1C00A4F009 /* voicevox_core.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 176AC9AB2E48FB1C00A4F009 /* voicevox_core.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		176AC9B02E48FB4100A4F009 /* voicevox_onnxruntime.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 176AC9AF2E48FB4100A4F009 /* voicevox_onnxruntime.xcframework */; };
 		176AC9B12E48FB4100A4F009 /* voicevox_onnxruntime.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 176AC9AF2E48FB4100A4F009 /* voicevox_onnxruntime.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		17DD5CC12EEB1EE000DA8574 /* Development.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 17DD5CC02EEB1EE000DA8574 /* Development.xcconfig */; };
+		17DD5CC32EEB1EEB00DA8574 /* Production.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 17DD5CC22EEB1EEB00DA8574 /* Production.xcconfig */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,6 +53,8 @@
 		1780EE602E313B1A00CF634A /* ZunTalk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ZunTalk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1780EE6D2E313B1B00CF634A /* ZunTalkTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ZunTalkTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1780EE772E313B1B00CF634A /* ZunTalkUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ZunTalkUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		17DD5CC02EEB1EE000DA8574 /* Development.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Development.xcconfig; sourceTree = "<group>"; };
+		17DD5CC22EEB1EEB00DA8574 /* Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Production.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -115,6 +119,8 @@
 				1780EE7A2E313B1B00CF634A /* ZunTalkUITests */,
 				176AC9AA2E48FB1C00A4F009 /* Frameworks */,
 				1780EE612E313B1A00CF634A /* Products */,
+				17DD5CC02EEB1EE000DA8574 /* Development.xcconfig */,
+				17DD5CC22EEB1EEB00DA8574 /* Production.xcconfig */,
 			);
 			sourceTree = "<group>";
 		};
@@ -249,6 +255,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				17DD5CC12EEB1EE000DA8574 /* Development.xcconfig in Resources */,
+				17DD5CC32EEB1EEB00DA8574 /* Production.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -306,8 +314,9 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		1780EE7F2E313B1B00CF634A /* Debug */ = {
+		17DD5CB82EEB1EB300DA8574 /* Development */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 17DD5CC02EEB1EE000DA8574 /* Development.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -368,10 +377,78 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
-			name = Debug;
+			name = Development;
 		};
-		1780EE802E313B1B00CF634A /* Release */ = {
+		17DD5CB92EEB1EB300DA8574 /* Development */ = {
 			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5RH346BQ66;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "マイクを利用します";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "音声認識を利用します";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.swiswiswift.ZunTalk;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Development;
+		};
+		17DD5CBA2EEB1EB300DA8574 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5RH346BQ66;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.swiswiswift.ZunTalkTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ZunTalk.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ZunTalk";
+			};
+			name = Development;
+		};
+		17DD5CBB2EEB1EB300DA8574 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5RH346BQ66;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.swiswiswift.ZunTalkUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = ZunTalk;
+			};
+			name = Development;
+		};
+		17DD5CBC2EEB1EC600DA8574 /* Production */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 17DD5CC22EEB1EEB00DA8574 /* Production.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -425,9 +502,9 @@
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
-			name = Release;
+			name = Production;
 		};
-		1780EE822E313B1B00CF634A /* Debug */ = {
+		17DD5CBD2EEB1EC600DA8574 /* Production */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -456,40 +533,9 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
-			name = Debug;
+			name = Production;
 		};
-		1780EE832E313B1B00CF634A /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5RH346BQ66;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "マイクを利用します";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "音声認識を利用します";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.swiswiswift.ZunTalk;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-		1780EE852E313B1B00CF634A /* Debug */ = {
+		17DD5CBE2EEB1EC600DA8574 /* Production */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
@@ -506,28 +552,9 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ZunTalk.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ZunTalk";
 			};
-			name = Debug;
+			name = Production;
 		};
-		1780EE862E313B1B00CF634A /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5RH346BQ66;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.swiswiswift.ZunTalkTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ZunTalk.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ZunTalk";
-			};
-			name = Release;
-		};
-		1780EE882E313B1B00CF634A /* Debug */ = {
+		17DD5CBF2EEB1EC600DA8574 /* Production */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
@@ -542,24 +569,7 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = ZunTalk;
 			};
-			name = Debug;
-		};
-		1780EE892E313B1B00CF634A /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5RH346BQ66;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.swiswiswift.ZunTalkUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = ZunTalk;
-			};
-			name = Release;
+			name = Production;
 		};
 /* End XCBuildConfiguration section */
 
@@ -567,38 +577,38 @@
 		1780EE5B2E313B1A00CF634A /* Build configuration list for PBXProject "ZunTalk" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				1780EE7F2E313B1B00CF634A /* Debug */,
-				1780EE802E313B1B00CF634A /* Release */,
+				17DD5CB82EEB1EB300DA8574 /* Development */,
+				17DD5CBC2EEB1EC600DA8574 /* Production */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Development;
 		};
 		1780EE812E313B1B00CF634A /* Build configuration list for PBXNativeTarget "ZunTalk" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				1780EE822E313B1B00CF634A /* Debug */,
-				1780EE832E313B1B00CF634A /* Release */,
+				17DD5CB92EEB1EB300DA8574 /* Development */,
+				17DD5CBD2EEB1EC600DA8574 /* Production */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Development;
 		};
 		1780EE842E313B1B00CF634A /* Build configuration list for PBXNativeTarget "ZunTalkTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				1780EE852E313B1B00CF634A /* Debug */,
-				1780EE862E313B1B00CF634A /* Release */,
+				17DD5CBA2EEB1EB300DA8574 /* Development */,
+				17DD5CBE2EEB1EC600DA8574 /* Production */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Development;
 		};
 		1780EE872E313B1B00CF634A /* Build configuration list for PBXNativeTarget "ZunTalkUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				1780EE882E313B1B00CF634A /* Debug */,
-				1780EE892E313B1B00CF634A /* Release */,
+				17DD5CBB2EEB1EB300DA8574 /* Development */,
+				17DD5CBF2EEB1EC600DA8574 /* Production */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = Development;
 		};
 /* End XCConfigurationList section */
 	};
