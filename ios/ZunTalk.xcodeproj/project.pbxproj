@@ -404,7 +404,6 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ZunTalk/Info.plist;
-				INFOPLIST_KEY_API_BASE_URL = "$(API_BASE_URL)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "マイクを利用します";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "音声認識を利用します";
@@ -532,7 +531,6 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ZunTalk/Info.plist;
-				INFOPLIST_KEY_API_BASE_URL = "$(API_BASE_URL)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "マイクを利用します";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "音声認識を利用します";
