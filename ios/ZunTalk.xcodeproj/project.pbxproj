@@ -11,8 +11,8 @@
 		176AC9AD2E48FB1C00A4F009 /* voicevox_core.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 176AC9AB2E48FB1C00A4F009 /* voicevox_core.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		176AC9B02E48FB4100A4F009 /* voicevox_onnxruntime.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 176AC9AF2E48FB4100A4F009 /* voicevox_onnxruntime.xcframework */; };
 		176AC9B12E48FB4100A4F009 /* voicevox_onnxruntime.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 176AC9AF2E48FB4100A4F009 /* voicevox_onnxruntime.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		17DD5CC12EEB1EE000DA8574 /* Development.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 17DD5CC02EEB1EE000DA8574 /* Development.xcconfig */; };
-		17DD5CC32EEB1EEB00DA8574 /* Production.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 17DD5CC22EEB1EEB00DA8574 /* Production.xcconfig */; };
+		17DD5D532EEB21EB00DA8574 /* Development.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 17DD5D522EEB21EB00DA8574 /* Development.xcconfig */; };
+		17DD5D552EEB21F800DA8574 /* Production.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 17DD5D542EEB21F800DA8574 /* Production.xcconfig */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -53,13 +53,26 @@
 		1780EE602E313B1A00CF634A /* ZunTalk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ZunTalk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1780EE6D2E313B1B00CF634A /* ZunTalkTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ZunTalkTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1780EE772E313B1B00CF634A /* ZunTalkUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ZunTalkUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		17DD5CC02EEB1EE000DA8574 /* Development.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Development.xcconfig; sourceTree = "<group>"; };
-		17DD5CC22EEB1EEB00DA8574 /* Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Production.xcconfig; sourceTree = "<group>"; };
+		17DD5D522EEB21EB00DA8574 /* Development.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Development.xcconfig; sourceTree = "<group>"; };
+		17DD5D542EEB21F800DA8574 /* Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Production.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		17DD5DEA2EEC711500DA8574 /* Exceptions for "ZunTalk" folder in "ZunTalk" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 1780EE5F2E313B1A00CF634A /* ZunTalk */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1780EE622E313B1A00CF634A /* ZunTalk */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				17DD5DEA2EEC711500DA8574 /* Exceptions for "ZunTalk" folder in "ZunTalk" target */,
+			);
 			path = ZunTalk;
 			sourceTree = "<group>";
 		};
@@ -119,8 +132,8 @@
 				1780EE7A2E313B1B00CF634A /* ZunTalkUITests */,
 				176AC9AA2E48FB1C00A4F009 /* Frameworks */,
 				1780EE612E313B1A00CF634A /* Products */,
-				17DD5CC02EEB1EE000DA8574 /* Development.xcconfig */,
-				17DD5CC22EEB1EEB00DA8574 /* Production.xcconfig */,
+				17DD5D522EEB21EB00DA8574 /* Development.xcconfig */,
+				17DD5D542EEB21F800DA8574 /* Production.xcconfig */,
 			);
 			sourceTree = "<group>";
 		};
@@ -255,8 +268,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				17DD5CC12EEB1EE000DA8574 /* Development.xcconfig in Resources */,
-				17DD5CC32EEB1EEB00DA8574 /* Production.xcconfig in Resources */,
+				17DD5D552EEB21F800DA8574 /* Production.xcconfig in Resources */,
+				17DD5D532EEB21EB00DA8574 /* Development.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -316,7 +329,7 @@
 /* Begin XCBuildConfiguration section */
 		17DD5CB82EEB1EB300DA8574 /* Development */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 17DD5CC02EEB1EE000DA8574 /* Development.xcconfig */;
+			baseConfigurationReference = 17DD5D522EEB21EB00DA8574 /* Development.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -382,6 +395,7 @@
 		17DD5CB92EEB1EB300DA8574 /* Development */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				API_BASE_URL = "$(API_BASE_URL)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
@@ -389,6 +403,8 @@
 				DEVELOPMENT_TEAM = 5RH346BQ66;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ZunTalk/Info.plist;
+				INFOPLIST_KEY_API_BASE_URL = "$(API_BASE_URL)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "マイクを利用します";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "音声認識を利用します";
@@ -448,7 +464,7 @@
 		};
 		17DD5CBC2EEB1EC600DA8574 /* Production */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 17DD5CC22EEB1EEB00DA8574 /* Production.xcconfig */;
+			baseConfigurationReference = 17DD5D542EEB21F800DA8574 /* Production.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -507,6 +523,7 @@
 		17DD5CBD2EEB1EC600DA8574 /* Production */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				API_BASE_URL = "$(API_BASE_URL)";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
@@ -514,6 +531,8 @@
 				DEVELOPMENT_TEAM = 5RH346BQ66;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ZunTalk/Info.plist;
+				INFOPLIST_KEY_API_BASE_URL = "$(API_BASE_URL)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "マイクを利用します";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "音声認識を利用します";

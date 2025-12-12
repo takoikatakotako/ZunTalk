@@ -2,28 +2,24 @@ import Foundation
 
 class OpenAITextGenerationRepository: TextGenerationRepository {
     private let apiKey: String
-    private let baseURL = "https://api.openai.com/v1/responses"
 
     init(apiKey: String) {
         self.apiKey = apiKey
     }
 
     func generateResponse(inputs: [ChatMessage]) async throws -> String {
-        guard !apiKey.isEmpty else {
-            throw OpenAITextGenerationError.invalidAPIKey
-        }
+        // Lambda APIではAPIキーは不要（Lambda側で管理）
+        // ただし、互換性のため空チェックは残す
 
-        let url = URL(string: baseURL)!
+        let url = URL(string: APIConfig.chatEndpoint)!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let requestBody = OpenAIResponsesRequest(
-            model: "gpt-4o",
-            input: inputs,
-//            instructions: nil,
-//            temperature: 0.9
+        let requestBody = LambdaChatRequest(
+            messages: inputs,
+            model: "gpt-4o-mini",
+            maxTokens: 500
         )
 
         do {
@@ -36,7 +32,7 @@ class OpenAITextGenerationRepository: TextGenerationRepository {
             let (data, response) = try await URLSession.shared.data(for: request)
             if let httpResponse = response as? HTTPURLResponse {
                 guard httpResponse.statusCode == 200 else {
-                    print("OpenAI API Error: \(httpResponse.statusCode)")
+                    print("Lambda API Error: \(httpResponse.statusCode)")
                     if let errorString = String(data: data, encoding: .utf8) {
                         print("Error Response: \(errorString)")
                     }
@@ -44,36 +40,8 @@ class OpenAITextGenerationRepository: TextGenerationRepository {
                 }
             }
 
-            let responsesResponse = try JSONDecoder().decode(OpenAIResponsesResponse.self, from: data)
-            
-            // message の text をオプショナルで取り出す
-            var firstMessageText: String? = nil
-            for output in responsesResponse.output {
-                switch output {
-                case let .message(msg):
-                    // msg.content から outputText ケースだけ探す
-                    for content in msg.content {
-                        switch content {
-                        case let .outputText(textContent):
-                            firstMessageText = textContent.text
-                            break  // 最初の text が見つかったらループを抜ける
-                        case .refusal:
-                            continue
-                        }
-                    }
-                    if firstMessageText != nil {
-                        break  // 最初の message が見つかったらループを抜ける
-                    }
-                case .reasoning:
-                    continue
-                }
-            }
-            
-            guard let firstMessageText = firstMessageText else {
-                throw OpenAITextGenerationError.noResponse
-            }
-
-            return firstMessageText
+            let chatResponse = try JSONDecoder().decode(LambdaChatResponse.self, from: data)
+            return chatResponse.message.content
         } catch {
             if error is OpenAITextGenerationError {
                 throw error
