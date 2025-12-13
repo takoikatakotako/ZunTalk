@@ -4,7 +4,7 @@ import SwiftUI
 struct ZunTalkApp: App {
     var body: some Scene {
         WindowGroup {
-            ContactView()
+            LaunchView()
                 .preferredColorScheme(.light)
         }
     }
