@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LaunchView: View {
     @StateObject private var viewModel = LaunchViewModel()
+    @State private var hasCompletedOnboarding = UserDefaultsRepository().hasCompletedOnboarding
 
     var body: some View {
         Group {
@@ -9,7 +10,15 @@ struct LaunchView: View {
             case .loading:
                 LoadingView()
             case .ready:
-                ContactView()
+                if hasCompletedOnboarding {
+                    ContactView()
+                } else {
+                    OnboardingView {
+                        var repository = UserDefaultsRepository()
+                        repository.hasCompletedOnboarding = true
+                        hasCompletedOnboarding = true
+                    }
+                }
             case .maintenance:
                 MaintenanceView()
             case .updateRequired(let currentVersion, let minimumVersion):

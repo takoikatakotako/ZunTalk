@@ -78,9 +78,11 @@ struct ConfigView: View {
             Button("キャンセル", role: .cancel) {}
             Button("リセット", role: .destructive) {
                 resetAllSettings()
+                // アプリを終了して再起動を促す
+                exit(0)
             }
         } message: {
-            Text("すべての設定がデフォルト値に戻ります。この操作は取り消せません。")
+            Text("すべての設定がデフォルト値に戻ります。この操作は取り消せません。\nアプリは自動的に終了します。")
         }
     }
 
@@ -90,6 +92,10 @@ struct ConfigView: View {
 
         // モデル選択をデフォルトに戻す
         UserSettings.shared.selectedModelType = .freeServer
+
+        // オンボーディングをリセット
+        var repository = UserDefaultsRepository()
+        repository.resetAll()
 
         // 他の設定もここに追加
     }
