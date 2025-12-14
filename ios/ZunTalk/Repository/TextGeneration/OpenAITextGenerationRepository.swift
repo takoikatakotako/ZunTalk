@@ -1,15 +1,8 @@
 import Foundation
 
 class OpenAITextGenerationRepository: TextGenerationRepository {
-    private let apiKey: String
-
-    init(apiKey: String) {
-        self.apiKey = apiKey
-    }
-
     func generateResponse(inputs: [ChatMessage]) async throws -> String {
         // Lambda APIではAPIキーは不要（Lambda側で管理）
-        // ただし、互換性のため空チェックは残す
 
         let url = URL(string: APIConfig.chatEndpoint)!
         var request = URLRequest(url: url)

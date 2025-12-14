@@ -67,7 +67,7 @@ class CallViewModel: NSObject, ObservableObject {
 
     init(
         voicevoxRepository: TextToSpeechRepository = VoicevoxRepository(),
-        textGenerationRepository: TextGenerationRepository = OpenAITextGenerationRepository(apiKey: tempAPIKey)
+        textGenerationRepository: TextGenerationRepository = OpenAITextGenerationRepository()
     ) {
         self.voicevoxRepository = voicevoxRepository
         self.textGenerationRepository = textGenerationRepository

@@ -2,7 +2,7 @@ import SwiftUI
 
 struct LaunchView: View {
     @StateObject private var viewModel = LaunchViewModel()
-    @State private var hasCompletedOnboarding = UserDefaultsManager.hasCompletedOnboarding
+    @State private var hasCompletedOnboarding = UserDefaultsRepository().hasCompletedOnboarding
 
     var body: some View {
         Group {
@@ -14,7 +14,8 @@ struct LaunchView: View {
                     ContactView()
                 } else {
                     OnboardingView {
-                        UserDefaultsManager.hasCompletedOnboarding = true
+                        var repository = UserDefaultsRepository()
+                        repository.hasCompletedOnboarding = true
                         hasCompletedOnboarding = true
                     }
                 }
