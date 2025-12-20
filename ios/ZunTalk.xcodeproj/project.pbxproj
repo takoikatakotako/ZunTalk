@@ -396,7 +396,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				API_BASE_URL = "$(API_BASE_URL)";
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -404,6 +403,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ZunTalk/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "ずんトーク";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "マイクを利用します";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "音声認識を利用します";
@@ -417,7 +417,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.swiswiswift.ZunTalk;
+				PRODUCT_BUNDLE_IDENTIFIER = com.swiswiswift.zuntalk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -523,7 +523,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				API_BASE_URL = "$(API_BASE_URL)";
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -531,6 +530,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ZunTalk/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "ずんトーク";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "マイクを利用します";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "音声認識を利用します";
@@ -544,7 +544,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.swiswiswift.ZunTalk;
+				PRODUCT_BUNDLE_IDENTIFIER = com.swiswiswift.zuntalk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

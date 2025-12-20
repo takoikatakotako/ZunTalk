@@ -94,7 +94,7 @@ struct ConfigView: View {
         UserSettings.shared.selectedModelType = .freeServer
 
         // オンボーディングをリセット
-        var repository = UserDefaultsRepository()
+        let repository = UserDefaultsRepository()
         repository.resetAll()
 
         // 他の設定もここに追加
