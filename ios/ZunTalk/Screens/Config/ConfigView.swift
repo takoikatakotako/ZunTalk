@@ -11,6 +11,8 @@ struct ConfigView: View {
 
     var body: some View {
         List {
+            // MARK: - AI設定（コメントアウト）
+            /*
             Section("AI設定") {
                 NavigationLink(destination: ModelSelectionView()) {
                     Label("モデル選択", systemImage: "brain")
@@ -24,6 +26,7 @@ struct ConfigView: View {
                     Label("プロンプト設定", systemImage: "text.bubble")
                 }
             }
+            */
 
             Section("サポート") {
                 NavigationLink(destination: Text("お問い合わせ画面")) {
