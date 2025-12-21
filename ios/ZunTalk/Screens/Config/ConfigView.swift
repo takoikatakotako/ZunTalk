@@ -1,9 +1,7 @@
 import SwiftUI
-import SafariServices
 
 struct ConfigView: View {
     @State private var showResetAlert = false
-    @State private var showFeedbackForm = false
 
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "不明"
@@ -31,18 +29,22 @@ struct ConfigView: View {
             */
 
             Section("サポート") {
-                Button {
-                    showFeedbackForm = true
-                } label: {
+                Link(destination: URL(string: "https://docs.google.com/forms/d/1qVjc7y_FiZNk9SDf4seux08dbWmNVP__yNlC7H_l1qA/viewform")!) {
                     HStack {
                         Label("お問い合わせ", systemImage: "envelope")
                         Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .foregroundColor(.secondary)
                     }
                 }
-                .foregroundColor(.primary)
 
-                NavigationLink(destination: Text("開発者情報")) {
-                    Label("開発者情報", systemImage: "person.circle")
+                Link(destination: URL(string: "https://github.com/takoikatakotako/ZunTalk")!) {
+                    HStack {
+                        Label("GitHub", systemImage: "link")
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .foregroundColor(.secondary)
+                    }
                 }
 
                 Link(destination: URL(string: "https://x.com/takoikatakotako")!) {
@@ -56,6 +58,24 @@ struct ConfigView: View {
             }
 
             Section("法的情報") {
+                Link(destination: URL(string: "https://takoikatakotako.github.io/zuntalk/terms")!) {
+                    HStack {
+                        Label("利用規約", systemImage: "doc.text")
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                Link(destination: URL(string: "https://takoikatakotako.github.io/zuntalk/privacy")!) {
+                    HStack {
+                        Label("プライバシーポリシー", systemImage: "hand.raised")
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .foregroundColor(.secondary)
+                    }
+                }
+
                 NavigationLink(destination: Text("ライセンス情報")) {
                     Label("ライセンス", systemImage: "doc.text")
                 }
@@ -95,11 +115,6 @@ struct ConfigView: View {
         } message: {
             Text("すべての設定がデフォルト値に戻ります。この操作は取り消せません。\nアプリは自動的に終了します。")
         }
-        .sheet(isPresented: $showFeedbackForm) {
-            if let url = URL(string: "https://docs.google.com/forms/d/1qVjc7y_FiZNk9SDf4seux08dbWmNVP__yNlC7H_l1qA/viewform") {
-                SafariView(url: url)
-            }
-        }
     }
 
     private func resetAllSettings() {
@@ -114,17 +129,6 @@ struct ConfigView: View {
         repository.resetAll()
 
         // 他の設定もここに追加
-    }
-}
-
-struct SafariView: UIViewControllerRepresentable {
-    let url: URL
-
-    func makeUIViewController(context: Context) -> SFSafariViewController {
-        return SFSafariViewController(url: url)
-    }
-
-    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {
     }
 }
 
