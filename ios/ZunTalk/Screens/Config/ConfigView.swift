@@ -1,7 +1,9 @@
 import SwiftUI
+import SafariServices
 
 struct ConfigView: View {
     @State private var showResetAlert = false
+    @State private var showFeedbackForm = false
 
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "不明"
@@ -29,9 +31,15 @@ struct ConfigView: View {
             */
 
             Section("サポート") {
-                NavigationLink(destination: Text("お問い合わせ画面")) {
-                    Label("お問い合わせ", systemImage: "envelope")
+                Button {
+                    showFeedbackForm = true
+                } label: {
+                    HStack {
+                        Label("お問い合わせ", systemImage: "envelope")
+                        Spacer()
+                    }
                 }
+                .foregroundColor(.primary)
 
                 NavigationLink(destination: Text("開発者情報")) {
                     Label("開発者情報", systemImage: "person.circle")
@@ -87,6 +95,11 @@ struct ConfigView: View {
         } message: {
             Text("すべての設定がデフォルト値に戻ります。この操作は取り消せません。\nアプリは自動的に終了します。")
         }
+        .sheet(isPresented: $showFeedbackForm) {
+            if let url = URL(string: "https://docs.google.com/forms/d/1qVjc7y_FiZNk9SDf4seux08dbWmNVP__yNlC7H_l1qA/viewform") {
+                SafariView(url: url)
+            }
+        }
     }
 
     private func resetAllSettings() {
@@ -101,6 +114,17 @@ struct ConfigView: View {
         repository.resetAll()
 
         // 他の設定もここに追加
+    }
+}
+
+struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        return SFSafariViewController(url: url)
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {
     }
 }
 
