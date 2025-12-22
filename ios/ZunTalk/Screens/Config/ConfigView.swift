@@ -101,7 +101,7 @@ struct ConfigView: View {
                 }
                 .foregroundColor(.red)
             } footer: {
-                Text("すべての設定をデフォルト値に戻します。APIキーやモデル選択などがリセットされます。")
+                Text("すべての設定をデフォルト値に戻します。")
             }
         }
         .navigationTitle("設定")

@@ -11,7 +11,7 @@ struct ContactView: View {
         Contact(name: "ずんだもん", imageName: "person.circle.fill"),
     ]
     
-    @State private var isNavigatingToText = false
+    // @State private var isNavigatingToText = false
     @State private var isNavigatingToCall = false
     
     var body: some View {
@@ -36,17 +36,17 @@ struct ContactView: View {
                     Spacer()
                     
                     HStack(spacing: 12) {
-                        Button(action: {
-                            isNavigatingToText = true
-                        }) {
-                            Image(systemName: "message.fill")
-                                .foregroundColor(.white)
-                                .font(.system(size: 16))
-                                .frame(width: 36, height: 36)
-                                .background(Color.blue)
-                                .clipShape(Circle())
-                        }
-                        
+                        // Button(action: {
+                        //     isNavigatingToText = true
+                        // }) {
+                        //     Image(systemName: "message.fill")
+                        //         .foregroundColor(.white)
+                        //         .font(.system(size: 16))
+                        //         .frame(width: 36, height: 36)
+                        //         .background(Color.blue)
+                        //         .clipShape(Circle())
+                        // }
+
                         Button(action: {
                             isNavigatingToCall = true
                         }) {
@@ -67,9 +67,9 @@ struct ContactView: View {
             .background(Color.white)
             .navigationTitle("連絡先")
             .navigationBarTitleDisplayMode(.large)
-            .navigationDestination(isPresented: $isNavigatingToText) {
-                Text("XXXX")
-            }
+            // .navigationDestination(isPresented: $isNavigatingToText) {
+            //     Text("XXXX")
+            // }
             .navigationDestination(isPresented: $isNavigatingToCall) {
                 CallView()
             }
