@@ -58,7 +58,7 @@ struct ConfigView: View {
             }
 
             Section("法的情報") {
-                Link(destination: URL(string: "https://takoikatakotako.github.io/zuntalk/terms")!) {
+                Link(destination: URL(string: "https://takoikatakotako.github.io/projects/zuntalk/terms.html")!) {
                     HStack {
                         Label("利用規約", systemImage: "doc.text")
                         Spacer()
@@ -67,7 +67,7 @@ struct ConfigView: View {
                     }
                 }
 
-                Link(destination: URL(string: "https://takoikatakotako.github.io/zuntalk/privacy")!) {
+                Link(destination: URL(string: "https://takoikatakotako.github.io/projects/zuntalk/privacy.html")!) {
                     HStack {
                         Label("プライバシーポリシー", systemImage: "hand.raised")
                         Spacer()
