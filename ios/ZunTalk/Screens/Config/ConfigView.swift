@@ -29,7 +29,7 @@ struct ConfigView: View {
             */
 
             Section("サポート") {
-                Link(destination: URL(string: "https://docs.google.com/forms/d/1qVjc7y_FiZNk9SDf4seux08dbWmNVP__yNlC7H_l1qA/viewform")!) {
+                Link(destination: URL(string: "https://docs.google.com/forms/d/e/1FAIpQLSfqxPpkdiG7JW5qIiz0pf0oisne4HIJZiL8nkhmPmgFAlRwCA/viewform")!) {
                     HStack {
                         Label("お問い合わせ", systemImage: "envelope")
                         Spacer()
