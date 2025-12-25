@@ -76,7 +76,7 @@ struct ConfigView: View {
                     }
                 }
 
-                NavigationLink(destination: Text("ライセンス情報")) {
+                NavigationLink(destination: LicenseView()) {
                     Label("ライセンス", systemImage: "doc.text")
                 }
             }
