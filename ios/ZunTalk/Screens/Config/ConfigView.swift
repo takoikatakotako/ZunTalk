@@ -11,6 +11,8 @@ struct ConfigView: View {
 
     var body: some View {
         List {
+            // MARK: - AI設定（コメントアウト）
+            /*
             Section("AI設定") {
                 NavigationLink(destination: ModelSelectionView()) {
                     Label("モデル選択", systemImage: "brain")
@@ -24,14 +26,25 @@ struct ConfigView: View {
                     Label("プロンプト設定", systemImage: "text.bubble")
                 }
             }
+            */
 
             Section("サポート") {
-                NavigationLink(destination: Text("お問い合わせ画面")) {
-                    Label("お問い合わせ", systemImage: "envelope")
+                Link(destination: URL(string: "https://docs.google.com/forms/d/e/1FAIpQLSfqxPpkdiG7JW5qIiz0pf0oisne4HIJZiL8nkhmPmgFAlRwCA/viewform")!) {
+                    HStack {
+                        Label("お問い合わせ", systemImage: "envelope")
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .foregroundColor(.secondary)
+                    }
                 }
 
-                NavigationLink(destination: Text("開発者情報")) {
-                    Label("開発者情報", systemImage: "person.circle")
+                Link(destination: URL(string: "https://github.com/takoikatakotako/ZunTalk")!) {
+                    HStack {
+                        Label("GitHub", systemImage: "link")
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .foregroundColor(.secondary)
+                    }
                 }
 
                 Link(destination: URL(string: "https://x.com/takoikatakotako")!) {
@@ -45,7 +58,25 @@ struct ConfigView: View {
             }
 
             Section("法的情報") {
-                NavigationLink(destination: Text("ライセンス情報")) {
+                Link(destination: URL(string: "https://takoikatakotako.github.io/projects/zuntalk/terms.html")!) {
+                    HStack {
+                        Label("利用規約", systemImage: "doc.text")
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                Link(destination: URL(string: "https://takoikatakotako.github.io/projects/zuntalk/privacy.html")!) {
+                    HStack {
+                        Label("プライバシーポリシー", systemImage: "hand.raised")
+                        Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                NavigationLink(destination: LicenseView()) {
                     Label("ライセンス", systemImage: "doc.text")
                 }
             }
@@ -70,7 +101,7 @@ struct ConfigView: View {
                 }
                 .foregroundColor(.red)
             } footer: {
-                Text("すべての設定をデフォルト値に戻します。APIキーやモデル選択などがリセットされます。")
+                Text("すべての設定をデフォルト値に戻します。")
             }
         }
         .navigationTitle("設定")
