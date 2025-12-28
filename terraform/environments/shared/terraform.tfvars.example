@@ -1,3 +1,4 @@
 region = "ap-northeast-1"
+# development_account_id   = "YOUR_DEV_ACCOUNT_ID"
+# production_account_id    = "YOUR_PROD_ACCOUNT_ID"
 # github_oidc_provider_arn = "arn:aws:iam::YOUR_ACCOUNT_ID:oidc-provider/token.actions.githubusercontent.com"
-# ecr_allowed_account_ids = ["ACCOUNT_ID_1", "ACCOUNT_ID_2"]
