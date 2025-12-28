@@ -22,7 +22,7 @@ provider "aws" {
   default_tags {
     tags = {
       Project     = "ZunTalk"
-      Environment = "dev"
+      Environment = "prod"
       ManagedBy   = "Terraform"
     }
   }
