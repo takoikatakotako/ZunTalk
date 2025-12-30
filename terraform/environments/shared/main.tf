@@ -5,7 +5,7 @@ module "ecr" {
   image_tag_mutability = "MUTABLE"
   scan_on_push         = false
   max_image_count      = 20
-  allowed_account_ids  = ["039612872248"] # Development account
+  allowed_account_ids  = local.ecr_allowed_account_ids
 
   tags = {
     Name = "zuntalk-backend"

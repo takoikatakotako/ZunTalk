@@ -1,14 +1,10 @@
-data "aws_ecr_repository" "backend" {
-  name = "zuntalk-backend"
-}
-
 module "lambda" {
   source = "../../modules/lambda"
 
   function_name = "zuntalk-backend-prod"
-  image_uri     = "${data.aws_ecr_repository.backend.repository_url}:prod-latest"
+  image_uri     = "448049807848.dkr.ecr.ap-northeast-1.amazonaws.com/zuntalk-backend:latest"
   timeout       = 30
-  memory_size   = 1024
+  memory_size   = 512
 
   environment_variables = {
     OPENAI_API_KEY = var.openai_api_key
@@ -16,7 +12,7 @@ module "lambda" {
     ENV            = "prod"
   }
 
-  log_retention_days = 30
+  log_retention_days = 7
 
   enable_function_url    = true
   function_url_auth_type = "NONE"

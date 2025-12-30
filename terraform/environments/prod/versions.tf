@@ -3,21 +3,21 @@ terraform {
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.0"
+      version = "6.25.0"
     }
   }
 
   backend "s3" {
-    bucket         = "zuntalk-terraform-state"
-    key            = "prod/terraform.tfstate"
-    region         = "ap-northeast-1"
-    encrypt        = true
-    dynamodb_table = "zuntalk-terraform-lock"
+    bucket  = "charalarm.terraform.state"
+    key     = "zuntalk-production/terraform.tfstate"
+    region  = "ap-northeast-1"
+    profile = "charalarm-management-sso"
   }
 }
 
 provider "aws" {
-  region = var.region
+  region  = var.region
+  profile = "charalarm-production-sso"
 
   default_tags {
     tags = {
