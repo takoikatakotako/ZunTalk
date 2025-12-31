@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -25,6 +26,7 @@ func (h *ChatHandler) HandleChat(c echo.Context) error {
 	var req model.ChatRequest
 
 	if err := c.Bind(&req); err != nil {
+		slog.Warn("Failed to bind request", "error", err)
 		return c.JSON(http.StatusBadRequest, model.ErrorResponse{
 			Code:    "INVALID_REQUEST",
 			Message: "リクエストが不正です",
@@ -42,6 +44,7 @@ func (h *ChatHandler) HandleChat(c echo.Context) error {
 	// OpenAI APIを呼び出し
 	resp, err := h.openAIService.CreateChatCompletion(&req)
 	if err != nil {
+		slog.Error("Failed to create chat completion", "error", err)
 		return c.JSON(http.StatusInternalServerError, model.ErrorResponse{
 			Code:    "INTERNAL_ERROR",
 			Message: "チャット生成に失敗しました",
