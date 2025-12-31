@@ -2,7 +2,7 @@ module "lambda" {
   source = "../../modules/lambda"
 
   function_name = "zuntalk-backend-dev"
-  image_uri     = "448049807848.dkr.ecr.ap-northeast-1.amazonaws.com/zuntalk-backend:latest"
+  image_uri     = "448049807848.dkr.ecr.ap-northeast-1.amazonaws.com/zuntalk-backend:22849bb1c0b0fd687e56fb5f038b3eefce3873ec"
   timeout       = 30
   memory_size   = 512
 
