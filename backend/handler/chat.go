@@ -35,6 +35,7 @@ func (h *ChatHandler) HandleChat(c echo.Context) error {
 
 	// バリデーション
 	if len(req.Messages) == 0 {
+		slog.Warn("Empty messages in request")
 		return c.JSON(http.StatusBadRequest, model.ErrorResponse{
 			Code:    "INVALID_REQUEST",
 			Message: "メッセージが空です",
