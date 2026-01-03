@@ -1,4 +1,9 @@
-module "ecr" {
+# =============================================================================
+# ECR Repositories
+# =============================================================================
+
+# バックエンドAPI用のECRリポジトリ
+module "ecr_backend" {
   source = "../../modules/ecr"
 
   repository_name      = "zuntalk-backend"
@@ -12,6 +17,7 @@ module "ecr" {
   }
 }
 
+# Slack通知用Lambda用のECRリポジトリ
 module "ecr_slack_notifier" {
   source = "../../modules/ecr"
 

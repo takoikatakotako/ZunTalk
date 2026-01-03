@@ -1,17 +1,39 @@
-output "ecr_repository_url" {
-  description = "The URL of the ECR repository"
-  value       = module.ecr.repository_url
+# =============================================================================
+# ECR Outputs - Backend
+# =============================================================================
+
+output "ecr_backend_repository_url" {
+  description = "The URL of the backend ECR repository"
+  value       = module.ecr_backend.repository_url
 }
 
-output "ecr_repository_name" {
-  description = "The name of the ECR repository"
-  value       = module.ecr.repository_name
+output "ecr_backend_repository_name" {
+  description = "The name of the backend ECR repository"
+  value       = module.ecr_backend.repository_name
 }
 
-output "ecr_registry_id" {
-  description = "The registry ID where the repository was created"
-  value       = module.ecr.registry_id
+output "ecr_backend_registry_id" {
+  description = "The registry ID where the backend repository was created"
+  value       = module.ecr_backend.registry_id
 }
+
+# =============================================================================
+# ECR Outputs - Slack Notifier
+# =============================================================================
+
+output "ecr_slack_notifier_repository_url" {
+  description = "The URL of the slack notifier ECR repository"
+  value       = module.ecr_slack_notifier.repository_url
+}
+
+output "ecr_slack_notifier_repository_name" {
+  description = "The name of the slack notifier ECR repository"
+  value       = module.ecr_slack_notifier.repository_name
+}
+
+# =============================================================================
+# IAM Outputs
+# =============================================================================
 
 output "github_actions_role_arn" {
   description = "The ARN of the IAM role for GitHub Actions"
