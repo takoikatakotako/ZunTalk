@@ -26,3 +26,34 @@ module "lambda" {
     Name = "zuntalk-backend-dev"
   }
 }
+
+module "slack_notifier" {
+  source = "../../modules/lambda"
+
+  function_name = "zuntalk-slack-notifier-dev"
+  image_uri     = var.slack_notifier_image_uri
+  timeout       = 30
+  memory_size   = 128
+
+  environment_variables = {
+    SLACK_WEBHOOK_URL = var.slack_webhook_url
+  }
+
+  log_retention_days = 7
+
+  enable_function_url = false
+
+  tags = {
+    Name = "zuntalk-slack-notifier-dev"
+  }
+}
+
+module "backend_log_filter" {
+  source = "../../modules/logs-subscription-filter"
+
+  name                   = "zuntalk-backend-dev-error-filter"
+  log_group_name         = module.lambda.log_group_name
+  log_group_arn          = module.lambda.log_group_arn
+  filter_pattern         = "ERROR"
+  destination_lambda_arn = module.slack_notifier.function_arn
+}

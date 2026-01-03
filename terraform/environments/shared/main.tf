@@ -11,3 +11,17 @@ module "ecr" {
     Name = "zuntalk-backend"
   }
 }
+
+module "ecr_slack_notifier" {
+  source = "../../modules/ecr"
+
+  repository_name      = "zuntalk-slack-notifier"
+  image_tag_mutability = "MUTABLE"
+  scan_on_push         = false
+  max_image_count      = 5
+  allowed_account_ids  = local.ecr_allowed_account_ids
+
+  tags = {
+    Name = "zuntalk-slack-notifier"
+  }
+}
