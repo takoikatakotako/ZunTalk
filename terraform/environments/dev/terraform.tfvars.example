@@ -1,2 +1,11 @@
-region = "ap-northeast-1"
-# openai_api_key = "sk-proj-your_api_key_here"  # Set via environment variable TF_VAR_openai_api_key
+# =============================================================================
+# Dev Environment Variables
+# =============================================================================
+
+slack_notifier_image_uri = "448049807848.dkr.ecr.ap-northeast-1.amazonaws.com/zuntalk-slack-notifier:latest"
+
+# =============================================================================
+# Secret Variables (secret.auto.tfvars に記載)
+# =============================================================================
+# openai_api_key    = "sk-proj-xxx"
+# slack_webhook_url = "https://hooks.slack.com/services/xxx"
