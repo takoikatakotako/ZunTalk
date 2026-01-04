@@ -1,4 +1,11 @@
+# =============================================================================
+# GitHub Actions IAM Role
+# GitHub ActionsからAWSリソースにアクセスするためのIAMロール
+# OIDC認証を使用してGitHub Actionsからのアクセスを許可
+# =============================================================================
+
 # Assume Role Policy Document
+# GitHub ActionsのOIDCプロバイダーからのAssumeRoleを許可
 data "aws_iam_policy_document" "github_actions_assume_role" {
   statement {
     effect = "Allow"
@@ -24,7 +31,7 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
   }
 }
 
-# GitHub Actions IAM Role
+# GitHub Actions用IAMロール
 resource "aws_iam_role" "github_actions" {
   name               = "zuntalk-shared-github-actions"
   assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role.json
@@ -34,8 +41,13 @@ resource "aws_iam_role" "github_actions" {
   }
 }
 
-# ECR Push Policy Document
+# =============================================================================
+# ECR Push Policy
+# GitHub ActionsからECRにDockerイメージをプッシュするための権限
+# =============================================================================
+
 data "aws_iam_policy_document" "github_actions_ecr" {
+  # ECR認証トークン取得
   statement {
     effect = "Allow"
     actions = [
@@ -44,6 +56,7 @@ data "aws_iam_policy_document" "github_actions_ecr" {
     resources = ["*"]
   }
 
+  # ECRへのイメージプッシュ
   statement {
     effect = "Allow"
     actions = [
@@ -55,11 +68,13 @@ data "aws_iam_policy_document" "github_actions_ecr" {
       "ecr:UploadLayerPart",
       "ecr:CompleteLayerUpload"
     ]
-    resources = [module.ecr.repository_arn]
+    resources = [
+      module.ecr_backend.repository_arn,
+      module.ecr_slack_notifier.repository_arn
+    ]
   }
 }
 
-# ECR Push Policy
 resource "aws_iam_role_policy" "github_actions_ecr" {
   name   = "ECRPushPolicy"
   role   = aws_iam_role.github_actions.id
