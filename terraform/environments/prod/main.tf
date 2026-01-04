@@ -1,4 +1,9 @@
-module "lambda" {
+# =============================================================================
+# Lambda Functions
+# =============================================================================
+
+# バックエンドAPI
+module "lambda_backend" {
   source = "../../modules/lambda"
 
   function_name = "zuntalk-backend-prod"
@@ -25,4 +30,41 @@ module "lambda" {
   tags = {
     Name = "zuntalk-backend-prod"
   }
+}
+
+# Slack通知用Lambda
+module "lambda_slack_notifier" {
+  source = "../../modules/lambda"
+
+  function_name = "zuntalk-slack-notifier-prod"
+  image_uri     = var.slack_notifier_image_uri
+  timeout       = 30
+  memory_size   = 128
+
+  environment_variables = {
+    SLACK_WEBHOOK_URL = var.slack_webhook_url
+  }
+
+  log_retention_days = 7
+
+  enable_function_url = false
+
+  tags = {
+    Name = "zuntalk-slack-notifier-prod"
+  }
+}
+
+# =============================================================================
+# CloudWatch Logs Subscription Filter
+# =============================================================================
+
+# バックエンドログのエラー検知
+module "logs_filter_backend" {
+  source = "../../modules/logs-subscription-filter"
+
+  name                   = "zuntalk-backend-prod-error-filter"
+  log_group_name         = module.lambda_backend.log_group_name
+  log_group_arn          = module.lambda_backend.log_group_arn
+  filter_pattern         = "ERROR"
+  destination_lambda_arn = module.lambda_slack_notifier.function_arn
 }
