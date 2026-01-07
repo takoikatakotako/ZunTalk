@@ -21,7 +21,7 @@ jobs:
       contents: read
 
     steps:
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (Shared - for ECR)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::${{ secrets.SHARED_ACCOUNT_ID }}:role/zuntalk-shared-github-actions
@@ -40,6 +40,12 @@ jobs:
           aws ecr describe-images \
             --repository-name $ECR_REPOSITORY \
             --image-ids imageTag=$IMAGE_TAG
+
+      - name: Configure AWS credentials (Prod - for Lambda)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.PROD_ACCOUNT_ID }}:role/zuntalk-prod-github-actions
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy to Lambda (Prod)
         env:

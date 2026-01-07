@@ -1,0 +1,73 @@
+# =============================================================================
+# GitHub Actions OIDC Provider
+# =============================================================================
+
+resource "aws_iam_openid_connect_provider" "github_actions" {
+  url             = "https://token.actions.githubusercontent.com"
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = ["6938fd4d98bab03faadb97b34396831e3780aea1"]
+
+  tags = {
+    Name = "github-actions-oidc-provider"
+  }
+}
+
+# =============================================================================
+# GitHub Actions IAM Role
+# =============================================================================
+
+data "aws_iam_policy_document" "github_actions_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.github_actions.arn]
+    }
+
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringLike"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:takoikatakotako/ZunTalk:*"]
+    }
+  }
+}
+
+resource "aws_iam_role" "github_actions" {
+  name               = "zuntalk-dev-github-actions"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_assume_role.json
+
+  tags = {
+    Name = "zuntalk-dev-github-actions"
+  }
+}
+
+# =============================================================================
+# Lambda Update Policy
+# =============================================================================
+
+data "aws_iam_policy_document" "github_actions_lambda" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "lambda:UpdateFunctionCode"
+    ]
+    resources = [
+      module.lambda_backend.function_arn
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "github_actions_lambda" {
+  name   = "LambdaUpdatePolicy"
+  role   = aws_iam_role.github_actions.id
+  policy = data.aws_iam_policy_document.github_actions_lambda.json
+}

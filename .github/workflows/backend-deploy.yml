@@ -24,7 +24,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (Shared - for ECR)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::${{ secrets.SHARED_ACCOUNT_ID }}:role/zuntalk-shared-github-actions
@@ -46,6 +46,12 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials (Dev - for Lambda)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.DEV_ACCOUNT_ID }}:role/zuntalk-dev-github-actions
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy to Lambda (Dev)
         run: |
