@@ -80,3 +80,27 @@ resource "aws_iam_role_policy" "github_actions_ecr" {
   role   = aws_iam_role.github_actions.id
   policy = data.aws_iam_policy_document.github_actions_ecr.json
 }
+
+# =============================================================================
+# Lambda Update Policy
+# GitHub ActionsからLambda関数を更新するための権限
+# =============================================================================
+
+data "aws_iam_policy_document" "github_actions_lambda" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "lambda:UpdateFunctionCode"
+    ]
+    resources = [
+      "arn:aws:lambda:${var.region}:${var.development_account_id}:function:zuntalk-backend-dev",
+      "arn:aws:lambda:${var.region}:${var.production_account_id}:function:zuntalk-backend-prod"
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "github_actions_lambda" {
+  name   = "LambdaUpdatePolicy"
+  role   = aws_iam_role.github_actions.id
+  policy = data.aws_iam_policy_document.github_actions_lambda.json
+}
