@@ -75,3 +75,11 @@ func (h *ChatHandler) HandleInfo(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, response)
 }
+
+func (h *ChatHandler) HandleError(c echo.Context) error {
+	slog.Error("Test error for Slack notification", "endpoint", "/api/error", "message", "This is a test error")
+	return c.JSON(http.StatusInternalServerError, model.ErrorResponse{
+		Code:    "TEST_ERROR",
+		Message: "テストエラーです",
+	})
+}

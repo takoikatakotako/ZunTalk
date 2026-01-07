@@ -51,6 +51,7 @@ func setupServer(cfg *config.Config) *echo.Echo {
 	e.GET("/api/info", chatHandler.HandleInfo)
 	e.POST("/api/chat", chatHandler.HandleChat)
 	e.GET("/health", chatHandler.HandleHealth)
+	e.GET("/api/error", chatHandler.HandleError)
 
 	return e
 }
