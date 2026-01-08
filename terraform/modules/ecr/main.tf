@@ -54,7 +54,7 @@ resource "aws_ecr_repository_policy" "default" {
         ]
       },
       {
-        Sid    = "AllowCrossAccountLambda"
+        Sid    = "AllowCrossAccountLambdaByArn"
         Effect = "Allow"
         Principal = {
           Service = "lambda.amazonaws.com"
@@ -62,6 +62,23 @@ resource "aws_ecr_repository_policy" "default" {
         Condition = {
           ArnLike = {
             "aws:sourceArn" = [for account_id in var.allowed_account_ids : "arn:aws:lambda:*:${account_id}:function:*"]
+          }
+        }
+        Action = [
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:BatchCheckLayerAvailability"
+        ]
+      },
+      {
+        Sid    = "AllowCrossAccountLambdaByAccount"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+        Condition = {
+          StringLike = {
+            "aws:sourceAccount" = var.allowed_account_ids
           }
         }
         Action = [
