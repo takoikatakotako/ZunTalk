@@ -7,6 +7,8 @@ env:
   AWS_REGION: ap-northeast-1
   ECR_REPOSITORY: zuntalk-backend
   SHARED_ACCOUNT_ID: "448049807848"
+  DEV_ACCOUNT_ID: "039612872248"
+  PROD_ACCOUNT_ID: "986921280333"
 
 jobs:
   status:
@@ -16,32 +18,56 @@ jobs:
       contents: read
 
     steps:
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (Dev)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.DEV_ACCOUNT_ID }}:role/zuntalk-dev-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get Dev deployed image
+        id: dev-image
+        run: |
+          DEV_IMAGE=$(aws lambda get-function --function-name zuntalk-backend-dev --query 'Code.ImageUri' --output text)
+          DEV_TAG=$(echo $DEV_IMAGE | sed 's/.*://')
+          echo "image=$DEV_IMAGE" >> $GITHUB_OUTPUT
+          echo "tag=$DEV_TAG" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials (Prod)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.PROD_ACCOUNT_ID }}:role/zuntalk-prod-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Get Prod deployed image
+        id: prod-image
+        run: |
+          PROD_IMAGE=$(aws lambda get-function --function-name zuntalk-backend-prod --query 'Code.ImageUri' --output text)
+          PROD_TAG=$(echo $PROD_IMAGE | sed 's/.*://')
+          echo "image=$PROD_IMAGE" >> $GITHUB_OUTPUT
+          echo "tag=$PROD_TAG" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials (Shared - for ECR)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::${{ env.SHARED_ACCOUNT_ID }}:role/zuntalk-shared-github-actions
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Get current deployed images
+      - name: Generate summary
         run: |
           echo "## 🚀 Currently Deployed Images" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           echo "### Dev (zuntalk-backend-dev)" >> $GITHUB_STEP_SUMMARY
-          DEV_IMAGE=$(aws lambda get-function --function-name zuntalk-backend-dev --query 'Code.ImageUri' --output text)
-          DEV_TAG=$(echo $DEV_IMAGE | sed 's/.*://')
-          echo "- **Image URI**: \`$DEV_IMAGE\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tag**: \`$DEV_TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image URI**: \`${{ steps.dev-image.outputs.image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: \`${{ steps.dev-image.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           echo "### Prod (zuntalk-backend-prod)" >> $GITHUB_STEP_SUMMARY
-          PROD_IMAGE=$(aws lambda get-function --function-name zuntalk-backend-prod --query 'Code.ImageUri' --output text)
-          PROD_TAG=$(echo $PROD_IMAGE | sed 's/.*://')
-          echo "- **Image URI**: \`$PROD_IMAGE\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tag**: \`$PROD_TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image URI**: \`${{ steps.prod-image.outputs.image }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tag**: \`${{ steps.prod-image.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ "$DEV_TAG" = "$PROD_TAG" ]; then
+          if [ "${{ steps.dev-image.outputs.tag }}" = "${{ steps.prod-image.outputs.tag }}" ]; then
             echo "✅ Dev and Prod are running the same image" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ Dev and Prod are running different images" >> $GITHUB_STEP_SUMMARY
