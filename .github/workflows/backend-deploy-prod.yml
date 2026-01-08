@@ -24,7 +24,7 @@ jobs:
       - name: Configure AWS credentials (Shared - for ECR)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.SHARED_ACCOUNT_ID }}:role/zuntalk-shared-github-actions
+          role-to-assume: arn:aws:iam::448049807848:role/zuntalk-shared-github-actions
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
@@ -44,7 +44,7 @@ jobs:
       - name: Configure AWS credentials (Prod - for Lambda)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.PROD_ACCOUNT_ID }}:role/zuntalk-prod-github-actions
+          role-to-assume: arn:aws:iam::986921280333:role/zuntalk-prod-github-actions
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy to Lambda (Prod)

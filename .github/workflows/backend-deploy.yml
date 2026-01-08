@@ -27,7 +27,7 @@ jobs:
       - name: Configure AWS credentials (Shared - for ECR)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.SHARED_ACCOUNT_ID }}:role/zuntalk-shared-github-actions
+          role-to-assume: arn:aws:iam::448049807848:role/zuntalk-shared-github-actions
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
@@ -50,7 +50,7 @@ jobs:
       - name: Configure AWS credentials (Dev - for Lambda)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.DEV_ACCOUNT_ID }}:role/zuntalk-dev-github-actions
+          role-to-assume: arn:aws:iam::039612872248:role/zuntalk-dev-github-actions
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy to Lambda (Dev)

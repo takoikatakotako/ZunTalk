@@ -26,7 +26,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.SHARED_ACCOUNT_ID }}:role/zuntalk-shared-github-actions
+          role-to-assume: arn:aws:iam::448049807848:role/zuntalk-shared-github-actions
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Login to Amazon ECR
