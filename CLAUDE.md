@@ -45,7 +45,10 @@ ZunTalk/
 ├── docs/                   # ドキュメント
 │   └── api/openapi.yaml   # OpenAPI仕様書
 └── .github/workflows/      # CI/CD
-    └── backend-deploy.yml # バックエンドデプロイ
+    ├── backend-deploy-dev.yml  # Dev環境デプロイ
+    ├── backend-deploy-prod.yml # Prod環境デプロイ
+    ├── backend-status.yml      # デプロイ状況確認
+    └── slack-notifier-build.yml # Slack通知Lambda
 ```
 
 ## 技術スタック
@@ -120,6 +123,7 @@ open ios/ZunTalk.xcodeproj
 |---------|------|------|
 | POST | `/api/chat` | AI会話生成 |
 | GET | `/api/info` | アプリ情報取得（メンテナンス状態、最小バージョン） |
+| GET | `/api/error` | エラーテスト（Slack通知確認用） |
 | GET | `/health` | ヘルスチェック |
 
 ### /api/chat リクエスト例
@@ -151,30 +155,27 @@ export TF_VAR_openai_api_key="sk-proj-..."
 export TF_VAR_region="ap-northeast-1"
 ```
 
-### GitHub Actions Secrets
+### AWSアカウント構成
 ```
-SHARED_ACCOUNT_ID    # AWS Account ID
-AWS_ROLE_ARN         # GitHub Actions用IAMロール
+Shared: 448049807848  # ECR、GitHub Actions共通IAMロール
+Dev:    039612872248  # 開発環境Lambda
+Prod:   986921280333  # 本番環境Lambda
 ```
 
 ## デプロイ
 
 ### 自動デプロイ（GitHub Actions）
-`backend/**`への変更がmainにマージされると自動でECRにプッシュ。
-Lambda更新は`terraform apply`で手動実行。
+`backend/**`への変更がmainにマージされると自動でDev環境にデプロイ。
+1. ECRにDockerイメージをプッシュ（sharedアカウント）
+2. Lambda関数を更新（devアカウント）
 
 ### 手動デプロイ
-```bash
-# ECRにプッシュ
-aws ecr get-login-password --region ap-northeast-1 | \
-  docker login --username AWS --password-stdin {account-id}.dkr.ecr.ap-northeast-1.amazonaws.com
-docker build -t {account-id}.dkr.ecr.ap-northeast-1.amazonaws.com/zuntalk-backend:latest backend/
-docker push {account-id}.dkr.ecr.ap-northeast-1.amazonaws.com/zuntalk-backend:latest
+GitHub Actionsから手動実行可能:
+- **Dev**: `backend-deploy-dev.yml` → workflow_dispatch
+- **Prod**: `backend-deploy-prod.yml` → workflow_dispatch（イメージタグを指定）
 
-# Lambda更新
-cd terraform/environments/dev
-terraform apply
-```
+### デプロイ状況確認
+`backend-status.yml`を実行すると、Dev/Prodの現在のイメージタグとECR内のイメージ一覧を確認可能。
 
 ## コーディング規約
 
