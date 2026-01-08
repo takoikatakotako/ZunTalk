@@ -60,8 +60,8 @@ resource "aws_ecr_repository_policy" "default" {
           Service = "lambda.amazonaws.com"
         }
         Condition = {
-          StringLike = {
-            "aws:sourceAccount" = var.allowed_account_ids
+          ArnLike = {
+            "aws:sourceArn" = [for account_id in var.allowed_account_ids : "arn:aws:lambda:*:${account_id}:function:*"]
           }
         }
         Action = [
