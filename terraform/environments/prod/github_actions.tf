@@ -64,6 +64,22 @@ data "aws_iam_policy_document" "github_actions_lambda" {
       module.lambda_backend.function_arn
     ]
   }
+
+  # クロスアカウントECRイメージをLambdaで使用するために必要
+  # LambdaサービスがGitHub Actionsロールの認証情報でECRにアクセスする
+  statement {
+    effect = "Allow"
+    actions = [
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:BatchGetImage",
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:ListImages",
+      "ecr:DescribeImages",
+      "ecr:DescribeRepositories",
+      "ecr:GetRepositoryPolicy",
+    ]
+    resources = ["*"]
+  }
 }
 
 resource "aws_iam_role_policy" "github_actions_lambda" {
