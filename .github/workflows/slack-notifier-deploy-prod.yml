@@ -1,0 +1,60 @@
+name: Slack Notifier Deploy (Prod)
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (e.g., commit SHA or "latest")'
+        required: true
+        type: string
+
+env:
+  AWS_REGION: ap-northeast-1
+  ECR_REPOSITORY: zuntalk-slack-notifier
+  LAMBDA_FUNCTION_NAME: zuntalk-slack-notifier-prod
+  SHARED_ACCOUNT_ID: "448049807848"
+  PROD_ACCOUNT_ID: "986921280333"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Configure AWS credentials (Shared - for ECR)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.SHARED_ACCOUNT_ID }}:role/zuntalk-shared-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Verify image exists
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          echo "Verifying image: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          aws ecr describe-images \
+            --repository-name $ECR_REPOSITORY \
+            --image-ids imageTag=$IMAGE_TAG
+
+      - name: Configure AWS credentials (Prod - for Lambda)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.PROD_ACCOUNT_ID }}:role/zuntalk-prod-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to Lambda (Prod)
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          echo "Deploying $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG to $LAMBDA_FUNCTION_NAME"
+          aws lambda update-function-code \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --image-uri $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG

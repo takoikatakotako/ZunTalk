@@ -1,0 +1,62 @@
+name: Slack Notifier Build and Deploy (Dev)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lambda/slack-notifier/**'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-northeast-1
+  ECR_REPOSITORY: zuntalk-slack-notifier
+  LAMBDA_FUNCTION_NAME: zuntalk-slack-notifier-dev
+  SHARED_ACCOUNT_ID: "448049807848"
+  DEV_ACCOUNT_ID: "039612872248"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (Shared - for ECR)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.SHARED_ACCOUNT_ID }}:role/zuntalk-shared-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        working-directory: ./lambda/slack-notifier
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "image_uri=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials (Dev - for Lambda)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.DEV_ACCOUNT_ID }}:role/zuntalk-dev-github-actions
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to Lambda (Dev)
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
+            --image-uri ${{ steps.build-image.outputs.image_uri }}
