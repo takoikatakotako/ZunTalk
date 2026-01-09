@@ -40,7 +40,7 @@ jobs:
             --registry-id $SHARED_ACCOUNT_ID \
             --repository-name $ECR_REPOSITORY_BACKEND \
             --query 'sort_by(imageDetails, &imagePushedAt) | reverse(@) | [0:20]' \
-            --output json | jq -r '.[] | "| `\(.imageTags[0] // "untagged")` | \(.imagePushedAt | split(".")[0]) | \((.imageSizeInBytes / 1024 / 1024) | floor)MB |"' >> $GITHUB_STEP_SUMMARY
+            --output json | jq -r '.[] | "| `\(.imageTags // ["untagged"] | join(", "))` | \(.imagePushedAt | split(".")[0]) | \((.imageSizeInBytes / 1024 / 1024) | floor)MB |"' >> $GITHUB_STEP_SUMMARY
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### zuntalk-slack-notifier (latest 5)" >> $GITHUB_STEP_SUMMARY
@@ -51,7 +51,7 @@ jobs:
             --registry-id $SHARED_ACCOUNT_ID \
             --repository-name $ECR_REPOSITORY_SLACK_NOTIFIER \
             --query 'sort_by(imageDetails, &imagePushedAt) | reverse(@) | [0:5]' \
-            --output json | jq -r '.[] | "| `\(.imageTags[0] // "untagged")` | \(.imagePushedAt | split(".")[0]) | \((.imageSizeInBytes / 1024 / 1024) | floor)MB |"' >> $GITHUB_STEP_SUMMARY
+            --output json | jq -r '.[] | "| `\(.imageTags // ["untagged"] | join(", "))` | \(.imagePushedAt | split(".")[0]) | \((.imageSizeInBytes / 1024 / 1024) | floor)MB |"' >> $GITHUB_STEP_SUMMARY
 
       - name: Get Dev deployed image (backend)
         id: dev-backend
