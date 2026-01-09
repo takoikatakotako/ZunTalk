@@ -25,6 +25,34 @@ jobs:
           role-to-assume: arn:aws:iam::${{ env.DEV_ACCOUNT_ID }}:role/zuntalk-dev-github-actions
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: List available images in ECR
+        run: |
+          set -euo pipefail
+
+          echo "## 📦 Available Images in ECR" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### zuntalk-backend (latest 20)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Tag | Pushed At | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|-----------|------|" >> $GITHUB_STEP_SUMMARY
+          aws ecr describe-images \
+            --registry-id $SHARED_ACCOUNT_ID \
+            --repository-name $ECR_REPOSITORY_BACKEND \
+            --query 'sort_by(imageDetails, &imagePushedAt) | reverse(@) | [0:20]' \
+            --output json | jq -r '.[] | "| `\(.imageTags[0] // "untagged")` | \(.imagePushedAt | split(".")[0]) | \((.imageSizeInBytes / 1024 / 1024) | floor)MB |"' >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### zuntalk-slack-notifier (latest 5)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Tag | Pushed At | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|-----------|------|" >> $GITHUB_STEP_SUMMARY
+          aws ecr describe-images \
+            --registry-id $SHARED_ACCOUNT_ID \
+            --repository-name $ECR_REPOSITORY_SLACK_NOTIFIER \
+            --query 'sort_by(imageDetails, &imagePushedAt) | reverse(@) | [0:5]' \
+            --output json | jq -r '.[] | "| `\(.imageTags[0] // "untagged")` | \(.imagePushedAt | split(".")[0]) | \((.imageSizeInBytes / 1024 / 1024) | floor)MB |"' >> $GITHUB_STEP_SUMMARY
+
       - name: Get Dev deployed image (backend)
         id: dev-backend
         run: |
@@ -69,6 +97,7 @@ jobs:
 
       - name: Generate summary
         run: |
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 🚀 Currently Deployed Images" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
@@ -100,38 +129,3 @@ jobs:
           else
             echo "⚠️ Dev and Prod are running different images" >> $GITHUB_STEP_SUMMARY
           fi
-
-      - name: Configure AWS credentials (Dev - for ECR)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::${{ env.DEV_ACCOUNT_ID }}:role/zuntalk-dev-github-actions
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: List available images in ECR
-        run: |
-          set -euo pipefail
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 📦 Available Images in ECR" >> $GITHUB_STEP_SUMMARY
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### zuntalk-backend (latest 20)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Tag | Pushed At | Size |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----|-----------|------|" >> $GITHUB_STEP_SUMMARY
-          aws ecr describe-images \
-            --registry-id $SHARED_ACCOUNT_ID \
-            --repository-name $ECR_REPOSITORY_BACKEND \
-            --query 'sort_by(imageDetails, &imagePushedAt) | reverse(@) | [0:20]' \
-            --output json | jq -r '.[] | "| `\(.imageTags[0] // "untagged")` | \(.imagePushedAt | split(".")[0]) | \((.imageSizeInBytes / 1024 / 1024) | floor)MB |"' >> $GITHUB_STEP_SUMMARY
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### zuntalk-slack-notifier (latest 5)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Tag | Pushed At | Size |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----|-----------|------|" >> $GITHUB_STEP_SUMMARY
-          aws ecr describe-images \
-            --registry-id $SHARED_ACCOUNT_ID \
-            --repository-name $ECR_REPOSITORY_SLACK_NOTIFIER \
-            --query 'sort_by(imageDetails, &imagePushedAt) | reverse(@) | [0:5]' \
-            --output json | jq -r '.[] | "| `\(.imageTags[0] // "untagged")` | \(.imagePushedAt | split(".")[0]) | \((.imageSizeInBytes / 1024 / 1024) | floor)MB |"' >> $GITHUB_STEP_SUMMARY
