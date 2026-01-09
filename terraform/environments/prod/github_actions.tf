@@ -62,7 +62,8 @@ data "aws_iam_policy_document" "github_actions_lambda" {
       "lambda:GetFunction"
     ]
     resources = [
-      module.lambda_backend.function_arn
+      module.lambda_backend.function_arn,
+      module.lambda_slack_notifier.function_arn
     ]
   }
 
