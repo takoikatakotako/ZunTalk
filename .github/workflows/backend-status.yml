@@ -6,6 +6,7 @@ on:
 env:
   AWS_REGION: ap-northeast-1
   ECR_REPOSITORY: zuntalk-backend
+  SHARED_ACCOUNT_ID: "448049807848"
   DEV_ACCOUNT_ID: "039612872248"
   PROD_ACCOUNT_ID: "986921280333"
 
@@ -81,6 +82,7 @@ jobs:
           echo "|-----|-----------|------|" >> $GITHUB_STEP_SUMMARY
 
           aws ecr describe-images \
+            --registry-id $SHARED_ACCOUNT_ID \
             --repository-name $ECR_REPOSITORY \
             --query 'sort_by(imageDetails, &imagePushedAt) | reverse(@) | [0:20]' \
             --output json | jq -r '.[] | "| `\(.imageTags[0] // "untagged")` | \(.imagePushedAt | split(".")[0]) | \((.imageSizeInBytes / 1024 / 1024) | floor)MB |"' >> $GITHUB_STEP_SUMMARY
