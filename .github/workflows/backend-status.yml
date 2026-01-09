@@ -5,7 +5,8 @@ on:
 
 env:
   AWS_REGION: ap-northeast-1
-  ECR_REPOSITORY: zuntalk-backend
+  ECR_REPOSITORY_BACKEND: zuntalk-backend
+  ECR_REPOSITORY_SLACK_NOTIFIER: zuntalk-slack-notifier
   SHARED_ACCOUNT_ID: "448049807848"
   DEV_ACCOUNT_ID: "039612872248"
   PROD_ACCOUNT_ID: "986921280333"
@@ -78,14 +79,28 @@ jobs:
       - name: List available images in ECR
         run: |
           set -euo pipefail
+
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## 📦 Available Images in ECR (latest 20)" >> $GITHUB_STEP_SUMMARY
+          echo "## 📦 Available Images in ECR" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### zuntalk-backend (latest 20)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Tag | Pushed At | Size |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|-----------|------|" >> $GITHUB_STEP_SUMMARY
-
           aws ecr describe-images \
             --registry-id $SHARED_ACCOUNT_ID \
-            --repository-name $ECR_REPOSITORY \
+            --repository-name $ECR_REPOSITORY_BACKEND \
             --query 'sort_by(imageDetails, &imagePushedAt) | reverse(@) | [0:20]' \
+            --output json | jq -r '.[] | "| `\(.imageTags[0] // "untagged")` | \(.imagePushedAt | split(".")[0]) | \((.imageSizeInBytes / 1024 / 1024) | floor)MB |"' >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### zuntalk-slack-notifier (latest 5)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Tag | Pushed At | Size |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|-----------|------|" >> $GITHUB_STEP_SUMMARY
+          aws ecr describe-images \
+            --registry-id $SHARED_ACCOUNT_ID \
+            --repository-name $ECR_REPOSITORY_SLACK_NOTIFIER \
+            --query 'sort_by(imageDetails, &imagePushedAt) | reverse(@) | [0:5]' \
             --output json | jq -r '.[] | "| `\(.imageTags[0] // "untagged")` | \(.imagePushedAt | split(".")[0]) | \((.imageSizeInBytes / 1024 / 1024) | floor)MB |"' >> $GITHUB_STEP_SUMMARY
