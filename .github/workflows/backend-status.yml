@@ -25,14 +25,23 @@ jobs:
           role-to-assume: arn:aws:iam::${{ env.DEV_ACCOUNT_ID }}:role/zuntalk-dev-github-actions
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Get Dev deployed image
-        id: dev-image
+      - name: Get Dev deployed image (backend)
+        id: dev-backend
         run: |
           set -euo pipefail
-          DEV_IMAGE=$(aws lambda get-function --function-name zuntalk-backend-dev --query 'Code.ImageUri' --output text)
-          DEV_TAG=$(echo $DEV_IMAGE | sed 's/.*://')
-          echo "image=$DEV_IMAGE" >> $GITHUB_OUTPUT
-          echo "tag=$DEV_TAG" >> $GITHUB_OUTPUT
+          IMAGE=$(aws lambda get-function --function-name zuntalk-backend-dev --query 'Code.ImageUri' --output text)
+          TAG=$(echo $IMAGE | sed 's/.*://')
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Get Dev deployed image (slack-notifier)
+        id: dev-slack-notifier
+        run: |
+          set -euo pipefail
+          IMAGE=$(aws lambda get-function --function-name zuntalk-slack-notifier-dev --query 'Code.ImageUri' --output text)
+          TAG=$(echo $IMAGE | sed 's/.*://')
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Configure AWS credentials (Prod)
         uses: aws-actions/configure-aws-credentials@v4
@@ -40,31 +49,53 @@ jobs:
           role-to-assume: arn:aws:iam::${{ env.PROD_ACCOUNT_ID }}:role/zuntalk-prod-github-actions
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Get Prod deployed image
-        id: prod-image
+      - name: Get Prod deployed image (backend)
+        id: prod-backend
         run: |
           set -euo pipefail
-          PROD_IMAGE=$(aws lambda get-function --function-name zuntalk-backend-prod --query 'Code.ImageUri' --output text)
-          PROD_TAG=$(echo $PROD_IMAGE | sed 's/.*://')
-          echo "image=$PROD_IMAGE" >> $GITHUB_OUTPUT
-          echo "tag=$PROD_TAG" >> $GITHUB_OUTPUT
+          IMAGE=$(aws lambda get-function --function-name zuntalk-backend-prod --query 'Code.ImageUri' --output text)
+          TAG=$(echo $IMAGE | sed 's/.*://')
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Get Prod deployed image (slack-notifier)
+        id: prod-slack-notifier
+        run: |
+          set -euo pipefail
+          IMAGE=$(aws lambda get-function --function-name zuntalk-slack-notifier-prod --query 'Code.ImageUri' --output text)
+          TAG=$(echo $IMAGE | sed 's/.*://')
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Generate summary
         run: |
           echo "## 🚀 Currently Deployed Images" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          echo "### Dev (zuntalk-backend-dev)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image URI**: \`${{ steps.dev-image.outputs.image }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tag**: \`${{ steps.dev-image.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "### zuntalk-backend" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Env | Tag |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| Dev | \`${{ steps.dev-backend.outputs.tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Prod | \`${{ steps.prod-backend.outputs.tag }}\` |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          echo "### Prod (zuntalk-backend-prod)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image URI**: \`${{ steps.prod-image.outputs.image }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tag**: \`${{ steps.prod-image.outputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.dev-backend.outputs.tag }}" = "${{ steps.prod-backend.outputs.tag }}" ]; then
+            echo "✅ Dev and Prod are running the same image" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Dev and Prod are running different images" >> $GITHUB_STEP_SUMMARY
+          fi
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ "${{ steps.dev-image.outputs.tag }}" = "${{ steps.prod-image.outputs.tag }}" ]; then
+          echo "### zuntalk-slack-notifier" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Env | Tag |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| Dev | \`${{ steps.dev-slack-notifier.outputs.tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Prod | \`${{ steps.prod-slack-notifier.outputs.tag }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ steps.dev-slack-notifier.outputs.tag }}" = "${{ steps.prod-slack-notifier.outputs.tag }}" ]; then
             echo "✅ Dev and Prod are running the same image" >> $GITHUB_STEP_SUMMARY
           else
             echo "⚠️ Dev and Prod are running different images" >> $GITHUB_STEP_SUMMARY
