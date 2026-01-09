@@ -58,10 +58,12 @@ data "aws_iam_policy_document" "github_actions_lambda" {
   statement {
     effect = "Allow"
     actions = [
-      "lambda:UpdateFunctionCode"
+      "lambda:UpdateFunctionCode",
+      "lambda:GetFunction"
     ]
     resources = [
-      module.lambda_backend.function_arn
+      module.lambda_backend.function_arn,
+      module.lambda_slack_notifier.function_arn
     ]
   }
 
