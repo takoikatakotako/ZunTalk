@@ -56,7 +56,7 @@ data "aws_iam_policy_document" "github_actions_ecr" {
     resources = ["*"]
   }
 
-  # ECRへのイメージプッシュ
+  # ECRへのイメージプッシュ・読み取り
   statement {
     effect = "Allow"
     actions = [
@@ -66,7 +66,8 @@ data "aws_iam_policy_document" "github_actions_ecr" {
       "ecr:PutImage",
       "ecr:InitiateLayerUpload",
       "ecr:UploadLayerPart",
-      "ecr:CompleteLayerUpload"
+      "ecr:CompleteLayerUpload",
+      "ecr:DescribeImages"
     ]
     resources = [
       module.ecr_backend.repository_arn,
