@@ -6,7 +6,6 @@ on:
 env:
   AWS_REGION: ap-northeast-1
   ECR_REPOSITORY: zuntalk-backend
-  SHARED_ACCOUNT_ID: "448049807848"
   DEV_ACCOUNT_ID: "039612872248"
   PROD_ACCOUNT_ID: "986921280333"
 
@@ -46,12 +45,6 @@ jobs:
           echo "image=$PROD_IMAGE" >> $GITHUB_OUTPUT
           echo "tag=$PROD_TAG" >> $GITHUB_OUTPUT
 
-      - name: Configure AWS credentials (Shared - for ECR)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::${{ env.SHARED_ACCOUNT_ID }}:role/zuntalk-shared-github-actions
-          aws-region: ${{ env.AWS_REGION }}
-
       - name: Generate summary
         run: |
           echo "## 🚀 Currently Deployed Images" >> $GITHUB_STEP_SUMMARY
@@ -72,6 +65,12 @@ jobs:
           else
             echo "⚠️ Dev and Prod are running different images" >> $GITHUB_STEP_SUMMARY
           fi
+
+      - name: Configure AWS credentials (Dev - for ECR)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.DEV_ACCOUNT_ID }}:role/zuntalk-dev-github-actions
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: List available images in ECR
         run: |
