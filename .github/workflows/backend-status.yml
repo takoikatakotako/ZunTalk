@@ -27,6 +27,7 @@ jobs:
       - name: Get Dev deployed image
         id: dev-image
         run: |
+          set -euo pipefail
           DEV_IMAGE=$(aws lambda get-function --function-name zuntalk-backend-dev --query 'Code.ImageUri' --output text)
           DEV_TAG=$(echo $DEV_IMAGE | sed 's/.*://')
           echo "image=$DEV_IMAGE" >> $GITHUB_OUTPUT
@@ -41,6 +42,7 @@ jobs:
       - name: Get Prod deployed image
         id: prod-image
         run: |
+          set -euo pipefail
           PROD_IMAGE=$(aws lambda get-function --function-name zuntalk-backend-prod --query 'Code.ImageUri' --output text)
           PROD_TAG=$(echo $PROD_IMAGE | sed 's/.*://')
           echo "image=$PROD_IMAGE" >> $GITHUB_OUTPUT
@@ -75,6 +77,7 @@ jobs:
 
       - name: List available images in ECR
         run: |
+          set -euo pipefail
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "## 📦 Available Images in ECR (latest 20)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
