@@ -36,6 +36,29 @@ struct LicenseView: View {
             }
 
             Section {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("坂本アヒル様")
+                        .font(.headline)
+
+                    Text("坂本アヒル様の素材を使用しています。")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+
+                    Link(destination: URL(string: "https://x.com/sakamoto_ahr")!) {
+                        HStack {
+                            Text("坂本アヒル様 X（Twitter）")
+                            Spacer()
+                            Image(systemName: "arrow.up.right.square")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                .padding(.vertical, 4)
+            } header: {
+                Text("イラスト")
+            }
+
+            Section {
                 LicenseItemView(
                     name: "VOICEVOX CORE",
                     license: "MIT License",

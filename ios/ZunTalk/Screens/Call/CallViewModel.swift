@@ -11,12 +11,13 @@ class CallViewModel: NSObject, ObservableObject {
     @Published var status: CallStatus = .idle
     @Published var conversationDuration: TimeInterval = 0
     @Published var shouldDismiss = false
+    @Published var shouldRequestReview = false
 
     // MARK: - Constants
 
     private enum Constants {
         static let silenceDetectionTime: TimeInterval = 2.0
-        static let maxConversationDuration: TimeInterval = 60.0
+        static let maxConversationDuration: TimeInterval = 120.0
         static let conversationTimerInterval: TimeInterval = 1.0
         static let locale = Locale(identifier: "ja-JP")
         static let ringtoneAssetName = "maou_se_sound_phone02"
@@ -199,6 +200,9 @@ class CallViewModel: NSObject, ObservableObject {
         // 会話終了
         status = .ended
         conversationTimer?.invalidate()
+
+        // レビューダイアログを表示
+        shouldRequestReview = true
     }
 
     // MARK: - Private Methods - VOICEVOX
