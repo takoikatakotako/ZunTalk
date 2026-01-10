@@ -16,7 +16,7 @@ class CallViewModel: NSObject, ObservableObject {
 
     private enum Constants {
         static let silenceDetectionTime: TimeInterval = 2.0
-        static let maxConversationDuration: TimeInterval = 60.0
+        static let maxConversationDuration: TimeInterval = 120.0
         static let conversationTimerInterval: TimeInterval = 1.0
         static let locale = Locale(identifier: "ja-JP")
         static let ringtoneAssetName = "maou_se_sound_phone02"
