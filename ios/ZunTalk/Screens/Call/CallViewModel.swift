@@ -11,6 +11,7 @@ class CallViewModel: NSObject, ObservableObject {
     @Published var status: CallStatus = .idle
     @Published var conversationDuration: TimeInterval = 0
     @Published var shouldDismiss = false
+    @Published var shouldRequestReview = false
 
     // MARK: - Constants
 
@@ -199,6 +200,9 @@ class CallViewModel: NSObject, ObservableObject {
         // 会話終了
         status = .ended
         conversationTimer?.invalidate()
+
+        // レビューダイアログを表示
+        shouldRequestReview = true
     }
 
     // MARK: - Private Methods - VOICEVOX
