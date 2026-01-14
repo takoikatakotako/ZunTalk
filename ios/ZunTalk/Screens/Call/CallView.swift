@@ -1,8 +1,10 @@
 import SwiftUI
+import StoreKit
 
 struct CallView: View {
     @StateObject private var viewModel = CallViewModel()
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.requestReview) private var requestReview
 
     var body: some View {
         ZStack {
@@ -66,6 +68,11 @@ struct CallView: View {
         .onChange(of: viewModel.shouldDismiss) { oldValue, newValue in
             if newValue {
                 dismiss()
+            }
+        }
+        .onChange(of: viewModel.shouldRequestReview) { oldValue, newValue in
+            if newValue {
+                requestReview()
             }
         }
     }
