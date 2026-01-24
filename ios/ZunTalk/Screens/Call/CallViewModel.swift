@@ -126,17 +126,13 @@ class CallViewModel: NSObject, ObservableObject {
         let initialScript = try await generateInitialResponse()
         guard !shouldDismiss else { return }
 
-        // 音声を合成
-        let initialVoice = try await synthesizeVoice(from: initialScript)
-        guard !shouldDismiss else { return }
-
         // 着信音を停止
         stopRingtone()
         text = initialScript
         startConversationTracking()
 
-        // 音声を再生
-        try await playVoice(initialVoice)
+        // 音声を合成・再生（チャンク処理）
+        try await synthesizeAndPlayVoiceInChunks(from: initialScript)
         guard !shouldDismiss else { return }
 
         // 会話ループを開始
@@ -163,16 +159,12 @@ class CallViewModel: NSObject, ObservableObject {
         let response = try await generateResponse()
         guard !shouldDismiss else { return }
 
-        // 音声を合成
-        let voice = try await synthesizeVoice(from: response)
-        guard !shouldDismiss else { return }
-
         // 応答を会話履歴に追加
         chatMessages.append(ChatMessage(role: .assistant, content: response))
         text = response
 
-        // 音声を再生
-        try await playVoice(voice)
+        // 音声を合成・再生（チャンク処理）
+        try await synthesizeAndPlayVoiceInChunks(from: response)
         guard !shouldDismiss else { return }
 
         // 次の会話へ
@@ -187,15 +179,12 @@ class CallViewModel: NSObject, ObservableObject {
         status = .generatingScript
         let farewellScript = try await textGenerationRepository.generateResponse(inputs: chatMessages)
 
-        // 音声を合成
-        let farewellVoice = try await synthesizeVoice(from: farewellScript)
-
         // 終了メッセージを会話履歴に追加
         chatMessages.append(ChatMessage(role: .assistant, content: farewellScript))
         text = farewellScript
 
-        // 音声を再生
-        try await playVoice(farewellVoice)
+        // 音声を合成・再生（チャンク処理）
+        try await synthesizeAndPlayVoiceInChunks(from: farewellScript)
 
         // 会話終了
         status = .ended
@@ -216,6 +205,57 @@ class CallViewModel: NSObject, ObservableObject {
     private func synthesizeVoice(from script: String) async throws -> Data {
         status = .synthesizingVoice
         return try await voicevoxRepository.synthesize(text: script)
+    }
+
+    private func splitTextIntoChunks(_ text: String) -> [String] {
+        let delimiters: Set<Character> = ["。", "！", "？"]
+        var chunks: [String] = []
+        var currentChunk = ""
+
+        for char in text {
+            currentChunk.append(char)
+            if delimiters.contains(char) {
+                chunks.append(currentChunk)
+                currentChunk = ""
+            }
+        }
+
+        // 最後の残りがあれば追加
+        if !currentChunk.isEmpty {
+            chunks.append(currentChunk)
+        }
+
+        return chunks.filter { !$0.isEmpty }
+    }
+
+    private func synthesizeAndPlayVoiceInChunks(from text: String) async throws {
+        let chunks = splitTextIntoChunks(text)
+
+        guard !chunks.isEmpty else { return }
+
+        // 最初のチャンクを合成
+        var currentAudioData: Data? = try await synthesizeVoice(from: chunks[0])
+
+        for i in 0..<chunks.count {
+            guard !shouldDismiss else { return }
+
+            // 次のチャンクの合成を開始（最後のチャンク以外）
+            let nextSynthesisTask: Task<Data, Error>? = if i < chunks.count - 1 {
+                Task {
+                    try await synthesizeVoice(from: chunks[i + 1])
+                }
+            } else {
+                nil
+            }
+
+            // 現在のチャンクを再生
+            if let audioData = currentAudioData {
+                try await playVoice(audioData)
+            }
+
+            // 次のチャンクの音声データを取得
+            currentAudioData = try await nextSynthesisTask?.value
+        }
     }
 
     // MARK: - Private Methods - Speech Recognition
