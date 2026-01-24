@@ -29,13 +29,20 @@ ZunTalkは、AIを活用した音声通話アプリケーションです。
 flowchart TD
     Start([画面遷移]) --> PlayRingbackTone[発信音再生]
     PlayRingbackTone --> ScriptGeneration[スクリプト生成]
-    ScriptGeneration --> TextToSpeech[音声合成]
-    TextToSpeech --> PlayVoice[音声再生]
-    PlayVoice --> CallDuration{通話時間}
-    CallDuration -->|3分未満| SpeechRecognition[音声認識]
-    CallDuration -->|3分以上| End([終了])
+    ScriptGeneration --> SplitText[テキスト分割<br/>。！？で分割]
+    SplitText --> SynthesizeFirstChunk[最初のチャンク<br/>音声合成]
+    SynthesizeFirstChunk --> ChunkLoop{次のチャンクあり?}
+    ChunkLoop -->|あり| ParallelProcess[並行処理]
+    ParallelProcess --> SynthesizeNext[次チャンク合成]
+    ParallelProcess --> PlayCurrent[現チャンク再生]
+    SynthesizeNext --> ChunkLoop
+    PlayCurrent --> ChunkLoop
+    ChunkLoop -->|なし| LastChunkPlay[最終チャンク再生]
+    LastChunkPlay --> CallDuration{通話時間}
+    CallDuration -->|2分未満| SpeechRecognition[音声認識]
+    CallDuration -->|2分以上| End([終了])
     SpeechRecognition --> SilenceTimeout{2秒無音}
-    SilenceTimeout -->|30文字以上 OR 末尾が !, ?, 。| ScriptGeneration
+    SilenceTimeout -->|検出| ScriptGeneration
     SilenceTimeout -->|継続| SpeechRecognition
 ```
 
