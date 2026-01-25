@@ -91,9 +91,7 @@ struct CallView: View {
             return "音声認識の許可が必要です"
         case .generatingScript:
             return "返答を考え中..."
-        case .synthesizingVoice:
-            return "音声を生成中..."
-        case .playingVoice:
+        case .synthesizingVoice, .playingVoice:
             return "話しています"
         case .recognizingSpeech:
             return "聞いています"
@@ -112,9 +110,9 @@ struct CallView: View {
             return .green
         case .permissionDenied:
             return .red
-        case .generatingScript, .synthesizingVoice, .processingResponse:
+        case .generatingScript, .processingResponse:
             return .blue
-        case .playingVoice:
+        case .synthesizingVoice, .playingVoice:
             return .purple
         case .recognizingSpeech:
             return .green
