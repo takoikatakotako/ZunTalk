@@ -15,7 +15,7 @@ struct CallView: View {
                 Image(.thumbnail)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 200, height: 200)
+                    .frame(width: 180, height: 180)
                     .clipShape(Circle())
 
                 // ステータス表示
@@ -36,6 +36,8 @@ struct CallView: View {
                             .foregroundStyle(Color.gray)
                             .font(Font.system(size: 24))
                             .multilineTextAlignment(.center)
+                            .minimumScaleFactor(0.5)
+                            .lineLimit(nil)
                             .padding(.horizontal, 36)
                     }
                 }

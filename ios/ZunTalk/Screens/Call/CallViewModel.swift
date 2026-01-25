@@ -236,17 +236,12 @@ class CallViewModel: NSObject, ObservableObject {
         // 最初のチャンクを合成
         var currentAudioData: Data? = try await synthesizeVoice(from: chunks[0])
 
-        for i in 0..<chunks.count {
+        // 最初から最後の1つ前まで処理（次のチャンクがある場合）
+        for i in 0..<chunks.count - 1 {
             guard !shouldDismiss else { return }
 
-            // 次のチャンクの合成を開始（最後のチャンク以外）
-            let nextSynthesisTask: Task<Data, Error>? = if i < chunks.count - 1 {
-                Task {
-                    try await synthesizeVoice(from: chunks[i + 1])
-                }
-            } else {
-                nil
-            }
+            // 次のチャンクの合成を並行して開始
+            async let nextAudio = synthesizeVoice(from: chunks[i + 1])
 
             // 現在のチャンクを再生
             if let audioData = currentAudioData {
@@ -254,7 +249,13 @@ class CallViewModel: NSObject, ObservableObject {
             }
 
             // 次のチャンクの音声データを取得
-            currentAudioData = try await nextSynthesisTask?.value
+            currentAudioData = try await nextAudio
+        }
+
+        // 最後のチャンクを再生
+        guard !shouldDismiss else { return }
+        if let audioData = currentAudioData {
+            try await playVoice(audioData)
         }
     }
 
