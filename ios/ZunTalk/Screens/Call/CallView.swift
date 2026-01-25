@@ -15,7 +15,7 @@ struct CallView: View {
                 Image(.thumbnail)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 200, height: 200)
+                    .frame(width: 180, height: 180)
                     .clipShape(Circle())
 
                 // ステータス表示
@@ -36,6 +36,8 @@ struct CallView: View {
                             .foregroundStyle(Color.gray)
                             .font(Font.system(size: 24))
                             .multilineTextAlignment(.center)
+                            .minimumScaleFactor(0.5)
+                            .lineLimit(nil)
                             .padding(.horizontal, 36)
                     }
                 }
@@ -91,9 +93,7 @@ struct CallView: View {
             return "音声認識の許可が必要です"
         case .generatingScript:
             return "返答を考え中..."
-        case .synthesizingVoice:
-            return "音声を生成中..."
-        case .playingVoice:
+        case .synthesizingVoice, .playingVoice:
             return "話しています"
         case .recognizingSpeech:
             return "聞いています"
@@ -112,9 +112,9 @@ struct CallView: View {
             return .green
         case .permissionDenied:
             return .red
-        case .generatingScript, .synthesizingVoice, .processingResponse:
+        case .generatingScript, .processingResponse:
             return .blue
-        case .playingVoice:
+        case .synthesizingVoice, .playingVoice:
             return .purple
         case .recognizingSpeech:
             return .green
