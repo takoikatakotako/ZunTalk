@@ -32,7 +32,7 @@ class CallViewModel: NSObject, ObservableObject {
             暴力的・攻撃的・不快な発言はしないでください。
             """
 
-        static let endConversationPrompt = "会話時間が1分を超えたので、ずんだもんらしく親しみやすい挨拶で会話を終了してください。"
+        static let endConversationPrompt = "会話時間が2分を超えたので、ずんだもんらしく親しみやすい挨拶で会話を終了してください。"
     }
 
     // MARK: - Private Properties - Repositories
