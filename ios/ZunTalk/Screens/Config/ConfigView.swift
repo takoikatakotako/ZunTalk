@@ -16,17 +16,6 @@ struct ConfigView: View {
                 NavigationLink(destination: ModelSelectionView()) {
                     Label("モデル選択", systemImage: "brain")
                 }
-
-                NavigationLink(destination: APIKeyManagementView()) {
-                    Label("APIキー管理", systemImage: "key")
-                }
-
-                // 将来の機能
-                /*
-                NavigationLink(destination: Text("プロンプト設定画面")) {
-                    Label("プロンプト設定", systemImage: "text.bubble")
-                }
-                */
             }
 
             Section("サポート") {
