@@ -11,8 +11,7 @@ struct ConfigView: View {
 
     var body: some View {
         List {
-            // MARK: - AI設定（コメントアウト）
-            /*
+            // MARK: - AI設定
             Section("AI設定") {
                 NavigationLink(destination: ModelSelectionView()) {
                     Label("モデル選択", systemImage: "brain")
@@ -22,11 +21,13 @@ struct ConfigView: View {
                     Label("APIキー管理", systemImage: "key")
                 }
 
+                // 将来の機能
+                /*
                 NavigationLink(destination: Text("プロンプト設定画面")) {
                     Label("プロンプト設定", systemImage: "text.bubble")
                 }
+                */
             }
-            */
 
             Section("サポート") {
                 Link(destination: URL(string: "https://docs.google.com/forms/d/e/1FAIpQLSfqxPpkdiG7JW5qIiz0pf0oisne4HIJZiL8nkhmPmgFAlRwCA/viewform")!) {

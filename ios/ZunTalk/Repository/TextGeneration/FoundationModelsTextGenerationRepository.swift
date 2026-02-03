@@ -1,0 +1,92 @@
+import Foundation
+import FoundationModels
+
+@available(iOS 26.0, *)
+class FoundationModelsTextGenerationRepository: TextGenerationRepository {
+
+    private var session: LanguageModelSession?
+    private let model: SystemLanguageModel
+
+    init() {
+        self.model = SystemLanguageModel.default
+        self.session = nil
+    }
+
+    func generateResponse(inputs: [ChatMessage]) async throws -> String {
+        // Check model availability
+        switch model.availability {
+        case .available:
+            break
+        case .unavailable(let reason):
+            throw FoundationModelsTextGenerationError.modelUnavailable(String(describing: reason))
+        }
+
+        // Convert ChatMessage array to prompt format
+        let prompt = buildPrompt(from: inputs)
+
+        guard !prompt.isEmpty else {
+            throw FoundationModelsTextGenerationError.invalidInput
+        }
+
+        // Create or reuse session
+        if session == nil {
+            let systemPrompt = extractSystemPrompt(from: inputs)
+            session = LanguageModelSession {
+                systemPrompt
+            }
+        }
+
+        guard let session = session else {
+            throw FoundationModelsTextGenerationError.sessionCreationFailed
+        }
+
+        do {
+            // Generate response with appropriate options for Zundamon character
+            let options = GenerationOptions(
+                sampling: .random(probabilityThreshold: 0.9, seed: nil),
+                temperature: 0.8,
+                maximumResponseTokens: 500
+            )
+
+            let response = try await session.respond(
+                to: prompt,
+                options: options
+            )
+
+            guard !response.content.isEmpty else {
+                throw FoundationModelsTextGenerationError.noResponse
+            }
+
+            return response.content
+
+        } catch {
+            throw FoundationModelsTextGenerationError.generationFailed(error)
+        }
+    }
+
+    // MARK: - Private Helpers
+
+    private func extractSystemPrompt(from messages: [ChatMessage]) -> String {
+        return messages.first(where: { $0.role == ChatMessage.Role.system.rawValue })?.content
+            ?? "あなたはずんだもんです。"
+    }
+
+    private func buildPrompt(from messages: [ChatMessage]) -> String {
+        var promptParts: [String] = []
+
+        for message in messages where message.role != ChatMessage.Role.system.rawValue {
+            let prefix = message.role == ChatMessage.Role.user.rawValue ? "User" : "Assistant"
+            promptParts.append("\(prefix): \(message.content)")
+        }
+
+        if let lastMessage = messages.last, lastMessage.role == ChatMessage.Role.user.rawValue {
+            promptParts.append("Assistant:")
+        }
+
+        return promptParts.joined(separator: "\n")
+    }
+
+    deinit {
+        session = nil
+    }
+}
