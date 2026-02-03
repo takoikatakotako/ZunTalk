@@ -5,11 +5,13 @@ import FoundationModels
 class FoundationModelsTextGenerationRepository: TextGenerationRepository {
 
     private var session: LanguageModelSession?
+    private var currentSystemPrompt: String?
     private let model: SystemLanguageModel
 
     init() {
         self.model = SystemLanguageModel.default
         self.session = nil
+        self.currentSystemPrompt = nil
     }
 
     func generateResponse(inputs: [ChatMessage]) async throws -> String {
@@ -28,12 +30,13 @@ class FoundationModelsTextGenerationRepository: TextGenerationRepository {
             throw FoundationModelsTextGenerationError.invalidInput
         }
 
-        // Create or reuse session
-        if session == nil {
-            let systemPrompt = extractSystemPrompt(from: inputs)
+        // Create or reuse session (recreate if system prompt changed)
+        let systemPrompt = extractSystemPrompt(from: inputs)
+        if session == nil || currentSystemPrompt != systemPrompt {
             session = LanguageModelSession {
                 systemPrompt
             }
+            currentSystemPrompt = systemPrompt
         }
 
         guard let session = session else {
@@ -59,7 +62,11 @@ class FoundationModelsTextGenerationRepository: TextGenerationRepository {
 
             return response.content
 
+        } catch let error as FoundationModelsTextGenerationError {
+            // 既にFoundationModelsTextGenerationErrorの場合はそのまま再スロー
+            throw error
         } catch {
+            // その他のエラーはラップ
             throw FoundationModelsTextGenerationError.generationFailed(error)
         }
     }

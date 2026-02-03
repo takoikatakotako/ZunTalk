@@ -1,5 +1,7 @@
 import SwiftUI
+#if canImport(FoundationModels)
 import FoundationModels
+#endif
 
 struct ModelSelectionView: View {
     @StateObject private var viewModel = ModelSelectionViewModel()
@@ -12,17 +14,13 @@ struct ModelSelectionView: View {
                     let isAvailable = isModelTypeAvailable(modelType)
 
                     Button(action: {
-                        if isAvailable {
-                            if modelType == .foundationModels {
-                                // iOS 26+でもデバイスがApple Intelligence非対応の場合をチェック
-                                if #available(iOS 26.0, *) {
-                                    checkDeviceSupportAndSelect(modelType)
-                                } else {
-                                    viewModel.selectModel(modelType)
-                                }
-                            } else {
-                                viewModel.selectModel(modelType)
+                        if modelType == .foundationModels {
+                            // iOS 26+でもデバイスがApple Intelligence非対応の場合をチェック
+                            if #available(iOS 26.0, *) {
+                                checkDeviceSupportAndSelect(modelType)
                             }
+                        } else {
+                            viewModel.selectModel(modelType)
                         }
                     }) {
                         HStack(spacing: 16) {
