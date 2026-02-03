@@ -27,21 +27,23 @@ jobs:
       - name: List available simulators
         run: xcrun simctl list devices available
 
-      - name: Run tests
-        working-directory: ios
-        run: |
-          xcodebuild test \
-            -scheme ZunTalk-Development \
-            -sdk iphonesimulator \
-            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5' \
-            -enableCodeCoverage YES \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO
+      # TODO: VOICEVOXフレームワークのCI対応後に有効化
+      # 別プルリクで対応予定
+      # - name: Run tests
+      #   working-directory: ios
+      #   run: |
+      #     xcodebuild test \
+      #       -scheme ZunTalk-Development \
+      #       -sdk iphonesimulator \
+      #       -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5' \
+      #       -enableCodeCoverage YES \
+      #       CODE_SIGN_IDENTITY="" \
+      #       CODE_SIGNING_REQUIRED=NO
 
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: |
-            ios/build/Logs/Test/*.xcresult
+      # - name: Upload test results
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: test-results
+      #     path: |
+      #       ios/build/Logs/Test/*.xcresult
