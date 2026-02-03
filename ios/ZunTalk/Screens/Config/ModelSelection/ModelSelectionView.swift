@@ -5,7 +5,6 @@ import FoundationModels
 
 struct ModelSelectionView: View {
     @StateObject private var viewModel = ModelSelectionViewModel()
-    @State private var showUnsupportedDeviceAlert = false
 
     var body: some View {
         List {
@@ -14,14 +13,7 @@ struct ModelSelectionView: View {
                     let isAvailable = isModelTypeAvailable(modelType)
 
                     Button(action: {
-                        if modelType == .foundationModels {
-                            // iOS 26+でもデバイスがApple Intelligence非対応の場合をチェック
-                            if #available(iOS 26.0, *) {
-                                checkDeviceSupportAndSelect(modelType)
-                            }
-                        } else {
-                            viewModel.selectModel(modelType)
-                        }
+                        viewModel.selectModel(modelType)
                     }) {
                         HStack(spacing: 16) {
                             Image(systemName: modelType.iconName)
@@ -81,28 +73,10 @@ struct ModelSelectionView: View {
         .onAppear {
             viewModel.updateAPIKeyStatus()
         }
-        .alert("デバイス非対応", isPresented: $showUnsupportedDeviceAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("お使いのデバイスはApple Intelligenceに対応していないため、Foundation Modelsを使用できません。\n\n対応デバイス:\n• iPhone 15 Pro / Pro Max以降\n• iPad（M1以降）\n• Mac（M1以降）")
-        }
     }
 
     private func isModelTypeAvailable(_ modelType: AIModelType) -> Bool {
         return modelType.isAvailable
-    }
-
-    @available(iOS 26.0, *)
-    private func checkDeviceSupportAndSelect(_ modelType: AIModelType) {
-        let model = SystemLanguageModel.default
-        switch model.availability {
-        case .available:
-            // デバイス対応OK
-            viewModel.selectModel(modelType)
-        case .unavailable:
-            // デバイス非対応
-            showUnsupportedDeviceAlert = true
-        }
     }
 }
 

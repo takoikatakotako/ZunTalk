@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationModels)
+import FoundationModels
+#endif
 
 enum AIModelType: String, CaseIterable {
     case freeServer = "free_server"
@@ -35,7 +38,17 @@ enum AIModelType: String, CaseIterable {
         switch self {
         case .foundationModels:
             if #available(iOS 26.0, *) {
-                return true
+                #if canImport(FoundationModels)
+                let model = SystemLanguageModel.default
+                switch model.availability {
+                case .available:
+                    return true
+                case .unavailable:
+                    return false
+                }
+                #else
+                return false
+                #endif
             }
             return false
         default:
