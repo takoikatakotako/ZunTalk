@@ -26,10 +26,6 @@ class FoundationModelsTextGenerationRepository: TextGenerationRepository {
         // Convert ChatMessage array to prompt format
         let prompt = buildPrompt(from: inputs)
 
-        guard !prompt.isEmpty else {
-            throw FoundationModelsTextGenerationError.invalidInput
-        }
-
         // Create or reuse session (recreate if system prompt changed)
         let systemPrompt = extractSystemPrompt(from: inputs)
         if session == nil || currentSystemPrompt != systemPrompt {
@@ -56,11 +52,14 @@ class FoundationModelsTextGenerationRepository: TextGenerationRepository {
                 options: options
             )
 
-            guard !response.content.isEmpty else {
+            // 前後の空白・改行を削除
+            let trimmedContent = response.content.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            guard !trimmedContent.isEmpty else {
                 throw FoundationModelsTextGenerationError.noResponse
             }
 
-            return response.content
+            return trimmedContent
 
         } catch let error as FoundationModelsTextGenerationError {
             // 既にFoundationModelsTextGenerationErrorの場合はそのまま再スロー
@@ -86,7 +85,10 @@ class FoundationModelsTextGenerationRepository: TextGenerationRepository {
             promptParts.append("\(prefix): \(message.content)")
         }
 
-        if let lastMessage = messages.last, lastMessage.role == ChatMessage.Role.user.rawValue {
+        // システムメッセージのみの場合、または最後がユーザーメッセージの場合は
+        // Assistantの応答を促すために"Assistant:"を追加
+        let nonSystemMessages = messages.filter { $0.role != ChatMessage.Role.system.rawValue }
+        if nonSystemMessages.isEmpty || nonSystemMessages.last?.role == ChatMessage.Role.user.rawValue {
             promptParts.append("Assistant:")
         }
 
