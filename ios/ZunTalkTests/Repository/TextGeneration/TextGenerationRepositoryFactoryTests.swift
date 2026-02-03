@@ -14,17 +14,6 @@ struct TextGenerationRepositoryFactoryTests {
         #expect(repository is OpenAITextGenerationRepository)
     }
 
-    @Test func testFactoryCreatesOpenAIRepository() async throws {
-        // Given: モデルタイプがopenAIに設定されている
-        UserSettings.shared.selectedModelType = .openAI
-
-        // When: Factoryからリポジトリを作成
-        let repository = TextGenerationRepositoryFactory.create()
-
-        // Then: OpenAITextGenerationRepositoryが返される（現時点では）
-        #expect(repository is OpenAITextGenerationRepository)
-    }
-
     @Test
     @available(iOS 26.0, *)
     func testFactoryCreatesFoundationModelsRepositoryOnIOS26() async throws {

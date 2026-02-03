@@ -9,11 +9,6 @@ struct TextGenerationRepositoryFactory {
         case .freeServer:
             return OpenAITextGenerationRepository()
 
-        case .openAI:
-            // Future implementation: Direct OpenAI API with user's key
-            // For now, fallback to free server
-            return OpenAITextGenerationRepository()
-
         case .foundationModels:
             if #available(iOS 26.0, *) {
                 return FoundationModelsTextGenerationRepository()

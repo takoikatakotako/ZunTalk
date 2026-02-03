@@ -66,23 +66,6 @@ struct ModelSelectionView: View {
             } footer: {
                 Text("選択したモデルが会話に使用されます。Foundation Modelsは完全無料でプライバシー重視のオンデバイスAIです。")
             }
-
-            if viewModel.selectedModelType == .openAI {
-                Section {
-                    NavigationLink(destination: OpenAIAPIKeySettingView()) {
-                        HStack {
-                            Label("APIキーを設定", systemImage: "key.fill")
-                            Spacer()
-                            if viewModel.hasOpenAIAPIKey {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
-                            }
-                        }
-                    }
-                } footer: {
-                    Text("OpenAIを使用するには、APIキーの設定が必要です。")
-                }
-            }
         }
         .navigationTitle("モデル選択")
         .navigationBarTitleDisplayMode(.inline)
