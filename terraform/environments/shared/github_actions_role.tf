@@ -81,3 +81,29 @@ resource "aws_iam_role_policy" "github_actions_ecr" {
   role   = aws_iam_role.github_actions.id
   policy = data.aws_iam_policy_document.github_actions_ecr.json
 }
+
+# =============================================================================
+# S3 Read Policy
+# GitHub ActionsからS3リソースバケットを読み取るための権限
+# =============================================================================
+
+data "aws_iam_policy_document" "github_actions_s3" {
+  # S3リソースの読み取り
+  statement {
+    effect = "Allow"
+    actions = [
+      "s3:GetObject",
+      "s3:ListBucket"
+    ]
+    resources = [
+      module.s3_resources.bucket_arn,
+      "${module.s3_resources.bucket_arn}/*"
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "github_actions_s3" {
+  name   = "S3ReadPolicy"
+  role   = aws_iam_role.github_actions.id
+  policy = data.aws_iam_policy_document.github_actions_s3.json
+}

@@ -31,3 +31,21 @@ module "ecr_slack_notifier" {
     Name = "zuntalk-slack-notifier"
   }
 }
+
+# =============================================================================
+# S3 Bucket for Resources
+# VOICEVOXフレームワーク、Open JTalk辞書、音声モデルなどの共有リソース
+# =============================================================================
+
+module "s3_resources" {
+  source = "../../modules/s3"
+
+  bucket_name                        = "zuntalk-resources"
+  enable_versioning                  = true
+  enable_lifecycle_rule              = true
+  noncurrent_version_expiration_days = 90
+
+  tags = {
+    Name = "zuntalk-resources"
+  }
+}

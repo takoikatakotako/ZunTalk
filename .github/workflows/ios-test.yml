@@ -27,23 +27,42 @@ jobs:
       - name: List available simulators
         run: xcrun simctl list devices available
 
-      # TODO: VOICEVOXフレームワークのCI対応後に有効化
-      # 別プルリクで対応予定
-      # - name: Run tests
-      #   working-directory: ios
-      #   run: |
-      #     xcodebuild test \
-      #       -scheme ZunTalk-Development \
-      #       -sdk iphonesimulator \
-      #       -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5' \
-      #       -enableCodeCoverage YES \
-      #       CODE_SIGN_IDENTITY="" \
-      #       CODE_SIGNING_REQUIRED=NO
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::448049807848:role/zuntalk-shared-github-actions
+          aws-region: ap-northeast-1
 
-      # - name: Upload test results
-      #   if: always()
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: test-results
-      #     path: |
-      #       ios/build/Logs/Test/*.xcresult
+      - name: Download VOICEVOX resources from S3
+        working-directory: ios
+        run: |
+          # VOICEVOXフレームワークをダウンロード
+          aws s3 cp s3://zuntalk-resources/voicevox/voicevox_core.xcframework.zip voicevox_core.xcframework.zip
+          unzip -q voicevox_core.xcframework.zip -d ZunTalk/Frameworks/
+
+          # Open JTalk辞書をダウンロード
+          aws s3 cp s3://zuntalk-resources/voicevox/open_jtalk_dic_utf_8-1.11.zip open_jtalk_dic_utf_8-1.11.zip
+          unzip -q open_jtalk_dic_utf_8-1.11.zip -d ZunTalk/Resources/
+
+          # 音声モデルをダウンロード
+          mkdir -p ZunTalk/Resources/Models
+          aws s3 sync s3://zuntalk-resources/voicevox/models/ ZunTalk/Resources/Models/
+
+      - name: Run tests
+        working-directory: ios
+        run: |
+          xcodebuild test \
+            -scheme ZunTalk-Development \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=18.5' \
+            -enableCodeCoverage YES \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            ios/build/Logs/Test/*.xcresult
