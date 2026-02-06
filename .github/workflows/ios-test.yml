@@ -16,6 +16,9 @@ jobs:
   test:
     name: Run iOS Tests
     runs-on: macos-15
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout code
