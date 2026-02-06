@@ -34,19 +34,22 @@ jobs:
           aws-region: ap-northeast-1
 
       - name: Download VOICEVOX resources from S3
-        working-directory: ios
         run: |
-          # VOICEVOXフレームワークをダウンロード
-          aws s3 cp s3://zuntalk-resources/voicevox/voicevox_core.xcframework.zip voicevox_core.xcframework.zip
-          unzip -q voicevox_core.xcframework.zip -d ZunTalk/Frameworks/
+          # S3から libs/ にダウンロード
+          aws s3 sync s3://zuntalk-resources/ libs/ \
+            --exclude ".DS_Store" \
+            --exclude "*/.DS_Store"
 
-          # Open JTalk辞書をダウンロード
-          aws s3 cp s3://zuntalk-resources/voicevox/open_jtalk_dic_utf_8-1.11.zip open_jtalk_dic_utf_8-1.11.zip
-          unzip -q open_jtalk_dic_utf_8-1.11.zip -d ZunTalk/Resources/
+          # VOICEVOXフレームワークを配置
+          cp -R libs/voicevox_core/voicevox_core-0.16.3/voicevox_core.xcframework ios/Voicevox/
+          cp -R libs/voicevox_onnxruntime-ios-xcframework/voicevox_onnxruntime-ios-xcframework-1.17.3/voicevox_onnxruntime.xcframework ios/Voicevox/
 
-          # 音声モデルをダウンロード
-          mkdir -p ZunTalk/Resources/Models
-          aws s3 sync s3://zuntalk-resources/voicevox/models/ ZunTalk/Resources/Models/
+          # Open JTalk辞書を配置
+          cp -R libs/voicevox_core/voicevox_core-0.16.3/dict/open_jtalk_dic_utf_8-1.11 ios/ZunTalk/
+
+          # 音声モデルを配置
+          mkdir -p ios/ZunTalk/vvms
+          cp libs/voicevox_core/voicevox_core-0.16.3/models/vvms/*.vvm ios/ZunTalk/vvms/
 
       - name: Run tests
         working-directory: ios
