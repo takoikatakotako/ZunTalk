@@ -47,6 +47,11 @@ jobs:
           echo "Downloaded files:"
           ls -la libs/
 
+          # 既存のフレームワークを削除（マージを避けるため）
+          echo "Removing existing frameworks..."
+          rm -rf ios/Voicevox/voicevox_core.xcframework
+          rm -rf ios/Voicevox/voicevox_onnxruntime.xcframework
+
           # VOICEVOXフレームワークを配置
           echo "Copying voicevox_core.xcframework..."
           ls -la libs/voicevox_core/voicevox_core-0.16.3/
