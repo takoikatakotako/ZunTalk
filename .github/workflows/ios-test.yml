@@ -52,14 +52,14 @@ jobs:
           rm -rf ios/Voicevox/voicevox_core.xcframework
           rm -rf ios/Voicevox/voicevox_onnxruntime.xcframework
 
-          # VOICEVOXフレームワークを配置
+          # VOICEVOXフレームワークを配置（rsyncを使用して確実にコピー）
           echo "Copying voicevox_core.xcframework..."
           ls -la libs/voicevox_core/voicevox_core-0.16.3/
-          cp -R libs/voicevox_core/voicevox_core-0.16.3/voicevox_core.xcframework ios/Voicevox/
+          rsync -a libs/voicevox_core/voicevox_core-0.16.3/voicevox_core.xcframework ios/Voicevox/
 
           echo "Copying voicevox_onnxruntime.xcframework..."
           ls -la libs/voicevox_onnxruntime-ios-xcframework/voicevox_onnxruntime-ios-xcframework-1.17.3/
-          cp -R libs/voicevox_onnxruntime-ios-xcframework/voicevox_onnxruntime-ios-xcframework-1.17.3/voicevox_onnxruntime.xcframework ios/Voicevox/
+          rsync -a libs/voicevox_onnxruntime-ios-xcframework/voicevox_onnxruntime-ios-xcframework-1.17.3/voicevox_onnxruntime.xcframework ios/Voicevox/
 
           # Open JTalk辞書を配置
           echo "Copying Open JTalk dictionary..."
