@@ -41,8 +41,6 @@ module "s3_resources" {
   source = "../../modules/s3"
 
   bucket_name                        = "zuntalk-resources"
-  enable_versioning                  = true
-  enable_lifecycle_rule              = true
   noncurrent_version_expiration_days = 90
 
   tags = {

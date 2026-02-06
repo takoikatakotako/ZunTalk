@@ -16,7 +16,6 @@ resource "aws_s3_bucket_public_access_block" "default" {
 
 # バージョニング設定
 resource "aws_s3_bucket_versioning" "default" {
-  count  = var.enable_versioning ? 1 : 0
   bucket = aws_s3_bucket.default.id
 
   versioning_configuration {
@@ -37,7 +36,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
 
 # ライフサイクルルール
 resource "aws_s3_bucket_lifecycle_configuration" "default" {
-  count  = var.enable_lifecycle_rule ? 1 : 0
   bucket = aws_s3_bucket.default.id
 
   rule {

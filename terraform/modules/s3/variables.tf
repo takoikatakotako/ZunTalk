@@ -3,12 +3,6 @@ variable "bucket_name" {
   type        = string
 }
 
-variable "enable_versioning" {
-  description = "Enable versioning for the bucket"
-  type        = bool
-  default     = true
-}
-
 variable "sse_algorithm" {
   description = "Server-side encryption algorithm (AES256 or aws:kms)"
   type        = string
@@ -37,12 +31,6 @@ variable "restrict_public_buckets" {
   description = "Restrict public bucket policies"
   type        = bool
   default     = true
-}
-
-variable "enable_lifecycle_rule" {
-  description = "Enable lifecycle rule for old versions"
-  type        = bool
-  default     = false
 }
 
 variable "noncurrent_version_expiration_days" {
