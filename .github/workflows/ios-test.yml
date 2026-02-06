@@ -43,16 +43,31 @@ jobs:
             --exclude ".DS_Store" \
             --exclude "*/.DS_Store"
 
+          # ダウンロード内容を確認
+          echo "Downloaded files:"
+          ls -la libs/
+
           # VOICEVOXフレームワークを配置
+          echo "Copying voicevox_core.xcframework..."
+          ls -la libs/voicevox_core/voicevox_core-0.16.3/
           cp -R libs/voicevox_core/voicevox_core-0.16.3/voicevox_core.xcframework ios/Voicevox/
+
+          echo "Copying voicevox_onnxruntime.xcframework..."
+          ls -la libs/voicevox_onnxruntime-ios-xcframework/voicevox_onnxruntime-ios-xcframework-1.17.3/
           cp -R libs/voicevox_onnxruntime-ios-xcframework/voicevox_onnxruntime-ios-xcframework-1.17.3/voicevox_onnxruntime.xcframework ios/Voicevox/
 
           # Open JTalk辞書を配置
+          echo "Copying Open JTalk dictionary..."
           cp -R libs/voicevox_core/voicevox_core-0.16.3/dict/open_jtalk_dic_utf_8-1.11 ios/ZunTalk/
 
           # 音声モデルを配置
+          echo "Copying voice models..."
           mkdir -p ios/ZunTalk/vvms
           cp libs/voicevox_core/voicevox_core-0.16.3/models/vvms/*.vvm ios/ZunTalk/vvms/
+
+          # 配置結果を確認
+          echo "Frameworks in ios/Voicevox:"
+          ls -la ios/Voicevox/
 
       - name: Run tests
         working-directory: ios
