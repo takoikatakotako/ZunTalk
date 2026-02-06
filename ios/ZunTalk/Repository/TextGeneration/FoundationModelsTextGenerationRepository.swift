@@ -1,4 +1,5 @@
 import Foundation
+#if canImport(FoundationModels)
 import FoundationModels
 
 @available(iOS 26.0, *)
@@ -99,3 +100,4 @@ class FoundationModelsTextGenerationRepository: TextGenerationRepository {
         session = nil
     }
 }
+#endif
