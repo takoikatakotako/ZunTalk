@@ -15,7 +15,15 @@ final class ZunTalkUITests: XCTestCase {
         // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
 
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
+        // In UI tests it's important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
+    }
+
+    /// UIテスト用のアプリインスタンスを作成（API呼び出しをスキップ）
+    private func createTestApp() -> XCUIApplication {
+        let app = XCUIApplication()
+        // UIテスト時はAPI呼び出しをスキップしてLambdaのコールドスタート問題を回避
+        app.launchArguments = ["UI-TESTING", "SKIP-API-CALLS"]
+        return app
     }
 
     override func tearDownWithError() throws {
@@ -24,11 +32,13 @@ final class ZunTalkUITests: XCTestCase {
 
     @MainActor
     func testExample() throws {
-        // UI tests must launch the application that they test.
-        let app = XCUIApplication()
+        // UIテスト: アプリが正常に起動することを確認
+        let app = createTestApp()
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+        // アプリが起動したことを確認
+        let appRunning = app.wait(for: .runningForeground, timeout: 5)
+        XCTAssertTrue(appRunning, "App should be running in foreground")
     }
 
     @MainActor
@@ -38,4 +48,5 @@ final class ZunTalkUITests: XCTestCase {
             XCUIApplication().launch()
         }
     }
+
 }

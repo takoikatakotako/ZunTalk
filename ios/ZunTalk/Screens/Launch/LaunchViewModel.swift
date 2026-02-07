@@ -14,6 +14,15 @@ class LaunchViewModel: ObservableObject {
     func checkAppStatus() async {
         appStatus = .loading
 
+        // UIテスト時はAPI呼び出しをスキップ
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("SKIP-API-CALLS") {
+            print("⚠️ [DEBUG] Skipping API calls for UI testing")
+            appStatus = .ready
+            return
+        }
+        #endif
+
         do {
             let appInfo = try await appInfoRepository.fetchAppInfo()
 

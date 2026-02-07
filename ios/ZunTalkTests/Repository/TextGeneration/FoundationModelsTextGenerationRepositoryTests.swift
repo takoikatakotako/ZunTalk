@@ -1,6 +1,7 @@
 import Testing
 @testable import ZunTalk
 
+#if canImport(FoundationModels)
 struct FoundationModelsTextGenerationRepositoryTests {
 
     @Test
@@ -108,3 +109,4 @@ struct FoundationModelsTextGenerationRepositoryTests {
         #expect(!response2.isEmpty)
     }
 }
+#endif

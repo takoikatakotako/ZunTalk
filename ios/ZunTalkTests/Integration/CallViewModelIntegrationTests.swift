@@ -15,6 +15,7 @@ struct CallViewModelIntegrationTests {
         #expect(viewModel.status == .idle)
     }
 
+    #if canImport(FoundationModels)
     @Test
     @available(iOS 26.0, *)
     func testCallViewModelWithFoundationModels() async throws {
@@ -27,6 +28,7 @@ struct CallViewModelIntegrationTests {
         // Then: ViewModelが正常に初期化される
         #expect(viewModel.status == .idle)
     }
+    #endif
 
     @Test func testRepositorySwitchingBetweenTypes() async throws {
         // Given: 異なるモデルタイプでViewModelを作成

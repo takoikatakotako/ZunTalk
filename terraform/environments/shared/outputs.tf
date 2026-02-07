@@ -32,6 +32,20 @@ output "ecr_slack_notifier_repository_name" {
 }
 
 # =============================================================================
+# S3 Outputs
+# =============================================================================
+
+output "s3_resources_bucket_name" {
+  description = "The name of the resources S3 bucket"
+  value       = module.s3_resources.bucket_name
+}
+
+output "s3_resources_bucket_arn" {
+  description = "The ARN of the resources S3 bucket"
+  value       = module.s3_resources.bucket_arn
+}
+
+# =============================================================================
 # IAM Outputs
 # =============================================================================
 

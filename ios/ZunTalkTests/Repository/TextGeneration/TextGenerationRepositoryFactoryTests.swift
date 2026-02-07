@@ -14,6 +14,7 @@ struct TextGenerationRepositoryFactoryTests {
         #expect(repository is OpenAITextGenerationRepository)
     }
 
+    #if canImport(FoundationModels)
     @Test
     @available(iOS 26.0, *)
     func testFactoryCreatesFoundationModelsRepositoryOnIOS26() async throws {
@@ -26,6 +27,7 @@ struct TextGenerationRepositoryFactoryTests {
         // Then: FoundationModelsTextGenerationRepositoryが返される
         #expect(repository is FoundationModelsTextGenerationRepository)
     }
+    #endif
 
     @Test func testFactoryFallbackToFreeServerOnUnsupportedOS() async throws {
         // このテストはiOS 26未満の環境で実行される
