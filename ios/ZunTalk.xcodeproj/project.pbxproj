@@ -76,10 +76,6 @@
 				"open_jtalk_dic_utf_8-1.11/sys.dic",
 				"open_jtalk_dic_utf_8-1.11/unk.dic",
 				vvms/0.vvm,
-				vvms/1.vvm,
-				vvms/2.vvm,
-				vvms/3.vvm,
-				vvms/4.vvm,
 			);
 			target = 1780EE5F2E313B1A00CF634A /* ZunTalk */;
 		};
