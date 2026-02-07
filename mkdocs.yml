@@ -1,0 +1,52 @@
+site_name: ZunTalk
+site_url: https://takoikatakotako.github.io/ZunTalk/
+site_description: ずんだもんと音声で会話できるiOSアプリ
+
+theme:
+  name: material
+  language: ja
+  palette:
+    primary: green
+    accent: light green
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - search.suggest
+    - search.highlight
+
+nav:
+  - ホーム: index.md
+  - はじめに:
+      - プロジェクト概要: getting-started/overview.md
+      - ローカル開発環境: local-development.md
+      - ライブラリ管理: libs-management.md
+  - アーキテクチャ:
+      - システム構成: architecture/system.md
+      - iOS アプリ: architecture/ios.md
+      - バックエンド: architecture/backend.md
+      - インフラ: architecture/infrastructure.md
+  - API:
+      - API仕様: api/specification.md
+  - 開発ガイド:
+      - コーディング規約: development/coding-style.md
+      - CI/CD: development/cicd.md
+      - デプロイ: development/deployment.md
+
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+  - search:
+      lang: ja

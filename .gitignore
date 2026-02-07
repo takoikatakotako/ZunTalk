@@ -136,4 +136,6 @@ backend/.idea/
 **/*.tfstate.*
 **/secret.auto.tfvars
 
-
+# MkDocs
+site/
+.cache/
