@@ -11,6 +11,8 @@
 		176AC9AD2E48FB1C00A4F009 /* voicevox_core.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 176AC9AB2E48FB1C00A4F009 /* voicevox_core.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		176AC9B02E48FB4100A4F009 /* voicevox_onnxruntime.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 176AC9AF2E48FB4100A4F009 /* voicevox_onnxruntime.xcframework */; };
 		176AC9B12E48FB4100A4F009 /* voicevox_onnxruntime.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 176AC9AF2E48FB4100A4F009 /* voicevox_onnxruntime.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		17AE5B662F378E6700BAC024 /* open_jtalk_dic_utf_8-1.11 in Resources */ = {isa = PBXBuildFile; fileRef = 17AE5B652F378E6600BAC024 /* open_jtalk_dic_utf_8-1.11 */; };
+		17AE5B682F378E7600BAC024 /* vvms in Resources */ = {isa = PBXBuildFile; fileRef = 17AE5B672F378E7600BAC024 /* vvms */; };
 		17DD5D532EEB21EB00DA8574 /* Development.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 17DD5D522EEB21EB00DA8574 /* Development.xcconfig */; };
 		17DD5D552EEB21F800DA8574 /* Production.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 17DD5D542EEB21F800DA8574 /* Production.xcconfig */; };
 /* End PBXBuildFile section */
@@ -53,6 +55,8 @@
 		1780EE602E313B1A00CF634A /* ZunTalk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ZunTalk.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1780EE6D2E313B1B00CF634A /* ZunTalkTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ZunTalkTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1780EE772E313B1B00CF634A /* ZunTalkUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ZunTalkUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		17AE5B652F378E6600BAC024 /* open_jtalk_dic_utf_8-1.11 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "open_jtalk_dic_utf_8-1.11"; path = "ZunTalk/open_jtalk_dic_utf_8-1.11"; sourceTree = "<group>"; };
+		17AE5B672F378E7600BAC024 /* vvms */ = {isa = PBXFileReference; lastKnownFileType = folder; name = vvms; path = ZunTalk/vvms; sourceTree = "<group>"; };
 		17DD5D522EEB21EB00DA8574 /* Development.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Development.xcconfig; sourceTree = "<group>"; };
 		17DD5D542EEB21F800DA8574 /* Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Production.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -62,6 +66,16 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				"open_jtalk_dic_utf_8-1.11/char.bin",
+				"open_jtalk_dic_utf_8-1.11/COPYING",
+				"open_jtalk_dic_utf_8-1.11/left-id.def",
+				"open_jtalk_dic_utf_8-1.11/matrix.bin",
+				"open_jtalk_dic_utf_8-1.11/pos-id.def",
+				"open_jtalk_dic_utf_8-1.11/rewrite.def",
+				"open_jtalk_dic_utf_8-1.11/right-id.def",
+				"open_jtalk_dic_utf_8-1.11/sys.dic",
+				"open_jtalk_dic_utf_8-1.11/unk.dic",
+				vvms/0.vvm,
 			);
 			target = 1780EE5F2E313B1A00CF634A /* ZunTalk */;
 		};
@@ -127,6 +141,8 @@
 		1780EE572E313B1A00CF634A = {
 			isa = PBXGroup;
 			children = (
+				17AE5B672F378E7600BAC024 /* vvms */,
+				17AE5B652F378E6600BAC024 /* open_jtalk_dic_utf_8-1.11 */,
 				1780EE622E313B1A00CF634A /* ZunTalk */,
 				1780EE702E313B1B00CF634A /* ZunTalkTests */,
 				1780EE7A2E313B1B00CF634A /* ZunTalkUITests */,
@@ -269,7 +285,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				17DD5D552EEB21F800DA8574 /* Production.xcconfig in Resources */,
+				17AE5B662F378E6700BAC024 /* open_jtalk_dic_utf_8-1.11 in Resources */,
 				17DD5D532EEB21EB00DA8574 /* Development.xcconfig in Resources */,
+				17AE5B682F378E7600BAC024 /* vvms in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

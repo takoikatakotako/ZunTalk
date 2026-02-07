@@ -8,40 +8,9 @@ class VoicevoxRepository: TextToSpeechRepository {
     // MARK: - TextToSpeechRepository Implementation
     
     func installVoicevox() async throws {
-        // Resource URL
-        let resourcePath = Bundle.main.resourcePath!
-        let resourceURL = URL(fileURLWithPath: resourcePath)
-
-        // Documents URL
-        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-
-        // Create Voice Model Directory
-        let voiceModelDirectoryName = "vvms"
-        let vvmsDirectory = documentsURL.appendingPathComponent(voiceModelDirectoryName)
-        try createDirectoryIfNotExist(at: vvmsDirectory)
-
-        // Copy Voice Model File
-        let voiceModelFileName = "0.vvm"
-        let voiceModelFileURL = vvmsDirectory.appendingPathComponent(voiceModelFileName)
-        try copyFile(
-            from: resourceURL.appendingPathComponent(voiceModelFileName),
-            to: voiceModelFileURL
-        )
-
-        // Create Open JTalk Directory
-        let openJTalkDirectoryName = "open_jtalk_dic_utf_8-1.11"
-        let openJTalkDirectory = documentsURL.appendingPathComponent(openJTalkDirectoryName)
-        try createDirectoryIfNotExist(at: openJTalkDirectory)
-
-        // Copy Open JTalk Files
-        let openJTalkFilenames = ["char.bin", "COPYING", "left-id.def", "matrix.bin", "pos-id.def", "rewrite.def", "right-id.def", "sys.dic", "unk.dic"]
-        for filename in openJTalkFilenames {
-            let fileURL = openJTalkDirectory.appendingPathComponent(filename)
-            try copyFile(
-                from: resourceURL.appendingPathComponent(filename),
-                to: fileURL
-            )
-        }
+        // リソースはバンドル内にフォルダ参照として配置されているため、
+        // コピー不要。setupSynthesizer()で直接バンドルから読み込む。
+        print("✅ VOICEVOX resources are ready in bundle (no copy needed)")
     }
     
     func setupSynthesizer() throws {
@@ -62,10 +31,11 @@ class VoicevoxRepository: TextToSpeechRepository {
             throw VoicevoxError.onnxruntimeInitFailed
         }
         
-        // Load Open JTalk
-        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        // Load Open JTalk (directly from bundle)
+        let bundlePath = Bundle.main.resourcePath!
+        let bundleURL = URL(fileURLWithPath: bundlePath)
         let openJTalkDirectoryName = "open_jtalk_dic_utf_8-1.11"
-        let openJTalkDirectory = documentsURL.appendingPathComponent(openJTalkDirectoryName)
+        let openJTalkDirectory = bundleURL.appendingPathComponent(openJTalkDirectoryName)
         let openJTalkDicDir: UnsafeMutablePointer<CChar>! = strdup(openJTalkDirectory.path())
         var openJtalk: OpaquePointer?
         let openJtalkRcNewResultCode: Int32 = voicevox_open_jtalk_rc_new(openJTalkDicDir, &openJtalk)
@@ -84,9 +54,9 @@ class VoicevoxRepository: TextToSpeechRepository {
         voicevox_open_jtalk_rc_delete(openJtalk)
         
         
-        // load model
+        // load model (directly from bundle)
         let voiceModelDirectoryName = "vvms"
-        let vvmsDirectory = documentsURL.appendingPathComponent(voiceModelDirectoryName)
+        let vvmsDirectory = bundleURL.appendingPathComponent(voiceModelDirectoryName)
         let voiceModelFileName = "0.vvm"
         let voiceModelFileURL = vvmsDirectory.appendingPathComponent(voiceModelFileName)
         let voiceModelPath: UnsafeMutablePointer<CChar>! = strdup(voiceModelFileURL.path())
@@ -148,21 +118,4 @@ class VoicevoxRepository: TextToSpeechRepository {
         cleanupSynthesizer()
     }
     
-    // MARK: - Private Methods
-    
-    private func createDirectoryIfNotExist(at url: URL) throws {
-         // すでに存在していれば何もしない
-         if FileManager.default.fileExists(atPath: url.path, isDirectory: nil) {
-             return
-         }
-         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true, attributes: nil)
-     }
-     
-     private func copyFile(from sourceURL: URL, to destinationURL: URL) throws {
-         // すでにファイルが存在していたらスキップ
-         if FileManager.default.fileExists(atPath: destinationURL.path) {
-             return
-         }
-         try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
-     }
 }

@@ -8,9 +8,9 @@
       "Bash(tee:*)",
       "Bash(gh run list:*)",
       "Bash(gh run view:*)",
-      "Bash(git commit:*)",
       "Bash(gh pr checks:*)",
-      "Bash(gh run watch:*)"
+      "Bash(gh run watch:*)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": []
   }
