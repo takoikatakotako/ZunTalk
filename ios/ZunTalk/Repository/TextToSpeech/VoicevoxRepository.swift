@@ -11,6 +11,35 @@ class VoicevoxRepository: TextToSpeechRepository {
         // リソースはバンドル内にフォルダ参照として配置されているため、
         // コピー不要。setupSynthesizer()で直接バンドルから読み込む。
         print("✅ VOICEVOX resources are ready in bundle (no copy needed)")
+
+        // MIGRATION: v1.5.0 - 古いDocumentsディレクトリのリソースを削除
+        // v1.6.0以降で削除予定
+        try? await cleanupLegacyResources()
+    }
+
+    /// 古いバージョンでDocumentsにコピーしていたVOICEVOXリソースを削除
+    /// - Note: v1.5.0で追加、v1.6.0以降で削除予定
+    private func cleanupLegacyResources() async throws {
+        let fileManager = FileManager.default
+        guard let documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first else {
+            return
+        }
+
+        let legacyPaths = [
+            documentsDirectory.appendingPathComponent("open_jtalk_dic_utf_8-1.11"),
+            documentsDirectory.appendingPathComponent("vvms")
+        ]
+
+        for path in legacyPaths {
+            if fileManager.fileExists(atPath: path.path) {
+                do {
+                    try fileManager.removeItem(at: path)
+                    print("🗑️ Removed legacy resource: \(path.lastPathComponent)")
+                } catch {
+                    print("⚠️ Failed to remove legacy resource: \(path.lastPathComponent) - \(error.localizedDescription)")
+                }
+            }
+        }
     }
     
     func setupSynthesizer() throws {
