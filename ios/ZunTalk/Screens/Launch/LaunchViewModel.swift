@@ -6,9 +6,14 @@ class LaunchViewModel: ObservableObject {
     @Published var appStatus: AppStatus = .loading
 
     private let appInfoRepository: AppInfoRepositoryProtocol
+    private let networkRepository: NetworkRepositoryProtocol
 
-    init(appInfoRepository: AppInfoRepositoryProtocol = AppInfoRepository()) {
+    init(
+        appInfoRepository: AppInfoRepositoryProtocol = AppInfoRepository(),
+        networkRepository: NetworkRepositoryProtocol = NetworkRepository()
+    ) {
         self.appInfoRepository = appInfoRepository
+        self.networkRepository = networkRepository
     }
 
     func checkAppStatus() async {
@@ -22,6 +27,13 @@ class LaunchViewModel: ObservableObject {
             return
         }
         #endif
+
+        // オフライン時はAPI呼び出しをスキップ（完全オフライン対応）
+        if !networkRepository.isConnected() {
+            print("📵 Offline mode: Skipping API calls")
+            appStatus = .ready
+            return
+        }
 
         do {
             let appInfo = try await appInfoRepository.fetchAppInfo()
