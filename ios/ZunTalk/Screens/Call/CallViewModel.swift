@@ -128,6 +128,7 @@ class CallViewModel: NSObject, ObservableObject {
 
         // 着信音を停止
         stopRingtone()
+        chatMessages.append(ChatMessage(role: .assistant, content: initialScript))
         text = initialScript
         startConversationTracking()
 
@@ -381,6 +382,11 @@ class CallViewModel: NSObject, ObservableObject {
 
     private func playVoice(_ audioData: Data) async throws {
         status = .playingVoice
+
+        // 再生用にAudioSessionをスピーカー出力に設定
+        let audioSession = AVAudioSession.sharedInstance()
+        try audioSession.setCategory(.playback, mode: .default, options: [])
+        try audioSession.setActive(true)
 
         audioPlayer = try AVAudioPlayer(data: audioData)
         audioPlayer?.delegate = self

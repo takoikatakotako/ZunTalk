@@ -9,6 +9,9 @@ class FoundationModelsTextGenerationRepository: TextGenerationRepository {
     private var currentSystemPrompt: String?
     private let model: SystemLanguageModel
 
+    private static let defaultInstructions = "あなたは親しみやすいAIアシスタントです。日本語で短く簡潔に返答してください。"
+    private static let endConversationInstructions = "あなたは親しみやすいAIアシスタントです。日本語で短く簡潔に返答してください。ユーザーとの会話を終了する挨拶をしてください。"
+
     init() {
         self.model = SystemLanguageModel.default
         self.session = nil
@@ -24,32 +27,42 @@ class FoundationModelsTextGenerationRepository: TextGenerationRepository {
             throw FoundationModelsTextGenerationError.modelUnavailable(String(describing: reason))
         }
 
-        // Convert ChatMessage array to prompt format
-        let prompt = buildPrompt(from: inputs)
+        // Use simplified instructions for on-device model
+        let systemMessages = inputs.filter { $0.role == ChatMessage.Role.system.rawValue }
+        let isEndConversation = systemMessages.count > 1
+        let instructions = isEndConversation ? Self.endConversationInstructions : Self.defaultInstructions
 
-        // Create or reuse session (recreate if system prompt changed)
-        let systemPrompt = extractSystemPrompt(from: inputs)
-        if session == nil || currentSystemPrompt != systemPrompt {
-            session = LanguageModelSession {
-                systemPrompt
-            }
-            currentSystemPrompt = systemPrompt
+        // Recreate session if instructions changed
+        if session == nil || currentSystemPrompt != instructions {
+            session = LanguageModelSession(instructions: instructions)
+            currentSystemPrompt = instructions
         }
 
         guard let session = session else {
             throw FoundationModelsTextGenerationError.sessionCreationFailed
         }
 
+        // Determine the message to send to the session
+        let latestMessage: String
+        if let userMessage = inputs.last(where: { $0.role == ChatMessage.Role.user.rawValue })?.content {
+            latestMessage = userMessage
+        } else if systemMessages.count > 1 {
+            // End conversation: no new user message, but new system instruction was added
+            // Send a natural user message to trigger farewell
+            latestMessage = "そろそろ時間だね、バイバイ！"
+        } else {
+            // Initial greeting (system prompt only)
+            latestMessage = "もしもし！"
+        }
+
         do {
-            // Generate response with appropriate options for Zundamon character
             let options = GenerationOptions(
                 sampling: .random(probabilityThreshold: 0.9, seed: nil),
-                temperature: 0.8,
                 maximumResponseTokens: 500
             )
 
             let response = try await session.respond(
-                to: prompt,
+                to: latestMessage,
                 options: options
             )
 
@@ -76,24 +89,6 @@ class FoundationModelsTextGenerationRepository: TextGenerationRepository {
     private func extractSystemPrompt(from messages: [ChatMessage]) -> String {
         return messages.first(where: { $0.role == ChatMessage.Role.system.rawValue })?.content
             ?? "あなたはずんだもんです。"
-    }
-
-    private func buildPrompt(from messages: [ChatMessage]) -> String {
-        var promptParts: [String] = []
-
-        for message in messages where message.role != ChatMessage.Role.system.rawValue {
-            let prefix = message.role == ChatMessage.Role.user.rawValue ? "User" : "Assistant"
-            promptParts.append("\(prefix): \(message.content)")
-        }
-
-        // システムメッセージのみの場合、または最後がユーザーメッセージの場合は
-        // Assistantの応答を促すために"Assistant:"を追加
-        let nonSystemMessages = messages.filter { $0.role != ChatMessage.Role.system.rawValue }
-        if nonSystemMessages.isEmpty || nonSystemMessages.last?.role == ChatMessage.Role.user.rawValue {
-            promptParts.append("Assistant:")
-        }
-
-        return promptParts.joined(separator: "\n")
     }
 
     deinit {
