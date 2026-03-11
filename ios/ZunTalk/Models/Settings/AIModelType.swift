@@ -21,7 +21,7 @@ enum AIModelType: String, CaseIterable {
         case .freeServer:
             return "広告が表示されますが、無料でご利用いただけます"
         case .foundationModels:
-            return "iOS 26+で利用可能。完全無料でプライバシー重視のオンデバイスAI"
+            return "iPhone 15 Pro以降 + iOS 26以上で利用可能。完全無料のオンデバイスAI（会話の精度は低めです）"
         }
     }
 
