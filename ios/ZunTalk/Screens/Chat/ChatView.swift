@@ -10,11 +10,17 @@ struct ChatView: View {
                 ScrollView {
                     LazyVStack(spacing: 12) {
                         ForEach(viewModel.messages) { message in
-                            MessageBubbleView(message: message)
-                                .id(message.id)
+                            MessageBubbleView(
+                                message: message,
+                                isPlaying: viewModel.playingMessageId == message.id,
+                                onReplay: {
+                                    viewModel.replayVoice(for: message)
+                                }
+                            )
+                            .id(message.id)
                         }
 
-                        if viewModel.isLoading {
+                        if viewModel.isLoading && !viewModel.isPlayingVoice {
                             HStack {
                                 TypingIndicatorView()
                                     .padding(.leading, 16)
@@ -36,32 +42,51 @@ struct ChatView: View {
             Divider()
 
             HStack(spacing: 8) {
-                TextField("メッセージを入力", text: $viewModel.inputText, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .lineLimit(1...5)
-                    .focused($isInputFocused)
+                if viewModel.isPlayingVoice {
+                    HStack(spacing: 6) {
+                        Image(systemName: "waveform")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.green)
+                            .symbolEffect(.variableColor.iterative, isActive: true)
+                        Text("ずんだもんが話しています...")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .onSubmit {
-                        viewModel.sendMessage()
-                    }
+                } else {
+                    TextField("メッセージを入力", text: $viewModel.inputText, axis: .vertical)
+                        .textFieldStyle(.plain)
+                        .lineLimit(1...5)
+                        .focused($isInputFocused)
+                        .disabled(viewModel.isLoading)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(Color(.systemGray6))
+                        .clipShape(RoundedRectangle(cornerRadius: 20))
+                        .onSubmit {
+                            viewModel.sendMessage()
+                        }
 
-                Button(action: {
-                    viewModel.sendMessage()
-                }) {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 32))
-                        .foregroundStyle(sendButtonColor)
+                    Button(action: {
+                        viewModel.sendMessage()
+                    }) {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 32))
+                            .foregroundStyle(sendButtonColor)
+                    }
+                    .disabled(viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isLoading)
                 }
-                .disabled(viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isLoading)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
         }
         .navigationTitle("ずんだもん")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            viewModel.onAppear()
+        }
     }
 
     private var sendButtonColor: Color {
@@ -74,6 +99,8 @@ struct ChatView: View {
 
 private struct MessageBubbleView: View {
     let message: ChatViewModel.DisplayMessage
+    let isPlaying: Bool
+    let onReplay: () -> Void
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 8) {
@@ -97,7 +124,23 @@ private struct MessageBubbleView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 18))
 
             if message.role == .assistant {
-                Spacer(minLength: 60)
+                Button(action: onReplay) {
+                    Group {
+                        if isPlaying {
+                            Image(systemName: "waveform")
+                                .foregroundStyle(.green)
+                                .symbolEffect(.variableColor.iterative, isActive: true)
+                        } else {
+                            Image(systemName: "play.circle.fill")
+                                .foregroundStyle(Color(.systemGray3))
+                        }
+                    }
+                    .font(.system(size: 26))
+                    .frame(width: 30, height: 30)
+                }
+                .disabled(isPlaying)
+
+                Spacer(minLength: 20)
             }
         }
         .padding(.horizontal, 12)
