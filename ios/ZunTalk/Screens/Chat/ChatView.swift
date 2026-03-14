@@ -42,7 +42,13 @@ struct ChatView: View {
             Divider()
 
             HStack(spacing: 8) {
-                if viewModel.isPlayingVoice {
+                if viewModel.isConversationEnded {
+                    Text("会話が終了しました")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                } else if viewModel.isPlayingVoice {
                     HStack(spacing: 6) {
                         Image(systemName: "waveform")
                             .font(.system(size: 14))

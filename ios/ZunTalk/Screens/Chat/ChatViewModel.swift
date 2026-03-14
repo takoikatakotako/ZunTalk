@@ -11,6 +11,7 @@ class ChatViewModel: NSObject, ObservableObject {
     @Published var isLoading = false
     @Published var isPlayingVoice = false
     @Published var playingMessageId: UUID?
+    @Published var isConversationEnded = false
 
     // MARK: - Types
 
@@ -28,6 +29,8 @@ class ChatViewModel: NSObject, ObservableObject {
             暴力的・攻撃的・不快な発言はしないでください。
             チャットでの会話なので、短めに返答してください。
             """
+        static let maxRoundTrips = 40
+        static let endConversationPrompt = "会話回数の上限に達したので、ずんだもんらしく親しみやすい挨拶で会話を終了してください。"
     }
 
     // MARK: - Private Properties
@@ -59,7 +62,7 @@ class ChatViewModel: NSObject, ObservableObject {
 
     func sendMessage() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, !isLoading else { return }
+        guard !text.isEmpty, !isLoading, !isConversationEnded else { return }
 
         inputText = ""
         messages.append(DisplayMessage(role: .user, content: text))
@@ -69,11 +72,21 @@ class ChatViewModel: NSObject, ObservableObject {
 
         Task {
             do {
+                // 上限チェック（ユーザーメッセージ数で判定）
+                let userMessageCount = messages.filter { $0.role == .user }.count
+                if userMessageCount >= Constants.maxRoundTrips {
+                    chatMessages.append(ChatMessage(role: .system, content: Constants.endConversationPrompt))
+                }
+
                 let response = try await textGenerationRepository.generateResponse(inputs: chatMessages)
                 chatMessages.append(ChatMessage(role: .assistant, content: response))
                 let message = DisplayMessage(role: .assistant, content: response)
                 messages.append(message)
                 await playVoice(text: response, messageId: message.id)
+
+                if userMessageCount >= Constants.maxRoundTrips {
+                    isConversationEnded = true
+                }
             } catch {
                 messages.append(DisplayMessage(role: .assistant, content: "ごめんなさいなのだ。エラーが発生してしまったのだ…"))
             }
