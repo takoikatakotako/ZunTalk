@@ -70,6 +70,10 @@ jobs:
           mkdir -p ios/ZunTalk/vvms
           cp libs/voicevox_core/voicevox_core-0.16.3/models/vvms/*.vvm ios/ZunTalk/vvms/
 
+          # Firebase設定ファイルを配置
+          echo "Copying GoogleService-Info.plist..."
+          cp libs/firebase/GoogleService-Info.plist ios/ZunTalk/
+
           # 配置結果を確認
           echo "Frameworks in ios/Voicevox:"
           ls -la ios/Voicevox/
