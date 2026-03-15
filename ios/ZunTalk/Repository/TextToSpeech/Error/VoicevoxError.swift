@@ -8,7 +8,7 @@ enum VoicevoxError: Error, LocalizedError {
     case synthesizerLoadVoiceModelFailed
     case synthesizerTextToSpeechFailed
     case waveBufferNil
-    
+
     var errorDescription: String? {
         switch self {
         case .onnxruntimeInitFailed:

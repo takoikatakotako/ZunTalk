@@ -30,7 +30,6 @@ struct FoundationModelsTextGenerationRepositoryTests {
 
         // Then: 空でないレスポンスが返される
         #expect(!response.isEmpty)
-        #expect(response.count > 0)
     }
 
     @Test

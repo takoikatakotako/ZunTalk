@@ -67,12 +67,12 @@ struct CallView: View {
         .onAppear {
             viewModel.onAppear()
         }
-        .onChange(of: viewModel.shouldDismiss) { oldValue, newValue in
+        .onChange(of: viewModel.shouldDismiss) { _, newValue in
             if newValue {
                 dismiss()
             }
         }
-        .onChange(of: viewModel.shouldRequestReview) { oldValue, newValue in
+        .onChange(of: viewModel.shouldRequestReview) { _, newValue in
             if newValue {
                 requestReview()
             }

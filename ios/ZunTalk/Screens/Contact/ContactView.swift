@@ -10,10 +10,10 @@ struct ContactView: View {
     let contacts = [
         Contact(name: "ずんだもん", imageName: "person.circle.fill"),
     ]
-    
+
     @State private var isNavigatingToChat = false
     @State private var isNavigatingToCall = false
-    
+
     var body: some View {
         NavigationStack {
             List(contacts, id: \.id) { contact in
@@ -23,18 +23,18 @@ struct ContactView: View {
                         .scaledToFill()
                         .frame(width: 48, height: 48)
                         .clipShape(Circle())
-                    
+
                     VStack(alignment: .leading, spacing: 4) {
                         Text(contact.name)
                             .font(.headline)
-                        
+
                         Text("ずんだの妖精")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
-                    
+
                     Spacer()
-                    
+
                     HStack(spacing: 12) {
                         Button(action: {
                             isNavigatingToChat = true
@@ -85,7 +85,6 @@ struct ContactView: View {
         }
     }
 }
-
 
 #Preview {
     ContactView()

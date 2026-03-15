@@ -2,11 +2,11 @@ import Foundation
 import voicevox_core
 
 class VoicevoxRepository: TextToSpeechRepository {
-    
+
     private var synthesizer: OpaquePointer?
 
     // MARK: - TextToSpeechRepository Implementation
-    
+
     func installVoicevox() async throws {
         // リソースはバンドル内にフォルダ参照として配置されているため、
         // コピー不要。setupSynthesizer()で直接バンドルから読み込む。
@@ -30,28 +30,26 @@ class VoicevoxRepository: TextToSpeechRepository {
             documentsDirectory.appendingPathComponent("vvms")
         ]
 
-        for path in legacyPaths {
-            if fileManager.fileExists(atPath: path.path) {
-                do {
-                    try fileManager.removeItem(at: path)
-                    print("🗑️ Removed legacy resource: \(path.lastPathComponent)")
-                } catch {
-                    print("⚠️ Failed to remove legacy resource: \(path.lastPathComponent) - \(error.localizedDescription)")
-                }
+        for path in legacyPaths where fileManager.fileExists(atPath: path.path) {
+            do {
+                try fileManager.removeItem(at: path)
+                print("🗑️ Removed legacy resource: \(path.lastPathComponent)")
+            } catch {
+                print("⚠️ Failed to remove legacy resource: \(path.lastPathComponent) - \(error.localizedDescription)")
             }
         }
     }
-    
+
     func setupSynthesizer() throws {
         // Generate VoicevoxInitializeOptions
         let initializeOptions: VoicevoxInitializeOptions = voicevox_make_default_initialize_options()
         print("Generate VoicevoxInitializeOptions")
         print("Acceleration Mode: %v\n", initializeOptions.acceleration_mode)
         print("Cpu Num Threads: %v\n", initializeOptions.cpu_num_threads)
-        
+
         // Generate Onnxruntime
         var onnxruntime: OpaquePointer? = voicevox_onnxruntime_get()
-        
+
         // Init Onnxruntime
         let onnxruntimeInitResultCode = voicevox_onnxruntime_init_once(&onnxruntime)
         print("OnnxruntimeInitResultCode: \(onnxruntimeInitResultCode)")
@@ -59,7 +57,7 @@ class VoicevoxRepository: TextToSpeechRepository {
             print("Onnxruntime Init Failed")
             throw VoicevoxError.onnxruntimeInitFailed
         }
-        
+
         // Load Open JTalk (directly from bundle)
         let bundlePath = Bundle.main.resourcePath!
         let bundleURL = URL(fileURLWithPath: bundlePath)
@@ -72,7 +70,7 @@ class VoicevoxRepository: TextToSpeechRepository {
             print("Open JTalk RC New Failed")
             throw VoicevoxError.openJTalkRCNewFailed
         }
-        
+
         // Make Synthesizer
         // var synthesizer: OpaquePointer?
         let synthesizerNewResultCode = voicevox_synthesizer_new(onnxruntime, openJtalk, initializeOptions, &synthesizer)
@@ -81,8 +79,7 @@ class VoicevoxRepository: TextToSpeechRepository {
             throw VoicevoxError.synthesizerNewFailed
         }
         voicevox_open_jtalk_rc_delete(openJtalk)
-        
-        
+
         // load model (directly from bundle)
         let voiceModelDirectoryName = "vvms"
         let vvmsDirectory = bundleURL.appendingPathComponent(voiceModelDirectoryName)
@@ -95,7 +92,7 @@ class VoicevoxRepository: TextToSpeechRepository {
             print("Voice Model File Open Failed")
             throw VoicevoxError.voiceModelFileOpenFailed
         }
-        
+
         // load synthesizer model
         let synthesizerLoadVoiceModelResultCode = voicevox_synthesizer_load_voice_model(synthesizer, voiceModelFile)
         guard synthesizerLoadVoiceModelResultCode == 0 else {
@@ -104,22 +101,24 @@ class VoicevoxRepository: TextToSpeechRepository {
         }
         voicevox_voice_model_file_delete(voiceModelFile)
     }
-    
+
     func synthesize(text: String) async throws -> Data {
-        
+
         // Generate
-        let VoicevoxTtsOptions = voicevox_make_default_tts_options()
+        let voicevoxTtsOptions = voicevox_make_default_tts_options()
         let cText = strdup(text)
         defer { free(cText) }
         let styleId = 3
         var wavLength: UInt = 0
-        var wavBuffer: UnsafeMutablePointer<UInt8>? = nil
-        let synthesizerTtsResultCode = voicevox_synthesizer_tts(synthesizer, cText, VoicevoxStyleId(styleId), VoicevoxTtsOptions, &wavLength, &wavBuffer)
+        var wavBuffer: UnsafeMutablePointer<UInt8>?
+        let synthesizerTtsResultCode = voicevox_synthesizer_tts(
+            synthesizer, cText, VoicevoxStyleId(styleId), voicevoxTtsOptions, &wavLength, &wavBuffer
+        )
         guard synthesizerTtsResultCode == 0 else {
             print("Synthesizer Text to Speech Failed")
             throw VoicevoxError.synthesizerTextToSpeechFailed
         }
-        
+
         // Load WAV Data
         guard let wavBuffer = wavBuffer else {
             print("Wave Buffer is nil")
@@ -129,10 +128,10 @@ class VoicevoxRepository: TextToSpeechRepository {
 
         // 解放（C側がmallocしてる想定）
         voicevox_wav_free(wavBuffer)
-        
+
         return data
     }
-    
+
     func cleanupSynthesizer() {
         if let synthesizer = synthesizer {
             print("Cleaning up synthesizer...")
@@ -140,11 +139,11 @@ class VoicevoxRepository: TextToSpeechRepository {
             self.synthesizer = nil
         }
     }
-    
+
     // MARK: - Lifecycle
-    
+
     deinit {
         cleanupSynthesizer()
     }
-    
+
 }

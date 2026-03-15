@@ -5,7 +5,7 @@ enum SpeechRecognitionError: Error, LocalizedError {
     case speechRecognitionDenied
     case alreadyRecording
     case recognitionFailed
-    
+
     var errorDescription: String? {
         switch self {
         case .microphonePermissionDenied:
