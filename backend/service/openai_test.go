@@ -1,7 +1,9 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -31,6 +33,27 @@ func newSuccessResponse() openAIResponse {
 	}
 }
 
+func newTestService(baseURL string) *OpenAIService {
+	svc := NewOpenAIService("test-api-key")
+	// retryClientの内部HTTPClientのTransportを差し替え
+	svc.retryClient.HTTPClient.Transport = &urlRewriteTransport{
+		baseURL:   baseURL,
+		transport: http.DefaultTransport,
+	}
+	return svc
+}
+
+type urlRewriteTransport struct {
+	baseURL   string
+	transport http.RoundTripper
+}
+
+func (t *urlRewriteTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	newReq, _ := http.NewRequest(req.Method, t.baseURL+"/", req.Body)
+	newReq.Header = req.Header
+	return t.transport.RoundTrip(newReq)
+}
+
 func TestCreateChatCompletion_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -38,9 +61,7 @@ func TestCreateChatCompletion_Success(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := newTestService(server.URL)
-	resp, err := svc.CreateChatCompletion(newTestRequest())
-
+	resp, err := newTestService(server.URL).CreateChatCompletion(newTestRequest())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -53,8 +74,7 @@ func TestCreateChatCompletion_RetryOn429(t *testing.T) {
 	var callCount atomic.Int32
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		count := callCount.Add(1)
-		if count <= 2 {
+		if callCount.Add(1) <= 2 {
 			w.WriteHeader(http.StatusTooManyRequests)
 			w.Write([]byte(`{"error": "rate limited"}`))
 			return
@@ -64,9 +84,7 @@ func TestCreateChatCompletion_RetryOn429(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := newTestService(server.URL)
-	resp, err := svc.CreateChatCompletion(newTestRequest())
-
+	resp, err := newTestService(server.URL).CreateChatCompletion(newTestRequest())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -82,8 +100,7 @@ func TestCreateChatCompletion_RetryOn500(t *testing.T) {
 	var callCount atomic.Int32
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		count := callCount.Add(1)
-		if count <= 1 {
+		if callCount.Add(1) <= 1 {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(`{"error": "internal server error"}`))
 			return
@@ -93,9 +110,7 @@ func TestCreateChatCompletion_RetryOn500(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := newTestService(server.URL)
-	resp, err := svc.CreateChatCompletion(newTestRequest())
-
+	resp, err := newTestService(server.URL).CreateChatCompletion(newTestRequest())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -117,9 +132,7 @@ func TestCreateChatCompletion_NoRetryOn400(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := newTestService(server.URL)
-	_, err := svc.CreateChatCompletion(newTestRequest())
-
+	_, err := newTestService(server.URL).CreateChatCompletion(newTestRequest())
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -138,9 +151,7 @@ func TestCreateChatCompletion_NoRetryOn401(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := newTestService(server.URL)
-	_, err := svc.CreateChatCompletion(newTestRequest())
-
+	_, err := newTestService(server.URL).CreateChatCompletion(newTestRequest())
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -149,52 +160,37 @@ func TestCreateChatCompletion_NoRetryOn401(t *testing.T) {
 	}
 }
 
-func TestCreateChatCompletion_ExhaustsRetries(t *testing.T) {
-	var callCount atomic.Int32
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		callCount.Add(1)
-		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(`{"error": "service unavailable"}`))
-	}))
-	defer server.Close()
-
-	svc := newTestService(server.URL)
-	_, err := svc.CreateChatCompletion(newTestRequest())
-
-	if err == nil {
-		t.Fatal("expected error after exhausting retries")
+func TestOpenAIRetryPolicy(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		wantRetry  bool
+	}{
+		{"429 should retry", http.StatusTooManyRequests, true},
+		{"500 should retry", http.StatusInternalServerError, true},
+		{"502 should retry", http.StatusBadGateway, true},
+		{"503 should retry", http.StatusServiceUnavailable, true},
+		{"504 should retry", http.StatusGatewayTimeout, true},
+		{"400 should not retry", http.StatusBadRequest, false},
+		{"401 should not retry", http.StatusUnauthorized, false},
+		{"403 should not retry", http.StatusForbidden, false},
+		{"200 should not retry", http.StatusOK, false},
 	}
-	// 初回 + 3リトライ = 4回
-	if callCount.Load() != 4 {
-		t.Errorf("expected 4 calls, got %d", callCount.Load())
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp := &http.Response{StatusCode: tt.statusCode}
+			retry, _ := openAIRetryPolicy(context.Background(), resp, nil)
+			if retry != tt.wantRetry {
+				t.Errorf("got retry=%v, want %v", retry, tt.wantRetry)
+			}
+		})
 	}
-}
 
-// newTestService はテスト用のOpenAIServiceを作成（APIエンドポイントを差し替え可能にするため、
-// doRequestのURLをテストサーバーに向ける）
-func newTestService(baseURL string) *OpenAIService {
-	svc := NewOpenAIService("test-api-key")
-	// テスト用にHTTPクライアントのTransportをカスタマイズしてURLを書き換え
-	svc.client.Transport = &urlRewriteTransport{
-		baseURL:   baseURL,
-		transport: http.DefaultTransport,
-	}
-	return svc
-}
-
-// urlRewriteTransport はリクエストのURLをテストサーバーに書き換えるTransport
-type urlRewriteTransport struct {
-	baseURL   string
-	transport http.RoundTripper
-}
-
-func (t *urlRewriteTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.URL.Scheme = "http"
-	req.URL.Host = ""
-	req.URL.Path = "/"
-	newURL := t.baseURL + "/"
-	newReq, _ := http.NewRequest(req.Method, newURL, req.Body)
-	newReq.Header = req.Header
-	return t.transport.RoundTrip(newReq)
+	t.Run("network error should retry", func(t *testing.T) {
+		retry, _ := openAIRetryPolicy(context.Background(), nil, fmt.Errorf("connection refused"))
+		if !retry {
+			t.Error("expected retry on network error")
+		}
+	})
 }

@@ -2,35 +2,40 @@ package service
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
-	"math"
 	"net/http"
 	"time"
 
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/takoikatakotako/ZunTalk/backend/model"
 )
 
 const (
-	maxRetries     = 3
-	initialBackoff = 1 * time.Second
-	maxBackoff     = 16 * time.Second
-	httpTimeout    = 30 * time.Second
+	retryMax     = 3
+	retryWaitMin = 1 * time.Second
+	retryWaitMax = 16 * time.Second
+	httpTimeout  = 30 * time.Second
 )
 
 type OpenAIService struct {
-	apiKey string
-	client *http.Client
+	apiKey      string
+	retryClient *retryablehttp.Client
 }
 
 func NewOpenAIService(apiKey string) *OpenAIService {
+	retryClient := retryablehttp.NewClient()
+	retryClient.RetryMax = retryMax
+	retryClient.RetryWaitMin = retryWaitMin
+	retryClient.RetryWaitMax = retryWaitMax
+	retryClient.CheckRetry = openAIRetryPolicy
+	retryClient.HTTPClient.Timeout = httpTimeout
+
 	return &OpenAIService{
-		apiKey: apiKey,
-		client: &http.Client{
-			Timeout: httpTimeout,
-		},
+		apiKey:      apiKey,
+		retryClient: retryClient,
 	}
 }
 
@@ -75,34 +80,8 @@ func (s *OpenAIService) CreateChatCompletion(req *model.ChatRequest) (*model.Cha
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	var lastErr error
-	for attempt := 0; attempt <= maxRetries; attempt++ {
-		if attempt > 0 {
-			backoff := calculateBackoff(attempt)
-			log.Printf("OpenAI API リトライ %d/%d (待機: %v)", attempt, maxRetries, backoff)
-			time.Sleep(backoff)
-		}
-
-		resp, err := s.doRequest(jsonData)
-		if err != nil {
-			// リトライ不要なエラーは即座に返す
-			if _, ok := err.(*nonRetryableError); ok {
-				return nil, err
-			}
-			lastErr = err
-			log.Printf("OpenAI API リクエストエラー (attempt %d): %v", attempt+1, err)
-			continue
-		}
-
-		return resp, nil
-	}
-
-	return nil, fmt.Errorf("OpenAI API failed after %d retries: %w", maxRetries+1, lastErr)
-}
-
-func (s *OpenAIService) doRequest(jsonData []byte) (*model.ChatResponse, error) {
-	// HTTPリクエストの作成
-	httpReq, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(jsonData))
+	// retryablehttp用リクエストの作成
+	httpReq, err := retryablehttp.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewReader(jsonData))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -110,8 +89,8 @@ func (s *OpenAIService) doRequest(jsonData []byte) (*model.ChatResponse, error) 
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Authorization", "Bearer "+s.apiKey)
 
-	// リクエストの送信
-	resp, err := s.client.Do(httpReq)
+	// リクエストの送信（リトライはgo-retryablehttpが自動処理）
+	resp, err := s.retryClient.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
@@ -124,22 +103,17 @@ func (s *OpenAIService) doRequest(jsonData []byte) (*model.ChatResponse, error) 
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		apiErr := fmt.Errorf("OpenAI API error (status %d): %s", resp.StatusCode, string(body))
-		if isRetryableStatus(resp.StatusCode) {
-			return nil, apiErr
-		}
-		// リトライ不要なエラー（400, 401, 403等）は即座に返す
-		return nil, &nonRetryableError{err: apiErr}
+		return nil, fmt.Errorf("OpenAI API error (status %d): %s", resp.StatusCode, string(body))
 	}
 
 	// レスポンスのパース
 	var openAIResp openAIResponse
 	if err := json.Unmarshal(body, &openAIResp); err != nil {
-		return nil, &nonRetryableError{err: fmt.Errorf("failed to unmarshal response: %w", err)}
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
 	if len(openAIResp.Choices) == 0 {
-		return nil, &nonRetryableError{err: fmt.Errorf("no choices in response")}
+		return nil, fmt.Errorf("no choices in response")
 	}
 
 	return &model.ChatResponse{
@@ -148,36 +122,18 @@ func (s *OpenAIService) doRequest(jsonData []byte) (*model.ChatResponse, error) 
 	}, nil
 }
 
-func isRetryableStatus(statusCode int) bool {
-	switch statusCode {
-	case http.StatusTooManyRequests,
-		http.StatusInternalServerError,
-		http.StatusBadGateway,
-		http.StatusServiceUnavailable,
-		http.StatusGatewayTimeout:
-		return true
-	default:
-		return false
+// openAIRetryPolicy は429と5xxのみリトライする
+func openAIRetryPolicy(ctx context.Context, resp *http.Response, err error) (bool, error) {
+	// ネットワークエラーはリトライ
+	if err != nil {
+		return true, nil
 	}
-}
 
-func calculateBackoff(attempt int) time.Duration {
-	backoff := time.Duration(float64(initialBackoff) * math.Pow(2, float64(attempt-1)))
-	if backoff > maxBackoff {
-		backoff = maxBackoff
+	// 429 (Rate Limit) と 5xx はリトライ
+	if resp.StatusCode == http.StatusTooManyRequests ||
+		resp.StatusCode >= http.StatusInternalServerError {
+		return true, nil
 	}
-	return backoff
-}
 
-// nonRetryableError はリトライ不要なエラーを表す
-type nonRetryableError struct {
-	err error
-}
-
-func (e *nonRetryableError) Error() string {
-	return e.err.Error()
-}
-
-func (e *nonRetryableError) Unwrap() error {
-	return e.err
+	return false, nil
 }
