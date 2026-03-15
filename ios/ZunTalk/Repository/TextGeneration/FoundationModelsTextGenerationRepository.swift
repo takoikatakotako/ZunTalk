@@ -38,9 +38,8 @@ class FoundationModelsTextGenerationRepository: TextGenerationRepository {
             currentSystemPrompt = instructions
         }
 
-        guard let session = session else {
-            throw FoundationModelsTextGenerationError.sessionCreationFailed
-        }
+        // session is guaranteed to be non-nil after the block above
+        let activeSession = session!
 
         // Determine the message to send to the session
         let latestMessage: String
@@ -61,7 +60,7 @@ class FoundationModelsTextGenerationRepository: TextGenerationRepository {
                 maximumResponseTokens: 500
             )
 
-            let response = try await session.respond(
+            let response = try await activeSession.respond(
                 to: latestMessage,
                 options: options
             )
