@@ -22,11 +22,11 @@ enum OpenAIResponsesOutputType: String, Decodable {
 enum OpenAIResponsesOutputResponse: Decodable {
     case message(OpenAIResponsesOutputMessageResponse)
     case reasoning(OpenAIResponsesReasoningResponse)
-    
+
     private enum CodingKeys: String, CodingKey {
         case type
     }
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let type = try container.decode(OpenAIResponsesOutputType.self, forKey: .type)
@@ -48,32 +48,30 @@ struct OpenAIResponsesOutputMessageResponse: Decodable {
     let content: [OpenAIResponsesOutputMessageContentResponse]
 }
 
-
 struct OpenAIResponsesReasoningResponse: Decodable {
     let id: String
     let type: OpenAIResponsesOutputType
 }
 
-
 enum OpenAIResponsesOutputMessageContentType: String, Decodable {
-    case output_text
+    case outputText = "output_text"
     case refusal
 }
 
 enum OpenAIResponsesOutputMessageContentResponse: Decodable {
     case outputText(OpenAIResponsesOutputMessageContentOutputTextResponse)
     case refusal(OpenAIResponsesOutputMessageContentRefusalResponse)
-    
+
     private enum CodingKeys: String, CodingKey {
         case type
     }
-    
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let type = try container.decode(OpenAIResponsesOutputMessageContentType.self, forKey: .type)
 
         switch type {
-        case .output_text:
+        case .outputText:
             let outputText = try OpenAIResponsesOutputMessageContentOutputTextResponse(from: decoder)
             self = .outputText(outputText)
         case .refusal:

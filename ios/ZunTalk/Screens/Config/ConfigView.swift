@@ -19,6 +19,7 @@ struct ConfigView: View {
             }
 
             Section("サポート") {
+                // swiftlint:disable:next line_length
                 Link(destination: URL(string: "https://docs.google.com/forms/d/e/1FAIpQLSfqxPpkdiG7JW5qIiz0pf0oisne4HIJZiL8nkhmPmgFAlRwCA/viewform")!) {
                     HStack {
                         Label("お問い合わせ", systemImage: "envelope")

@@ -44,7 +44,7 @@ struct ChatViewModelTests {
         let (viewModel, _) = makeViewModel()
 
         #expect(viewModel.messages.isEmpty)
-        #expect(viewModel.inputText == "")
+        #expect(viewModel.inputText.isEmpty)
         #expect(viewModel.isLoading == false)
         #expect(viewModel.isPlayingVoice == false)
         #expect(viewModel.playingMessageId == nil)
@@ -96,7 +96,7 @@ struct ChatViewModelTests {
         viewModel.inputText = "テスト"
         viewModel.sendMessage()
 
-        #expect(viewModel.inputText == "")
+        #expect(viewModel.inputText.isEmpty)
     }
 
     @Test func testSendEmptyMessageDoesNothing() async throws {

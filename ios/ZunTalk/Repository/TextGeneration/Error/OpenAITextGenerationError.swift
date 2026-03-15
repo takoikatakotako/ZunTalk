@@ -7,7 +7,7 @@ enum OpenAITextGenerationError: Error, LocalizedError {
     case apiError(Int)
     case networkError(Error)
     case noResponse
-    
+
     var errorDescription: String? {
         switch self {
         case .invalidAPIKey:

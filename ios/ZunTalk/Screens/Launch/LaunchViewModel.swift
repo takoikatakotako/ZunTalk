@@ -87,7 +87,7 @@ class LaunchViewModel: ObservableObject {
     private func parseVersion(_ version: String) -> (major: Int, minor: Int, patch: Int) {
         let components = version.split(separator: ".").compactMap { Int($0) }
         return (
-            major: components.count > 0 ? components[0] : 0,
+            major: !components.isEmpty ? components[0] : 0,
             minor: components.count > 1 ? components[1] : 0,
             patch: components.count > 2 ? components[2] : 0
         )
