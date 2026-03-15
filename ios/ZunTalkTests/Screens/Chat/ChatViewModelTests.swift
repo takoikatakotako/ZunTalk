@@ -5,13 +5,43 @@ import Testing
 @MainActor
 struct ChatViewModelTests {
 
+    // MARK: - Helper
+
+    /// 条件が満たされるまでポーリングして待つ（CI環境でも安定動作）
+    private func waitUntil(
+        timeout: Duration = .seconds(10),
+        _ condition: @escaping () -> Bool
+    ) async throws {
+        let deadline = ContinuousClock.now + timeout
+        while !condition() {
+            guard ContinuousClock.now < deadline else {
+                throw WaitError.timeout
+            }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+    }
+
+    private func makeViewModel(
+        response: String = "モックレスポンスなのだ",
+        shouldThrow: Bool = false,
+        delay: Duration? = nil
+    ) -> (ChatViewModel, MockTextGenerationRepository) {
+        let mockRepo = MockTextGenerationRepository()
+        mockRepo.response = response
+        mockRepo.shouldThrow = shouldThrow
+        mockRepo.delay = delay
+
+        let viewModel = ChatViewModel(
+            textGenerationRepository: mockRepo,
+            voicevoxRepository: MockTextToSpeechRepository()
+        )
+        return (viewModel, mockRepo)
+    }
+
     // MARK: - 初期化
 
     @Test func testInitialState() async throws {
-        let viewModel = ChatViewModel(
-            textGenerationRepository: MockTextGenerationRepository(),
-            voicevoxRepository: MockTextToSpeechRepository()
-        )
+        let (viewModel, _) = makeViewModel()
 
         #expect(viewModel.messages.isEmpty)
         #expect(viewModel.inputText == "")
@@ -24,39 +54,23 @@ struct ChatViewModelTests {
     // MARK: - 初回挨拶
 
     @Test func testOnAppearGeneratesInitialGreeting() async throws {
-        let mockRepo = MockTextGenerationRepository()
-        mockRepo.response = "やっほー！ずんだもんなのだ！"
-
-        let viewModel = ChatViewModel(
-            textGenerationRepository: mockRepo,
-            voicevoxRepository: MockTextToSpeechRepository()
-        )
+        let (viewModel, _) = makeViewModel(response: "やっほー！ずんだもんなのだ！")
 
         viewModel.onAppear()
+        try await waitUntil { viewModel.isLoading == false && viewModel.messages.count == 1 }
 
-        // 非同期処理の完了を待つ
-        try await Task.sleep(for: .milliseconds(100))
-
-        #expect(viewModel.messages.count == 1)
         #expect(viewModel.messages.first?.role == .assistant)
         #expect(viewModel.messages.first?.content == "やっほー！ずんだもんなのだ！")
-        #expect(viewModel.isLoading == false)
     }
 
     @Test func testOnAppearCalledTwiceDoesNotDuplicate() async throws {
-        let mockRepo = MockTextGenerationRepository()
-        mockRepo.response = "こんにちはなのだ！"
-
-        let viewModel = ChatViewModel(
-            textGenerationRepository: mockRepo,
-            voicevoxRepository: MockTextToSpeechRepository()
-        )
+        let (viewModel, _) = makeViewModel(response: "こんにちはなのだ！")
 
         viewModel.onAppear()
-        try await Task.sleep(for: .milliseconds(100))
+        try await waitUntil { viewModel.isLoading == false && viewModel.messages.count == 1 }
 
         viewModel.onAppear()
-        try await Task.sleep(for: .milliseconds(100))
+        try await Task.sleep(for: .milliseconds(200))
 
         #expect(viewModel.messages.count == 1)
     }
@@ -64,21 +78,12 @@ struct ChatViewModelTests {
     // MARK: - メッセージ送信
 
     @Test func testSendMessage() async throws {
-        let mockRepo = MockTextGenerationRepository()
-        mockRepo.response = "元気なのだ！"
-
-        let viewModel = ChatViewModel(
-            textGenerationRepository: mockRepo,
-            voicevoxRepository: MockTextToSpeechRepository()
-        )
+        let (viewModel, _) = makeViewModel(response: "元気なのだ！")
 
         viewModel.inputText = "こんにちは"
         viewModel.sendMessage()
+        try await waitUntil { viewModel.isLoading == false && viewModel.messages.count == 2 }
 
-        try await Task.sleep(for: .milliseconds(100))
-
-        // ユーザーメッセージ + ずんだもんの返答
-        #expect(viewModel.messages.count == 2)
         #expect(viewModel.messages[0].role == .user)
         #expect(viewModel.messages[0].content == "こんにちは")
         #expect(viewModel.messages[1].role == .assistant)
@@ -86,10 +91,7 @@ struct ChatViewModelTests {
     }
 
     @Test func testSendMessageClearsInputText() async throws {
-        let viewModel = ChatViewModel(
-            textGenerationRepository: MockTextGenerationRepository(),
-            voicevoxRepository: MockTextToSpeechRepository()
-        )
+        let (viewModel, _) = makeViewModel()
 
         viewModel.inputText = "テスト"
         viewModel.sendMessage()
@@ -98,10 +100,7 @@ struct ChatViewModelTests {
     }
 
     @Test func testSendEmptyMessageDoesNothing() async throws {
-        let viewModel = ChatViewModel(
-            textGenerationRepository: MockTextGenerationRepository(),
-            voicevoxRepository: MockTextToSpeechRepository()
-        )
+        let (viewModel, _) = makeViewModel()
 
         viewModel.inputText = "   "
         viewModel.sendMessage()
@@ -110,13 +109,7 @@ struct ChatViewModelTests {
     }
 
     @Test func testSendMessageWhileLoadingDoesNothing() async throws {
-        let slowRepo = MockTextGenerationRepository()
-        slowRepo.delay = .milliseconds(500)
-
-        let viewModel = ChatViewModel(
-            textGenerationRepository: slowRepo,
-            voicevoxRepository: MockTextToSpeechRepository()
-        )
+        let (viewModel, _) = makeViewModel(delay: .seconds(1))
 
         viewModel.inputText = "最初のメッセージ"
         viewModel.sendMessage()
@@ -125,9 +118,8 @@ struct ChatViewModelTests {
         viewModel.inputText = "2つ目のメッセージ"
         viewModel.sendMessage()
 
-        try await Task.sleep(for: .milliseconds(600))
+        try await waitUntil { viewModel.isLoading == false }
 
-        // ユーザーメッセージは1つだけ
         let userMessages = viewModel.messages.filter { $0.role == .user }
         #expect(userMessages.count == 1)
     }
@@ -135,66 +127,46 @@ struct ChatViewModelTests {
     // MARK: - エラーハンドリング
 
     @Test func testSendMessageWithErrorShowsErrorMessage() async throws {
-        let mockRepo = MockTextGenerationRepository()
-        mockRepo.shouldThrow = true
-
-        let viewModel = ChatViewModel(
-            textGenerationRepository: mockRepo,
-            voicevoxRepository: MockTextToSpeechRepository()
-        )
+        let (viewModel, _) = makeViewModel(shouldThrow: true)
 
         viewModel.inputText = "テスト"
         viewModel.sendMessage()
+        try await waitUntil { viewModel.isLoading == false && viewModel.messages.count == 2 }
 
-        try await Task.sleep(for: .milliseconds(100))
-
-        #expect(viewModel.messages.count == 2)
         #expect(viewModel.messages[1].role == .assistant)
         #expect(viewModel.messages[1].content.contains("ごめんなさい"))
-        #expect(viewModel.isLoading == false)
     }
 
     // MARK: - 会話回数制限
 
     @Test func testConversationEndsAfterMaxRoundTrips() async throws {
-        let mockRepo = MockTextGenerationRepository()
-        mockRepo.response = "返答なのだ"
+        let (viewModel, _) = makeViewModel(response: "返答なのだ")
 
-        let viewModel = ChatViewModel(
-            textGenerationRepository: mockRepo,
-            voicevoxRepository: MockTextToSpeechRepository()
-        )
-
-        // 40回メッセージを送信
         for i in 1...40 {
+            try await waitUntil { viewModel.isLoading == false }
             viewModel.inputText = "メッセージ\(i)"
             viewModel.sendMessage()
-            try await Task.sleep(for: .milliseconds(50))
         }
+        try await waitUntil { viewModel.isLoading == false }
 
         #expect(viewModel.isConversationEnded == true)
     }
 
     @Test func testCannotSendMessageAfterConversationEnded() async throws {
-        let mockRepo = MockTextGenerationRepository()
-        let viewModel = ChatViewModel(
-            textGenerationRepository: mockRepo,
-            voicevoxRepository: MockTextToSpeechRepository()
-        )
+        let (viewModel, _) = makeViewModel()
 
-        // 40回送信して会話終了
         for i in 1...40 {
+            try await waitUntil { viewModel.isLoading == false }
             viewModel.inputText = "メッセージ\(i)"
             viewModel.sendMessage()
-            try await Task.sleep(for: .milliseconds(50))
         }
+        try await waitUntil { viewModel.isLoading == false }
 
         let messageCountBefore = viewModel.messages.count
 
-        // 終了後に送信しても変わらない
         viewModel.inputText = "もう1つ"
         viewModel.sendMessage()
-        try await Task.sleep(for: .milliseconds(50))
+        try await Task.sleep(for: .milliseconds(200))
 
         #expect(viewModel.messages.count == messageCountBefore)
     }
@@ -202,23 +174,16 @@ struct ChatViewModelTests {
     // MARK: - 会話履歴
 
     @Test func testConversationHistoryPassedToRepository() async throws {
-        let mockRepo = MockTextGenerationRepository()
-        mockRepo.response = "返答なのだ"
-
-        let viewModel = ChatViewModel(
-            textGenerationRepository: mockRepo,
-            voicevoxRepository: MockTextToSpeechRepository()
-        )
+        let (viewModel, mockRepo) = makeViewModel(response: "返答なのだ")
 
         viewModel.inputText = "1つ目"
         viewModel.sendMessage()
-        try await Task.sleep(for: .milliseconds(100))
+        try await waitUntil { viewModel.isLoading == false && viewModel.messages.count == 2 }
 
         viewModel.inputText = "2つ目"
         viewModel.sendMessage()
-        try await Task.sleep(for: .milliseconds(100))
+        try await waitUntil { viewModel.isLoading == false && viewModel.messages.count == 4 }
 
-        // 2回目の呼び出し時にはシステム + 1回目のやりとり + 2回目のユーザーメッセージが渡される
         let lastInputs = mockRepo.lastInputs
         #expect(lastInputs != nil)
 
@@ -258,4 +223,8 @@ private class MockTextToSpeechRepository: TextToSpeechRepository {
 
 private enum MockError: Error {
     case testError
+}
+
+private enum WaitError: Error {
+    case timeout
 }
