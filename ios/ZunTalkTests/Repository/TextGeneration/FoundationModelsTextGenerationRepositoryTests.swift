@@ -6,16 +6,6 @@ struct FoundationModelsTextGenerationRepositoryTests {
 
     @Test
     @available(iOS 26.0, *)
-    func testRepositoryInitialization() async throws {
-        // Given & When: リポジトリを初期化
-        let repository = FoundationModelsTextGenerationRepository()
-
-        // Then: エラーなく初期化される
-        #expect(repository != nil)
-    }
-
-    @Test
-    @available(iOS 26.0, *)
     func testSimpleGeneration() async throws {
         // Given: リポジトリとシンプルなメッセージ
         let repository = FoundationModelsTextGenerationRepository()
