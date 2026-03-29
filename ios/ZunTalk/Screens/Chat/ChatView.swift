@@ -93,6 +93,9 @@ struct ChatView: View {
         .onAppear {
             viewModel.onAppear()
         }
+        .onDisappear {
+            viewModel.cleanup()
+        }
     }
 
     private var sendButtonColor: Color {
@@ -186,3 +189,4 @@ private struct TypingIndicatorView: View {
         ChatView()
     }
 }
+

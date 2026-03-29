@@ -342,10 +342,11 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
+				"$(DERIVED_FILE_DIR)/crashlytics-upload-symbols",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ -f \"${PROJECT_DIR}/ZunTalk/GoogleService-Info.plist\" ]; then\n  \"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\" -gsp \"${PROJECT_DIR}/ZunTalk/GoogleService-Info.plist\"\nelse\n  echo \"warning: GoogleService-Info.plist not found, skipping dSYM upload\"\nfi\n";
+			shellScript = "if [ -f \"${PROJECT_DIR}/ZunTalk/GoogleService-Info.plist\" ]; then\n  \"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\" -gsp \"${PROJECT_DIR}/ZunTalk/GoogleService-Info.plist\"\nelse\n  echo \"warning: GoogleService-Info.plist not found, skipping dSYM upload\"\nfi\ntouch \"${DERIVED_FILE_DIR}/crashlytics-upload-symbols\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -477,7 +478,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.0;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.swiswiswift.zuntalk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -611,7 +612,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.0;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.swiswiswift.zuntalk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

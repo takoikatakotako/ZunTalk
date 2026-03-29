@@ -102,6 +102,16 @@ class ChatViewModel: NSObject, ObservableObject {
         }
     }
 
+    func cleanup() {
+        audioPlayer?.stop()
+        audioPlayer = nil
+        playbackContinuation?.resume()
+        playbackContinuation = nil
+        voicevoxRepository.cleanupSynthesizer()
+        playingMessageId = nil
+        isPlayingVoice = false
+    }
+
     // MARK: - Private Methods
 
     private func generateInitialGreeting() {
@@ -115,7 +125,8 @@ class ChatViewModel: NSObject, ObservableObject {
                 messages.append(message)
                 await playVoice(text: response, messageId: message.id)
             } catch {
-                messages.append(DisplayMessage(role: .assistant, content: "やっほー！ずんだもんなのだ！"))
+                messages.append(DisplayMessage(role: .assistant, content: "エラーが出てしまったのだ…時間をあけてもう一度試して欲しいのだ！"))
+                isConversationEnded = true
             }
             isLoading = false
         }
