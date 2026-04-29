@@ -57,6 +57,7 @@ class ChatViewModel: NSObject, ObservableObject {
 
     func onAppear() {
         guard messages.isEmpty else { return }
+        AnalyticsManager.logChatStarted()
         generateInitialGreeting()
     }
 
@@ -68,12 +69,13 @@ class ChatViewModel: NSObject, ObservableObject {
         messages.append(DisplayMessage(role: .user, content: text))
         chatMessages.append(ChatMessage(role: .user, content: text))
 
+        let userMessageCount = messages.filter { $0.role == .user }.count
+        AnalyticsManager.logMessageSent(messageCount: userMessageCount)
+
         isLoading = true
 
         Task {
             do {
-                // 上限チェック（ユーザーメッセージ数で判定）
-                let userMessageCount = messages.filter { $0.role == .user }.count
                 if userMessageCount >= Constants.maxRoundTrips {
                     chatMessages.append(ChatMessage(role: .system, content: Constants.endConversationPrompt))
                 }
