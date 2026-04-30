@@ -52,6 +52,7 @@ struct OnboardingView: View {
 
                     // 始めるボタン
                     Button(action: {
+                        AnalyticsManager.logOnboardingCompleted()
                         onComplete()
                     }) {
                         Text("始める")

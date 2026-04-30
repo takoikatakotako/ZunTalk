@@ -36,8 +36,8 @@ final class ZunTalkUITests: XCTestCase {
         let app = createTestApp()
         app.launch()
 
-        // アプリが起動したことを確認（CI環境では60秒に延長）
-        let appRunning = app.wait(for: .runningForeground, timeout: 60)
+        // アプリが起動したことを確認（CI環境では90秒に延長）
+        let appRunning = app.wait(for: .runningForeground, timeout: 90)
         XCTAssertTrue(appRunning, "App should be running in foreground")
     }
 
