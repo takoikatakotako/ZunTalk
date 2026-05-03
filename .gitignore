@@ -142,3 +142,6 @@ backend/.idea/
 # MkDocs
 site/
 .cache/
+
+# Claude Code
+.claude/settings.local.json
