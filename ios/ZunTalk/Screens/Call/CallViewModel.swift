@@ -85,6 +85,7 @@ class CallViewModel: NSObject, ObservableObject {
             } catch {
                 switch error {
                 default:
+                    CrashlyticsManager.record(error)
                     print("通話エラー: \(error)")
                     await MainActor.run {
                         if let asset = NSDataAsset(name: Constants.errorVoiceAssetName) {

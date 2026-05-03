@@ -90,6 +90,7 @@ class ChatViewModel: NSObject, ObservableObject {
                     isConversationEnded = true
                 }
             } catch {
+                CrashlyticsManager.record(error)
                 messages.append(DisplayMessage(role: .assistant, content: "ごめんなさいなのだ。エラーが発生してしまったのだ…"))
             }
             isLoading = false
@@ -127,6 +128,7 @@ class ChatViewModel: NSObject, ObservableObject {
                 messages.append(message)
                 await playVoice(text: response, messageId: message.id)
             } catch {
+                CrashlyticsManager.record(error)
                 messages.append(DisplayMessage(role: .assistant, content: "エラーが出てしまったのだ…時間をあけてもう一度試して欲しいのだ！"))
                 isConversationEnded = true
             }
