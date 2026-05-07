@@ -368,7 +368,7 @@ class CallViewModel: NSObject, ObservableObject {
 
     private func playRingtone() {
         guard let asset = NSDataAsset(name: Constants.ringtoneAssetName) else {
-            print("⚠️ 着信音アセットが見つかりません: \(Constants.ringtoneAssetName)")
+            CrashlyticsManager.record(CallError.ringtoneNotFound)
             return
         }
 
