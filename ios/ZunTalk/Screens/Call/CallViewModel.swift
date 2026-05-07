@@ -21,7 +21,7 @@ class CallViewModel: NSObject, ObservableObject {
         static let conversationTimerInterval: TimeInterval = 1.0
         static let locale = Locale(identifier: "ja-JP")
         static let ringtoneAssetName = "maou_se_sound_phone02"
-        static let errorVoiceAssetName = "zundamon-error"
+        static let errorVoiceAssetName = "voice/zundamon-error"
 
         static let systemPrompt = """
             あなたはずんだの妖精のずんだもんです。語尾に「なのだ」をつけ、親しみやすく楽しい口調で話してください。
@@ -120,7 +120,7 @@ class CallViewModel: NSObject, ObservableObject {
         guard !shouldDismiss else { return }
 
         // 着信音を再生
-        try playRingtone()
+        playRingtone()
         guard !shouldDismiss else { return }
 
         // 初回の応答を生成
@@ -366,12 +366,13 @@ class CallViewModel: NSObject, ObservableObject {
 
     // MARK: - Private Methods - Audio Playback
 
-    private func playRingtone() throws {
+    private func playRingtone() {
         guard let asset = NSDataAsset(name: Constants.ringtoneAssetName) else {
-            throw CallError.ringtoneNotFound
+            print("⚠️ 着信音アセットが見つかりません: \(Constants.ringtoneAssetName)")
+            return
         }
 
-        audioPlayer = try AVAudioPlayer(data: asset.data)
+        audioPlayer = try? AVAudioPlayer(data: asset.data)
         audioPlayer?.numberOfLoops = -1
         audioPlayer?.prepareToPlay()
         audioPlayer?.play()
