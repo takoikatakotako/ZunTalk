@@ -55,6 +55,10 @@ jobs:
           IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
           echo "Deploying $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG to $LAMBDA_FUNCTION_NAME"
-          aws lambda update-function-code \
+          # 出力に Environment.Variables が含まれログに露出するため、Version のみ取得
+          VERSION=$(aws lambda update-function-code \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
-            --image-uri $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+            --image-uri $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            --publish \
+            --output text --query 'Version')
+          echo "Published version: $VERSION"
