@@ -57,6 +57,10 @@ jobs:
 
       - name: Deploy to Lambda (Dev)
         run: |
-          aws lambda update-function-code \
+          # 出力に Environment.Variables（OPENAI_API_KEY 等）が含まれログに露出するため、Version のみ取得
+          VERSION=$(aws lambda update-function-code \
             --function-name ${{ env.LAMBDA_FUNCTION_NAME }} \
-            --image-uri ${{ steps.build-image.outputs.image_uri }}
+            --image-uri ${{ steps.build-image.outputs.image_uri }} \
+            --publish \
+            --output text --query 'Version')
+          echo "Published version: $VERSION"
