@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 
 	"github.com/joho/godotenv"
@@ -14,6 +15,10 @@ import (
 func main() {
 	// .envファイルを読み込み（エラーは無視 - 本番環境では環境変数が直接設定される）
 	_ = godotenv.Load()
+
+	if err := config.ResolveSSMEnv(context.Background()); err != nil {
+		log.Fatalf("failed to resolve SSM environment variables: %v", err)
+	}
 
 	// 設定の読み込み
 	cfg := config.Load()

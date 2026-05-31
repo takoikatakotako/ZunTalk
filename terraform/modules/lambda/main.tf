@@ -49,6 +49,38 @@ resource "aws_iam_role_policy" "lambda_ecr" {
   })
 }
 
+resource "aws_iam_role_policy" "lambda_ssm" {
+  count = length(var.ssm_parameter_arns) > 0 ? 1 : 0
+
+  name = "${var.function_name}-ssm-policy"
+  role = aws_iam_role.lambda.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = concat(
+      [
+        {
+          Effect = "Allow"
+          Action = [
+            "ssm:GetParameter",
+            "ssm:GetParameters"
+          ]
+          Resource = var.ssm_parameter_arns
+        }
+      ],
+      length(var.kms_key_arns) > 0 ? [
+        {
+          Effect = "Allow"
+          Action = [
+            "kms:Decrypt"
+          ]
+          Resource = var.kms_key_arns
+        }
+      ] : []
+    )
+  })
+}
+
 resource "aws_cloudwatch_log_group" "lambda" {
   name              = "/aws/lambda/${var.function_name}"
   retention_in_days = var.log_retention_days

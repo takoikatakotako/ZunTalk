@@ -2,6 +2,19 @@ data "aws_ecr_repository" "backend" {
   name = "zuntalk-backend"
 }
 
+locals {
+  openai_api_key_parameter_name = "/zuntalk/stg/openai-api-key"
+}
+
+resource "aws_ssm_parameter" "openai_api_key" {
+  name             = local.openai_api_key_parameter_name
+  description      = "OpenAI API key for ZunTalk stg backend"
+  type             = "SecureString"
+  tier             = "Standard"
+  value_wo         = "replace-with-real-openai-api-key"
+  value_wo_version = 1
+}
+
 module "lambda" {
   source = "../../modules/lambda"
 
@@ -11,10 +24,14 @@ module "lambda" {
   memory_size   = 512
 
   environment_variables = {
-    OPENAI_API_KEY = var.openai_api_key
+    OPENAI_API_KEY = "ssm://${aws_ssm_parameter.openai_api_key.name}"
     PORT           = "8080"
     ENV            = "stg"
   }
+
+  ssm_parameter_arns = [
+    aws_ssm_parameter.openai_api_key.arn
+  ]
 
   log_retention_days = 14
 

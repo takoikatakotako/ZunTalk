@@ -26,6 +26,18 @@ variable "environment_variables" {
   default     = {}
 }
 
+variable "ssm_parameter_arns" {
+  description = "SSM parameter ARNs the Lambda function can read"
+  type        = list(string)
+  default     = []
+}
+
+variable "kms_key_arns" {
+  description = "KMS key ARNs the Lambda function can use to decrypt SSM SecureString parameters"
+  type        = list(string)
+  default     = []
+}
+
 variable "log_retention_days" {
   description = "CloudWatch log retention in days"
   type        = number

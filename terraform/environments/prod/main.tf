@@ -2,6 +2,29 @@
 # Lambda Functions
 # =============================================================================
 
+locals {
+  openai_api_key_parameter_name    = "/zuntalk/prod/openai-api-key"
+  slack_webhook_url_parameter_name = "/zuntalk/prod/slack-webhook-url"
+}
+
+resource "aws_ssm_parameter" "openai_api_key" {
+  name             = local.openai_api_key_parameter_name
+  description      = "OpenAI API key for ZunTalk prod backend"
+  type             = "SecureString"
+  tier             = "Standard"
+  value_wo         = "replace-with-real-openai-api-key"
+  value_wo_version = 1
+}
+
+resource "aws_ssm_parameter" "slack_webhook_url" {
+  name             = local.slack_webhook_url_parameter_name
+  description      = "Slack webhook URL for ZunTalk prod error notifications"
+  type             = "SecureString"
+  tier             = "Standard"
+  value_wo         = "replace-with-real-slack-webhook-url"
+  value_wo_version = 1
+}
+
 # バックエンドAPI
 module "lambda_backend" {
   source = "../../modules/lambda"
@@ -12,10 +35,14 @@ module "lambda_backend" {
   memory_size   = 512
 
   environment_variables = {
-    OPENAI_API_KEY = var.openai_api_key
+    OPENAI_API_KEY = "ssm://${aws_ssm_parameter.openai_api_key.name}"
     PORT           = "8080"
     ENV            = "prod"
   }
+
+  ssm_parameter_arns = [
+    aws_ssm_parameter.openai_api_key.arn
+  ]
 
   log_retention_days = 7
 
@@ -42,8 +69,12 @@ module "lambda_slack_notifier" {
   memory_size   = 128
 
   environment_variables = {
-    SLACK_WEBHOOK_URL = var.slack_webhook_url
+    SLACK_WEBHOOK_URL = "ssm://${aws_ssm_parameter.slack_webhook_url.name}"
   }
+
+  ssm_parameter_arns = [
+    aws_ssm_parameter.slack_webhook_url.arn
+  ]
 
   log_retention_days = 7
 
