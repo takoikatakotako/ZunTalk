@@ -4,8 +4,7 @@
 
 slack_notifier_image_uri = "448049807848.dkr.ecr.ap-northeast-1.amazonaws.com/zuntalk-slack-notifier:latest"
 
-# =============================================================================
-# Secret Variables (secret.auto.tfvars に記載)
-# =============================================================================
-# openai_api_key    = "sk-proj-xxx"
-# slack_webhook_url = "https://hooks.slack.com/services/xxx"
+# Secrets are stored as SSM SecureString parameters, not Terraform variables.
+# Required paths:
+# - /zuntalk/dev/openai-api-key
+# - /zuntalk/dev/slack-webhook-url

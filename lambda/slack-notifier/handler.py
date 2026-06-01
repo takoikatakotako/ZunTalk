@@ -5,8 +5,49 @@ import os
 import urllib.request
 
 
+SSM_PREFIX = "ssm://"
+_ssm_client = None
+_resolved_env = {}
+
+
+def _get_ssm_client():
+    global _ssm_client
+    if _ssm_client is None:
+        import boto3
+
+        _ssm_client = boto3.client("ssm")
+    return _ssm_client
+
+
+def resolve_env(name):
+    value = os.environ.get(name)
+    if not value:
+        return None
+    if not value.startswith(SSM_PREFIX):
+        return value
+    if name in _resolved_env:
+        return _resolved_env[name]
+
+    parameter_name = value.removeprefix(SSM_PREFIX)
+    if not parameter_name:
+        raise ValueError(f"{name} has empty SSM parameter name")
+
+    response = _get_ssm_client().get_parameter(
+        Name=parameter_name,
+        WithDecryption=True,
+    )
+    resolved = response["Parameter"]["Value"]
+    _resolved_env[name] = resolved
+    return resolved
+
+
 def lambda_handler(event, context):
-    slack_webhook_url = os.environ.get("SLACK_WEBHOOK_URL")
+    try:
+        slack_webhook_url = resolve_env("SLACK_WEBHOOK_URL")
+    except Exception as e:
+        print(f"Failed to resolve SLACK_WEBHOOK_URL: {type(e).__name__}")
+        return {"statusCode": 500, "body": "Failed to resolve SLACK_WEBHOOK_URL"}
+
     if not slack_webhook_url:
         print("SLACK_WEBHOOK_URL is not set")
         return {"statusCode": 500, "body": "SLACK_WEBHOOK_URL is not set"}

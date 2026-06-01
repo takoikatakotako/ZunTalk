@@ -57,32 +57,34 @@ GitHubリポジトリの Settings > Secrets and variables > Actions で以下を
 ```bash
 cd terraform/environments/dev
 
-# 環境変数でOpenAI APIキーを設定
-export TF_VAR_openai_api_key="sk-proj-your_api_key_here"
-
 terraform init
 terraform plan
 terraform apply
+
+# Terraformが作成したSecureStringパラメータのダミー値を実値に更新
+aws ssm put-parameter --name /zuntalk/dev/openai-api-key --type SecureString --value "sk-proj-your_api_key_here" --overwrite
+aws ssm put-parameter --name /zuntalk/dev/slack-webhook-url --type SecureString --value "https://hooks.slack.com/services/..." --overwrite
 ```
 
 #### Stg環境
 
 ```bash
 cd terraform/environments/stg
-export TF_VAR_openai_api_key="sk-proj-your_api_key_here"
 terraform init
 terraform plan
 terraform apply
+aws ssm put-parameter --name /zuntalk/stg/openai-api-key --type SecureString --value "sk-proj-your_api_key_here" --overwrite
 ```
 
 #### Prod環境
 
 ```bash
 cd terraform/environments/prod
-export TF_VAR_openai_api_key="sk-proj-your_api_key_here"
 terraform init
 terraform plan
 terraform apply
+aws ssm put-parameter --name /zuntalk/prod/openai-api-key --type SecureString --value "sk-proj-your_api_key_here" --overwrite
+aws ssm put-parameter --name /zuntalk/prod/slack-webhook-url --type SecureString --value "https://hooks.slack.com/services/..." --overwrite
 ```
 
 ## デプロイフロー
@@ -118,9 +120,11 @@ terraform apply
 
 ## 環境変数
 
-各環境で以下の環境変数を設定する必要があります：
+各環境で以下の設定を行います：
 
-- `TF_VAR_openai_api_key`: OpenAI APIキー（必須）
+- OpenAI APIキーやSlack Webhook URLはTerraformがSSM Parameter StoreのSecureStringパラメータを作成
+- Terraformは`value_wo`で初期ダミー値だけを書き込み、実値は`aws ssm put-parameter --overwrite`で手動更新
+- Lambda環境変数には`ssm:///zuntalk/{env}/...`形式の参照パスのみ設定
 - `TF_VAR_region`: AWSリージョン（デフォルト: ap-northeast-1）
 
 ## リソース概要

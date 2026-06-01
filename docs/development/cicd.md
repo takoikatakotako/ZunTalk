@@ -183,10 +183,10 @@ docker build -t zuntalk-backend backend/
 
 ### Terraformエラー
 
-**原因:** 環境変数未設定
+**原因:** SSM SecureStringパラメータの実値未更新、またはLambda実行ロールのSSM参照権限不足
 
 **対策:**
 ```bash
-export TF_VAR_openai_api_key="sk-proj-..."
+aws ssm put-parameter --name /zuntalk/dev/openai-api-key --type SecureString --value "sk-proj-..." --overwrite
 terraform plan
 ```
