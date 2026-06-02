@@ -15,6 +15,7 @@
 		179559942F66D6E60071E7FB /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = 179559932F66D6E60071E7FB /* FirebaseAnalyticsCore */; };
 		179559962F66D6E60071E7FB /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 179559952F66D6E60071E7FB /* FirebaseCore */; };
 		179559982F66D6E60071E7FB /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 179559972F66D6E60071E7FB /* FirebaseCrashlytics */; };
+		17F2A0022FCE390000000001 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 17F2A0012FCE390000000001 /* GoogleMobileAds */; };
 		17AE5B662F378E6700BAC024 /* open_jtalk_dic_utf_8-1.11 in Resources */ = {isa = PBXBuildFile; fileRef = 17AE5B652F378E6600BAC024 /* open_jtalk_dic_utf_8-1.11 */; };
 		17AE5B682F378E7600BAC024 /* vvms in Resources */ = {isa = PBXBuildFile; fileRef = 17AE5B672F378E7600BAC024 /* vvms */; };
 		17DD5D532EEB21EB00DA8574 /* Development.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 17DD5D522EEB21EB00DA8574 /* Development.xcconfig */; };
@@ -117,6 +118,7 @@
 				179559982F66D6E60071E7FB /* FirebaseCrashlytics in Frameworks */,
 				179559922F66D6E60071E7FB /* FirebaseAnalytics in Frameworks */,
 				179559942F66D6E60071E7FB /* FirebaseAnalyticsCore in Frameworks */,
+				17F2A0022FCE390000000001 /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -197,6 +199,7 @@
 				179559932F66D6E60071E7FB /* FirebaseAnalyticsCore */,
 				179559952F66D6E60071E7FB /* FirebaseCore */,
 				179559972F66D6E60071E7FB /* FirebaseCrashlytics */,
+				17F2A0012FCE390000000001 /* GoogleMobileAds */,
 			);
 			productName = ZunTalk;
 			productReference = 1780EE602E313B1A00CF634A /* ZunTalk.app */;
@@ -282,6 +285,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				179559902F66D6E60071E7FB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				17F2A0002FCE390000000001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1780EE612E313B1A00CF634A /* Products */;
@@ -712,6 +716,14 @@
 				minimumVersion = 12.10.0;
 			};
 		};
+		17F2A0002FCE390000000001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 13.4.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -734,6 +746,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 179559902F66D6E60071E7FB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCrashlytics;
+		};
+		17F2A0012FCE390000000001 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 17F2A0002FCE390000000001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
