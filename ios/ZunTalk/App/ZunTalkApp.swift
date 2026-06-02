@@ -1,14 +1,13 @@
 import SwiftUI
 import FirebaseCore
 import FirebaseCrashlytics
-import GoogleMobileAds
 
 @main
 struct ZunTalkApp: App {
     init() {
         FirebaseApp.configure()
         Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
-        MobileAds.shared.start()
+        AdManager.shared.startIfNeeded()
     }
 
     var body: some Scene {

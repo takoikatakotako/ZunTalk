@@ -32,6 +32,9 @@ private struct BannerViewContainer: UIViewRepresentable {
         let banner = BannerView(adSize: adSize)
         banner.adUnitID = adUnitID
         banner.delegate = context.coordinator
+        banner.rootViewController = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.windows.first?.rootViewController
         banner.load(Request())
         return banner
     }
