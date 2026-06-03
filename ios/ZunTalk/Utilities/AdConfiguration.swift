@@ -35,6 +35,10 @@ final class AdManager {
     private init() {}
 
     func startIfNeeded() {
+        guard !ProcessInfo.processInfo.arguments.contains("UI-TESTING") else {
+            return
+        }
+
         guard !isStarted else {
             return
         }
