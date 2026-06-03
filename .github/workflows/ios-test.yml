@@ -16,6 +16,7 @@ jobs:
   test:
     name: Run iOS Tests
     runs-on: macos-15
+    timeout-minutes: 25
     permissions:
       id-token: write
       contents: read
@@ -26,9 +27,6 @@ jobs:
 
       - name: Show Xcode version
         run: xcodebuild -version
-
-      - name: List available simulators
-        run: xcrun simctl list devices available
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
