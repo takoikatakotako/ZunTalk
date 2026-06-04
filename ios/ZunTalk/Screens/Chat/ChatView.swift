@@ -41,9 +41,6 @@ struct ChatView: View {
 
             Divider()
 
-            AdBannerView()
-                .padding(.top, 8)
-
             HStack(spacing: 8) {
                 if viewModel.isConversationEnded {
                     Text("会話が終了しました")
