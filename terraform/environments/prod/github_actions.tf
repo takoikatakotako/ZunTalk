@@ -1,15 +1,11 @@
 # =============================================================================
 # GitHub Actions OIDC Provider
 # =============================================================================
-
-resource "aws_iam_openid_connect_provider" "github_actions" {
-  url             = "https://token.actions.githubusercontent.com"
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [var.github_oidc_thumbprint]
-
-  tags = {
-    Name = "github-actions-oidc-provider"
-  }
+# OIDC プロバイダーは AWS アカウントに1つしか作れない共有リソース。
+# このアカウントでは charalarm 側が本体を管理しているため、ZunTalk は
+# data で参照するのみとし、tags/thumbprint には一切触れない。
+data "aws_iam_openid_connect_provider" "github_actions" {
+  url = "https://token.actions.githubusercontent.com"
 }
 
 # =============================================================================
@@ -22,7 +18,7 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
 
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.github_actions.arn]
+      identifiers = [data.aws_iam_openid_connect_provider.github_actions.arn]
     }
 
     actions = ["sts:AssumeRoleWithWebIdentity"]
