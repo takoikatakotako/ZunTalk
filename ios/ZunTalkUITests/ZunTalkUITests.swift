@@ -43,9 +43,13 @@ final class ZunTalkUITests: XCTestCase {
 
     @MainActor
     func testLaunchPerformance() throws {
+        if ProcessInfo.processInfo.environment["CI"] == "true" {
+            throw XCTSkip("Launch performance measurement is not stable on GitHub Actions simulators.")
+        }
+
         // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
+            createTestApp().launch()
         }
     }
 
