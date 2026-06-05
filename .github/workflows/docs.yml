@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'docs/**'
+      - 'landing/**'
       - 'mkdocs.yml'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
@@ -39,8 +40,13 @@ jobs:
           pip install mkdocs-material
           pip install pymdown-extensions
 
-      - name: Build documentation
-        run: mkdocs build
+      - name: Build landing page + documentation
+        run: |
+          # ランディングページ（App Store 誘導）をサイトのルートに配置
+          mkdir -p site
+          cp -r landing/. site/
+          # 開発ドキュメント（MkDocs）は /docs/ 配下へビルド
+          mkdocs build -d site/docs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
