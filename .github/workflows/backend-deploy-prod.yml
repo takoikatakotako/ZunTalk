@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Configure AWS credentials (Shared - for ECR)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::${{ env.SHARED_ACCOUNT_ID }}:role/zuntalk-shared-github-actions
           aws-region: ${{ env.AWS_REGION }}
@@ -44,7 +44,7 @@ jobs:
             --image-ids imageTag=$IMAGE_TAG
 
       - name: Configure AWS credentials (Prod - for Lambda)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::${{ env.PROD_ACCOUNT_ID }}:role/zuntalk-prod-github-actions
           aws-region: ${{ env.AWS_REGION }}

@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Configure AWS credentials (Dev)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::${{ env.DEV_ACCOUNT_ID }}:role/zuntalk-dev-github-actions
           aws-region: ${{ env.AWS_REGION }}
@@ -72,7 +72,7 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
 
       - name: Configure AWS credentials (Prod)
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: arn:aws:iam::${{ env.PROD_ACCOUNT_ID }}:role/zuntalk-prod-github-actions
           aws-region: ${{ env.AWS_REGION }}
