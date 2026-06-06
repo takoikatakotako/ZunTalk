@@ -6,7 +6,7 @@ final class AdManager {
     static let shared = AdManager()
 
     /// Google 公式のテスト用バナー広告ユニットID
-    private static let testBannerAdUnitID = "ca-app-pub-3940256099942544/2435281174"
+    nonisolated private static let testBannerAdUnitID = "ca-app-pub-3940256099942544/2435281174"
 
     /// 表示するバナー広告ユニットID。
     /// Debug / TestFlight ではテスト広告、App Store 本番では Info.plist の値を使う。
