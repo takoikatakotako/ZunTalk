@@ -54,7 +54,7 @@ private struct BannerViewContainer: UIViewRepresentable {
     }
 
     private func adSize(for width: CGFloat) -> AdSize {
-        currentOrientationAnchoredAdaptiveBanner(width: max(width, 320))
+        largeAnchoredAdaptiveBanner(width: max(width, 320))
     }
 
     private static var rootViewController: UIViewController? {
