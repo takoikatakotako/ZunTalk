@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2026-06-06
+
+### Added
+- AdMob バナー広告を導入（連絡先リスト下部に表示）
+- App Store 向けランディングページを追加し、ドキュメントを `/docs/` 配下で公開
+
+### Changed
+- 共有 OIDC プロバイダを data 参照に変更（dev/prod）
+- GitHub Actions を Node.js 24 対応版へ更新
+- Lambda のシークレットを SSM パラメータから解決するよう変更
+
+## [1.4.1] - 2026-05-12
+
+### Fixed
+- 着信音が取得できない場合でも通話を継続するよう修正（失敗は Crashlytics に記録）
+
+## [1.4.0] - 2026-05-03
+
+### Added
+- Firebase Analytics のイベント計測を実装
+- Firebase Crashlytics を有効化してエラーを記録
+
+### Fixed
+- CI 安定化（UI テストの起動タイムアウト延長、SwiftLint 対応）
+
+## [1.3.0] - 2026-03-29
+
+### Added
+- テキストチャット機能を追加
+- チャット画面に VOICEVOX 音声再生と初回挨拶を追加
+- チャットの最大会話回数を往復40回に制限
+- Firebase Analytics / Crashlytics を導入
+- SwiftLint を導入してコード品質を改善
+- OpenAI API リクエストに Exponential Backoff リトライを追加
+- ChatViewModel のユニットテストとバックエンド Go テストの CI を追加
+
+### Changed
+- リトライロジックを hashicorp/go-retryablehttp に置き換え
+
+### Fixed
+- チャット画面の音声停止・エラーハンドリングを改善
+
 ## [1.2.0] - 2026-02-17
 
 ### Added
