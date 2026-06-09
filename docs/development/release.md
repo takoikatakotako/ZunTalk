@@ -4,25 +4,27 @@ ZunTalkのリリース手順を説明します。
 
 ## iOSアプリのリリースフロー
 
-### 1. リリースブランチの作成
+**トランクベース + タグ**で運用します。`main` を常にリリース可能な状態に保ち、長命なリリースブランチは作りません。各リリースは `main` 上のコミットに打つタグ `ios/v{version}` で確定します。
 
-mainブランチから新しいリリースブランチを作成します。
+### 1. バージョン番号の更新（短命ブランチ）
+
+`main` から短命の作業ブランチを作成します（リリースブランチは作りません）。
 
 ```bash
 git checkout main
 git pull
-git checkout -b release/ios/{version}
+git checkout -b chore/bump-version-{version}
 ```
 
-**命名規則:** `release/ios/{version}` (例: `release/ios/1.2.0`)
+**命名規則の例:** `chore/bump-version-1.5.0`
 
-### 2. バージョン番号の更新
+以下でバージョン番号を更新します：
 
-以下のファイルでバージョン番号を更新します：
+- `ios/ZunTalk.xcodeproj/project.pbxproj`
+  - `MARKETING_VERSION`: マーケティングバージョン（アプリ本体ターゲットの Debug / Release の2箇所、例: `1.5.0`）
+  - `CURRENT_PROJECT_VERSION`: ビルド番号（同一マーケティングバージョンで再アップロードする場合のみ増やす）
 
-- `ios/ZunTalk/Info.plist`
-  - `CFBundleShortVersionString`: マーケティングバージョン (例: 1.2.0)
-  - `CFBundleVersion`: ビルド番号 (例: 1)
+> バージョンは `Info.plist` ではなくビルド設定（`MARKETING_VERSION`）が真実。`Info.plist` は値を持ちません。
 
 バージョニング規則：
 - セマンティックバージョニング: `MAJOR.MINOR.PATCH`
@@ -30,81 +32,73 @@ git checkout -b release/ios/{version}
   - **MINOR**: 後方互換性のある機能追加
   - **PATCH**: バグフィックス
 
-### 3. CHANGELOGの更新
+### 2. CHANGELOGの更新
 
-`CHANGELOG.md` を更新します（作成されていない場合は作成）。
+`CHANGELOG.md` の先頭に新しいバージョンのエントリを追加します。
 
 ```markdown
-## [1.2.0] - 2026-02-17
+## [1.5.0] - 2026-06-06
 
 ### Added
-- 完全オフライン対応（機内モードでも起動可能）
-- 古いVOICEVOXリソースを自動削除するマイグレーション処理
+- AdMob バナー広告を導入（連絡先リスト下部に表示）
 
 ### Changed
-- ネットワーク状態を監視するNetworkRepositoryを追加
+- (該当する場合)
 
 ### Fixed
 - (該当する場合)
 ```
 
-### 4. コミット & プッシュ
+### 3. PR 作成 & main へマージ
 
 ```bash
 git add .
-git commit -m "chore: bump version to 1.2.0"
-git push -u origin release/ios/1.2.0
+git commit -m "chore: bump version to {version}"
+git push -u origin chore/bump-version-{version}
 ```
 
-### 5. Archive & TestFlightアップロード
+GitHub で PR を作成し、CI が通ったら `main` へマージします。`main` は常にリリース可能な状態を保ちます。
 
-1. Xcodeでプロジェクトを開く
-2. スキームを **Release** に変更
-3. **Product > Archive** を実行
-4. Archiveが成功したら、**Distribute App** を選択
-5. **App Store Connect** を選択してTestFlightにアップロード
+### 4. Archive & App Store Connect アップロード
 
-### 6. TestFlightでのテスト
+`main` の最新コミット（リリースに含めたい変更がすべてマージ済みの状態）から Archive します。
 
-- 社内テスト: 開発チームで動作確認
-- 外部テスト: ベータテスターで確認（必要に応じて）
+1. `git checkout main && git pull` で最新に同期
+2. Xcode でスキームを **Release** に変更
+3. ターゲットを **Any iOS Device (arm64)** に設定
+4. **Product > Archive** を実行
+5. Organizer で **Distribute App → App Store Connect → Upload**
 
-### 7. mainブランチへのマージ
+### 5. タグの作成（アップロード成功後）
 
-テストが完了したら、mainにマージします。
-
-```bash
-# GitHubでPRを作成してマージ、またはローカルでマージ
-git checkout main
-git merge release/ios/1.2.0
-git push origin main
-```
-
-### 8. タグの作成
-
-mainブランチでリリースタグを作成します。
+アップロードが成功したら、**提出したコミット**にタグを打ちます。出荷していないコミットにタグを残さないため、Archive 前ではなくアップロード成功後に打ちます。
 
 ```bash
 git checkout main
 git pull
-git tag -a ios/v1.2.0 -m "iOS v1.2.0 release"
-git push origin ios/v1.2.0
+git tag -a ios/v{version} -m "iOS v{version} release"
+git push origin ios/v{version}
 ```
 
-**命名規則:** `ios/v{version}` (例: `ios/v1.2.0`)
+**命名規則:** `ios/v{version}` (例: `ios/v1.5.0`)
 
-### 9. リリースブランチの削除
+### 6. TestFlight / App Store 申請
+
+1. TestFlight で動作確認（必要に応じて社内/外部テスト）
+2. App Store Connect で新しいバージョンを作成
+3. スクリーンショット、説明文、「このバージョンの新機能」を更新
+4. 審査に提出
+
+> TestFlight 配信ビルドは `sandboxReceipt` 判定で自動的にテスト広告を表示します。実広告が出るのは App Store 公開ビルドのみです。
+
+### Hotfix
+
+公開済みバージョンの緊急修正は、対象タグから枝を切って対応します。
 
 ```bash
-git branch -d release/ios/1.2.0
-git push origin --delete release/ios/1.2.0
+git checkout -b hotfix/ios-{patch-version} ios/v{released-version}
+# 修正をコミット → PR で main へマージ → 上記 1〜5 の手順で {patch-version} をリリース
 ```
-
-### 10. App Store申請（必要に応じて）
-
-1. App Store Connectで新しいバージョンを作成
-2. スクリーンショット、説明文などを更新
-3. 審査に提出
 
 ---
 
@@ -158,18 +152,16 @@ git push origin backend/v1.0.1
 
 ### iOSリリース前
 
-- [ ] リリースブランチ作成 (`release/ios/{version}`)
-- [ ] バージョン番号更新（Info.plist）
+- [ ] バージョン番号更新（`project.pbxproj` の `MARKETING_VERSION`）
 - [ ] CHANGELOG更新
-- [ ] Archive成功
-- [ ] TestFlightアップロード成功
-- [ ] 社内テスト完了
+- [ ] PR を作成し CI 通過後に main へマージ
+- [ ] main を最新に同期して Archive 成功
+- [ ] App Store Connect アップロード成功
 
 ### iOSリリース後
 
-- [ ] mainにマージ
-- [ ] タグ作成 (`ios/v{version}`)
-- [ ] リリースブランチ削除
+- [ ] タグ作成 (`ios/v{version}`、アップロード成功後に main へ)
+- [ ] TestFlight で動作確認
 - [ ] App Store申請（必要に応じて）
 
 ### バックエンドリリース前
