@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-06-11
+
+### Changed
+- 輸出コンプライアンスの自己申告キー（`ITSAppUsesNonExemptEncryption`）を追加し、アップロード時の暗号化に関する質問をスキップ（#88）
+
+### Fixed
+- ビルド設定ファイル（`Development.xcconfig` / `Production.xcconfig`）がアプリバンドルに同梱されていた問題を修正（Copy Bundle Resources から除外）（#89）
+
 ## [1.5.0] - 2026-06-06
 
 ### Added

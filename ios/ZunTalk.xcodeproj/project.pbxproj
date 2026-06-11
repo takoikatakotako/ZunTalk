@@ -18,8 +18,6 @@
 		17F2A0022FCE390000000001 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 17F2A0012FCE390000000001 /* GoogleMobileAds */; };
 		17AE5B662F378E6700BAC024 /* open_jtalk_dic_utf_8-1.11 in Resources */ = {isa = PBXBuildFile; fileRef = 17AE5B652F378E6600BAC024 /* open_jtalk_dic_utf_8-1.11 */; };
 		17AE5B682F378E7600BAC024 /* vvms in Resources */ = {isa = PBXBuildFile; fileRef = 17AE5B672F378E7600BAC024 /* vvms */; };
-		17DD5D532EEB21EB00DA8574 /* Development.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 17DD5D522EEB21EB00DA8574 /* Development.xcconfig */; };
-		17DD5D552EEB21F800DA8574 /* Production.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 17DD5D542EEB21F800DA8574 /* Production.xcconfig */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -304,9 +302,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				17DD5D552EEB21F800DA8574 /* Production.xcconfig in Resources */,
 				17AE5B662F378E6700BAC024 /* open_jtalk_dic_utf_8-1.11 in Resources */,
-				17DD5D532EEB21EB00DA8574 /* Development.xcconfig in Resources */,
 				17AE5B682F378E7600BAC024 /* vvms in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -482,7 +478,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5.0;
+				MARKETING_VERSION = 1.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.swiswiswift.zuntalk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -616,7 +612,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5.0;
+				MARKETING_VERSION = 1.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.swiswiswift.zuntalk;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
