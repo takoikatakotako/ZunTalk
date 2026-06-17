@@ -167,13 +167,13 @@ struct TermsAgreementText: View {
     }
 
     private func openTermsURL() {
-        if let url = URL(string: "https://takoikatakotako.github.io/projects/zuntalk/terms.html") {
+        if let url = URL(string: "https://takoikatakotako.github.io/ZunTalk/terms.html") {
             UIApplication.shared.open(url)
         }
     }
 
     private func openPrivacyURL() {
-        if let url = URL(string: "https://takoikatakotako.github.io/projects/zuntalk/privacy.html") {
+        if let url = URL(string: "https://takoikatakotako.github.io/ZunTalk/privacy.html") {
             UIApplication.shared.open(url)
         }
     }
