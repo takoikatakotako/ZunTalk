@@ -28,7 +28,9 @@ final class AdManager {
         #if DEBUG
         return true
         #else
-        return Bundle.main.appStoreReceiptURL?.lastPathComponent == "sandboxReceipt"
+        // App Store 配信ビルドには embedded.mobileprovision が含まれない。
+        // TestFlight / 開発ビルドには含まれるため、その場合はテスト広告を使う。
+        return Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision") != nil
         #endif
     }
 
