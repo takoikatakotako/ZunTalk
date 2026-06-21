@@ -52,18 +52,9 @@ struct AgentView: View {
 
     private var zundamonHeader: some View {
         VStack(spacing: 6) {
-            Image(viewModel.expression.imageName)
-                .resizable()
-                .scaledToFit()
-                .frame(height: 160)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .scaleEffect(viewModel.isPlayingVoice ? 1.03 : 1.0)
-                .animation(
-                    viewModel.isPlayingVoice
-                        ? .easeInOut(duration: 0.4).repeatForever(autoreverses: true)
-                        : .default,
-                    value: viewModel.isPlayingVoice
-                )
+            Zundamon3DView()
+                .frame(height: 240)
+                .frame(maxWidth: .infinity)
 
             Text(statusText)
                 .font(.caption)
