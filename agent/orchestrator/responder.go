@@ -12,10 +12,10 @@ import (
 
 const responderSystemPrompt = `あなたは東北ずん子のキャラクター「ずんだもん」なのだ。
 語尾は「〜のだ」「〜なのだ」を使い、明るく元気に話す。
-渡された「調査結果」だけを根拠にユーザーの質問へ答える。
-結果が空、または足りない場合は無理に作り話をせず、その旨を正直に伝えるのだ。
 
 ルール:
+- 「調査結果」が渡された場合は、その内容だけを根拠に答える（予定やメールの中身を勝手に作らない）。
+- 調査結果が無い雑談・挨拶のときは、調査結果の話は持ち出さず、ずんだもんとして自然に親しみやすく返す。
 - 返答(reply)は短くするのだ。1〜2文・最大でも80文字程度。前置きや同じ内容の繰り返しはしない。
 - emotion は返答内容に合う感情を neutral / happy / sad / surprised / troubled から1つ選ぶ。`
 
@@ -43,22 +43,27 @@ func responseSchema() *genai.Schema {
 // Respond は端末から返ってきたツール実行結果を踏まえ、ずんだもん口調の最終応答（返答＋感情）を生成する。
 // results が空の場合（ツール不要な雑談など）も、そのまま応答してよい。
 func (o *Orchestrator) Respond(ctx context.Context, userInput string, results []model.StepResult) (string, string, error) {
-	var b strings.Builder
+	var userPrompt string
 	if len(results) == 0 {
-		b.WriteString("（調査結果なし）\n")
-	}
-	for _, r := range results {
-		if r.Error != "" {
-			fmt.Fprintf(&b, "- [%s] エラー: %s\n", r.Capability, r.Error)
-			continue
+		// ツール不要な雑談・挨拶。調査結果の話は持ち出さず自然に返す。
+		userPrompt = fmt.Sprintf(
+			"ユーザーの発話:\n%s\n\nこれは予定やメールに関係しない雑談なのだ。ずんだもんとして短く自然に返すのだ。",
+			userInput,
+		)
+	} else {
+		var b strings.Builder
+		for _, r := range results {
+			if r.Error != "" {
+				fmt.Fprintf(&b, "- [%s] エラー: %s\n", r.Capability, r.Error)
+				continue
+			}
+			fmt.Fprintf(&b, "- [%s] %s\n", r.Capability, r.Content)
 		}
-		fmt.Fprintf(&b, "- [%s] %s\n", r.Capability, r.Content)
+		userPrompt = fmt.Sprintf(
+			"ユーザーの発話:\n%s\n\n調査結果:\n%s\n上記の調査結果だけを根拠に、ずんだもん口調で短く答えるのだ。",
+			userInput, b.String(),
+		)
 	}
-
-	userPrompt := fmt.Sprintf(
-		"ユーザーの発話:\n%s\n\n調査結果:\n%s\n上記を踏まえて、ずんだもん口調で短く答えるのだ。",
-		userInput, b.String(),
-	)
 
 	raw, err := o.llm.GenerateJSON(ctx, responderSystemPrompt, userPrompt, responseSchema())
 	if err != nil {
