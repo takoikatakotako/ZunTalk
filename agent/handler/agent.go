@@ -43,7 +43,7 @@ func (h *AgentHandler) HandleAgent(c echo.Context) error {
 
 	// 2巡目以降: 端末でのツール実行結果が来ている → 最終応答を生成。
 	if len(req.Results) > 0 {
-		reply, err := h.orch.Respond(ctx, req.Message, req.Results)
+		reply, emotion, err := h.orch.Respond(ctx, req.Message, req.Results)
 		if err != nil {
 			slog.Error("Failed to respond", "error", err)
 			return c.JSON(http.StatusInternalServerError, model.ErrorResponse{
@@ -52,8 +52,9 @@ func (h *AgentHandler) HandleAgent(c echo.Context) error {
 			})
 		}
 		return c.JSON(http.StatusOK, model.AgentResponse{
-			Type:  model.ResponseTypeFinal,
-			Reply: reply,
+			Type:    model.ResponseTypeFinal,
+			Reply:   reply,
+			Emotion: emotion,
 		})
 	}
 
@@ -69,7 +70,7 @@ func (h *AgentHandler) HandleAgent(c echo.Context) error {
 
 	// ツール不要（雑談など）→ そのまま最終応答。
 	if len(plan) == 0 {
-		reply, err := h.orch.Respond(ctx, req.Message, nil)
+		reply, emotion, err := h.orch.Respond(ctx, req.Message, nil)
 		if err != nil {
 			slog.Error("Failed to respond", "error", err)
 			return c.JSON(http.StatusInternalServerError, model.ErrorResponse{
@@ -78,8 +79,9 @@ func (h *AgentHandler) HandleAgent(c echo.Context) error {
 			})
 		}
 		return c.JSON(http.StatusOK, model.AgentResponse{
-			Type:  model.ResponseTypeFinal,
-			Reply: reply,
+			Type:    model.ResponseTypeFinal,
+			Reply:   reply,
+			Emotion: emotion,
 		})
 	}
 

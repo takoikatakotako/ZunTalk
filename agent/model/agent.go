@@ -52,11 +52,22 @@ type AgentResponse struct {
 	Plan []PlanStep `json:"plan,omitempty"`
 	// Reply は Type=="final" のとき、ずんだもんの最終応答テキスト。
 	Reply string `json:"reply,omitempty"`
+	// Emotion は Type=="final" のとき、返答に対応する感情（端末の表情切替用）。
+	Emotion string `json:"emotion,omitempty"`
 }
 
 const (
 	ResponseTypeToolCalls = "tool_calls"
 	ResponseTypeFinal     = "final"
+)
+
+// 返答の感情（表情にマップする）。
+const (
+	EmotionNeutral   = "neutral"
+	EmotionHappy     = "happy"
+	EmotionSad       = "sad"
+	EmotionSurprised = "surprised"
+	EmotionTroubled  = "troubled"
 )
 
 // ErrorResponse はエラー時のレスポンス（backend と同じ形式に揃える）。
