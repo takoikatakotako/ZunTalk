@@ -25,13 +25,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      # WIF で GCP に認証。値は terraform output（wif_provider / deploy_service_account_email）を直書き。
-      # 秘密情報ではない。初回 apply 後に値を反映すること（PROJECT_NUMBER は sandbox-492513 の番号）。
+      # WIF で GCP に認証。gcp-iac が sandbox に用意した共有 WIF / Terraform SA を借用する。
+      # 値は gcp-iac terraform/sandbox の output（wif_provider / terraform_service_account_email）。秘密情報ではない。
       - name: Authenticate to Google Cloud (WIF)
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/zuntalk-github-actions/providers/github
-          service_account: github-actions-agent@sandbox-492513.iam.gserviceaccount.com
+          workload_identity_provider: projects/870183222406/locations/global/workloadIdentityPools/github-actions/providers/github
+          service_account: github-actions-terraform@sandbox-492513.iam.gserviceaccount.com
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2

@@ -22,12 +22,6 @@ variable "gemini_model" {
   default     = "gemini-2.5-flash"
 }
 
-variable "github_repo" {
-  description = "WIF で許可する GitHub リポジトリ（owner/repo）。デプロイ Workflow が動くリポジトリ。"
-  type        = string
-  default     = "takoikatakotako/ZunTalk"
-}
-
 variable "image" {
   description = "Cloud Run の初期イメージ。実イメージは CI(agent-deploy.yml)が更新し、TF は ignore_changes で無視する。"
   type        = string
