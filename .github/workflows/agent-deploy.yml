@@ -1,57 +1,17 @@
-name: Agent Build and Deploy (Cloud Run)
+name: Agent Deploy (skeleton)
+
+# main にはスケルトンのみを置く（hello を出すだけ）。
+# 実際の build → push → Cloud Run deploy のロジックは feature ブランチ側の
+# 同名ワークフローに実装し、`gh workflow run agent-deploy.yml --ref <branch>` で
+# そのブランチ版を実行する（workflow_dispatch はワークフローが default ブランチに
+# 存在しないと使えないため、登録用にこの最小版を main へ載せる）。
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'agent/**'
   workflow_dispatch: {}
 
-env:
-  PROJECT_ID: sandbox-492513
-  REGION: asia-northeast1
-  SERVICE: zuntalk-agent
-  REPO: zuntalk-agent
-
 jobs:
-  build-and-deploy:
+  hello:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      # WIF で GCP に認証。gcp-iac が sandbox に用意した共有 WIF / Terraform SA を借用する。
-      # 値は gcp-iac terraform/sandbox の output（wif_provider / terraform_service_account_email）。秘密情報ではない。
-      - name: Authenticate to Google Cloud (WIF)
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: projects/870183222406/locations/global/workloadIdentityPools/github-actions/providers/github
-          service_account: github-actions-terraform@sandbox-492513.iam.gserviceaccount.com
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Configure Docker for Artifact Registry
-        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
-
-      - name: Build and push image
-        id: build
-        working-directory: ./agent
-        run: |
-          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.SERVICE }}:${{ github.sha }}"
-          docker build -t "$IMAGE" .
-          docker push "$IMAGE"
-          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
-
-      - name: Deploy to Cloud Run
-        run: |
-          gcloud run deploy ${{ env.SERVICE }} \
-            --image "${{ steps.build.outputs.image }}" \
-            --region ${{ env.REGION }} \
-            --project ${{ env.PROJECT_ID }} \
-            --quiet
+      - name: Hello
+        run: echo "ずんだもんエージェントのデプロイ workflow（スケルトン）なのだ！hello"
