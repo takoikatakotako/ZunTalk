@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/subtle"
 	"log"
+	"log/slog"
+	"net/http"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -10,6 +13,7 @@ import (
 	"github.com/takoikatakotako/ZunTalk/agent/config"
 	"github.com/takoikatakotako/ZunTalk/agent/handler"
 	"github.com/takoikatakotako/ZunTalk/agent/llm"
+	"github.com/takoikatakotako/ZunTalk/agent/model"
 	"github.com/takoikatakotako/ZunTalk/agent/orchestrator"
 )
 
@@ -33,7 +37,11 @@ func main() {
 	orch := orchestrator.New(gemini)
 	agentHandler := handler.NewAgentHandler(orch)
 
-	e := setupServer(agentHandler)
+	if cfg.APIKey == "" {
+		slog.Warn("AGENT_API_KEY is empty; /agent API key verification is DISABLED (local dev only)")
+	}
+
+	e := setupServer(agentHandler, cfg.APIKey)
 
 	log.Printf("Starting agent server on port %s", cfg.Port)
 	if err := e.Start(":" + cfg.Port); err != nil {
@@ -41,16 +49,41 @@ func main() {
 	}
 }
 
-func setupServer(h *handler.AgentHandler) *echo.Echo {
+func setupServer(h *handler.AgentHandler, apiKey string) *echo.Echo {
 	e := echo.New()
 
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
 
-	e.POST("/agent", h.HandleAgent)
+	// /health は鍵不要（Cloud Run のヘルスチェック用）。
 	e.GET("/health", h.HandleHealth)
 	e.HEAD("/health", h.HandleHealth)
 
+	// /agent は X-Api-Key 検証を必須にする（鍵が設定されている場合）。
+	e.POST("/agent", h.HandleAgent, apiKeyMiddleware(apiKey))
+
 	return e
+}
+
+// apiKeyMiddleware は X-Api-Key ヘッダーを共有シークレットと照合する。
+// apiKey が空ならローカル開発用に検証をスキップする。
+func apiKeyMiddleware(apiKey string) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			if apiKey == "" {
+				return next(c)
+			}
+			// タイミング攻撃を避けるため定数時間比較。
+			provided := c.Request().Header.Get("X-Api-Key")
+			if subtle.ConstantTimeCompare([]byte(provided), []byte(apiKey)) != 1 {
+				slog.Warn("Rejected request with invalid API key")
+				return c.JSON(http.StatusUnauthorized, model.ErrorResponse{
+					Code:    "UNAUTHORIZED",
+					Message: "APIキーが不正です",
+				})
+			}
+			return next(c)
+		}
+	}
 }

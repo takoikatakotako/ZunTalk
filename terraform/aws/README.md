@@ -33,7 +33,7 @@ terraform apply
 ### 2. 共有リソース（ECR + GitHub Actions IAM）のデプロイ
 
 ```bash
-cd terraform/environments/shared
+cd terraform/aws/environments/shared
 terraform init
 terraform plan
 terraform apply
@@ -55,7 +55,7 @@ GitHubリポジトリの Settings > Secrets and variables > Actions で以下を
 #### Dev環境
 
 ```bash
-cd terraform/environments/dev
+cd terraform/aws/environments/dev
 
 terraform init
 terraform plan
@@ -69,7 +69,7 @@ aws ssm put-parameter --name /zuntalk/dev/slack-webhook-url --type SecureString 
 #### Stg環境
 
 ```bash
-cd terraform/environments/stg
+cd terraform/aws/environments/stg
 terraform init
 terraform plan
 terraform apply
@@ -79,7 +79,7 @@ aws ssm put-parameter --name /zuntalk/stg/openai-api-key --type SecureString --v
 #### Prod環境
 
 ```bash
-cd terraform/environments/prod
+cd terraform/aws/environments/prod
 terraform init
 terraform plan
 terraform apply
@@ -184,12 +184,12 @@ aws ssm put-parameter --name /zuntalk/prod/slack-webhook-url --type SecureString
 
 ```bash
 # 各環境のリソースを削除
-cd terraform/environments/dev && terraform destroy
-cd terraform/environments/stg && terraform destroy
-cd terraform/environments/prod && terraform destroy
+cd terraform/aws/environments/dev && terraform destroy
+cd terraform/aws/environments/stg && terraform destroy
+cd terraform/aws/environments/prod && terraform destroy
 
 # 共有リソースを削除
-cd terraform/environments/shared && terraform destroy
+cd terraform/aws/environments/shared && terraform destroy
 
 # Bootstrap（S3・DynamoDB）を削除
 cd terraform/bootstrap && terraform destroy

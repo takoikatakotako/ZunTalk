@@ -12,6 +12,9 @@ type Config struct {
 	VertexLocation string
 	// GeminiModel は使用する Gemini モデル名。
 	GeminiModel string
+	// APIKey は /agent を保護する共有シークレット（X-Api-Key ヘッダーと照合）。
+	// 空の場合はローカル開発用に検証をスキップする。
+	APIKey string
 }
 
 // Load は環境変数から設定を読み込む。
@@ -21,6 +24,7 @@ func Load() *Config {
 		GCPProjectID:   getEnv("GCP_PROJECT_ID", ""),
 		VertexLocation: getEnv("VERTEX_LOCATION", "us-central1"),
 		GeminiModel:    getEnv("GEMINI_MODEL", "gemini-2.5-flash"),
+		APIKey:         getEnv("AGENT_API_KEY", ""),
 	}
 }
 

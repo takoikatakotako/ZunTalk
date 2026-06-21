@@ -148,7 +148,7 @@ go test ./...
 ### Terraform
 
 ```bash
-cd terraform/environments/dev
+cd terraform/aws/environments/dev
 terraform init
 terraform plan
 ```

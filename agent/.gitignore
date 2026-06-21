@@ -6,5 +6,12 @@
 /server
 *.exe
 
+# Terraform（lock ファイルは追跡する）
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+
 # OS
 .DS_Store
