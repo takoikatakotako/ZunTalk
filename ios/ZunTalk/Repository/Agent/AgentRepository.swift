@@ -19,7 +19,7 @@ final class AgentRepository {
 
         // ツール不要（雑談など）→ そのまま返答
         if first.type == AgentResponseType.final {
-            return AgentRunResult(reply: first.reply ?? "", plan: [], results: [])
+            return AgentRunResult(reply: first.reply ?? "", emotion: first.emotion, plan: [], results: [])
         }
 
         let plan = first.plan ?? []
@@ -33,7 +33,7 @@ final class AgentRepository {
 
         // 2巡目: 結果を渡して最終応答を取得
         let second = try await post(AgentRequest(message: message, results: results))
-        return AgentRunResult(reply: second.reply ?? "", plan: plan, results: results)
+        return AgentRunResult(reply: second.reply ?? "", emotion: second.emotion, plan: plan, results: results)
     }
 
     private func post(_ body: AgentRequest) async throws -> AgentResponse {
@@ -60,6 +60,8 @@ final class AgentRepository {
 /// 往復1回の結果。
 struct AgentRunResult {
     let reply: String
+    /// サーバーが返した感情（neutral/happy/... 。未指定なら nil）。
+    let emotion: String?
     let plan: [AgentPlanStep]
     let results: [AgentStepResult]
 }

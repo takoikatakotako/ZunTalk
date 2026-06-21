@@ -57,6 +57,8 @@ final class AgentViewModel: NSObject, ObservableObject {
                 let reply = result.reply.isEmpty ? "うまく答えられなかったのだ…" : result.reply
                 let message = DisplayMessage(role: .assistant, content: reply)
                 messages.append(message)
+                // 返答の感情を表情に反映してから喋る
+                expression = ZundamonExpression.from(emotion: result.emotion)
                 await playVoice(text: reply)
             } catch {
                 CrashlyticsManager.record(error)
@@ -84,8 +86,8 @@ final class AgentViewModel: NSObject, ObservableObject {
 
     private func playVoice(text: String) async {
         do {
+            // 表情は呼び出し側で感情に応じて設定済み。ここでは喋り中フラグのみ。
             isPlayingVoice = true
-            expression = .talking
 
             try await voicevoxRepository.installVoicevox()
             try voicevoxRepository.setupSynthesizer()

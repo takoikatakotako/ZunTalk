@@ -38,6 +38,8 @@ struct AgentResponse: Codable {
     let type: String
     let plan: [AgentPlanStep]?
     let reply: String?
+    /// 返答に対応する感情（表情用）。neutral/happy/sad/surprised/troubled。
+    let emotion: String?
 }
 
 enum AgentResponseType {

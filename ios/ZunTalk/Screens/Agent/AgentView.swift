@@ -78,7 +78,7 @@ struct AgentView: View {
         switch viewModel.expression {
         case .idle: return "話しかけてみてなのだ！"
         case .thinking: return "考え中なのだ…"
-        case .talking: return "おしゃべり中なのだ♪"
+        default: return "おしゃべり中なのだ♪"
         }
     }
 
