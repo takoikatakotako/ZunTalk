@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1755465E2FE7E3E100F4BBF2 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 1755465D2FE7E3E100F4BBF2 /* GoogleSignIn */; };
+		175546602FE7E3E100F4BBF2 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 1755465F2FE7E3E100F4BBF2 /* GoogleSignInSwift */; };
 		176AC9AC2E48FB1C00A4F009 /* voicevox_core.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 176AC9AB2E48FB1C00A4F009 /* voicevox_core.xcframework */; };
 		176AC9AD2E48FB1C00A4F009 /* voicevox_core.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 176AC9AB2E48FB1C00A4F009 /* voicevox_core.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		176AC9B02E48FB4100A4F009 /* voicevox_onnxruntime.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 176AC9AF2E48FB4100A4F009 /* voicevox_onnxruntime.xcframework */; };
@@ -15,9 +17,9 @@
 		179559942F66D6E60071E7FB /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = 179559932F66D6E60071E7FB /* FirebaseAnalyticsCore */; };
 		179559962F66D6E60071E7FB /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 179559952F66D6E60071E7FB /* FirebaseCore */; };
 		179559982F66D6E60071E7FB /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 179559972F66D6E60071E7FB /* FirebaseCrashlytics */; };
-		17F2A0022FCE390000000001 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 17F2A0012FCE390000000001 /* GoogleMobileAds */; };
 		17AE5B662F378E6700BAC024 /* open_jtalk_dic_utf_8-1.11 in Resources */ = {isa = PBXBuildFile; fileRef = 17AE5B652F378E6600BAC024 /* open_jtalk_dic_utf_8-1.11 */; };
 		17AE5B682F378E7600BAC024 /* vvms in Resources */ = {isa = PBXBuildFile; fileRef = 17AE5B672F378E7600BAC024 /* vvms */; };
+		17F2A0022FCE390000000001 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 17F2A0012FCE390000000001 /* GoogleMobileAds */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -110,7 +112,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				175546602FE7E3E100F4BBF2 /* GoogleSignInSwift in Frameworks */,
 				176AC9B02E48FB4100A4F009 /* voicevox_onnxruntime.xcframework in Frameworks */,
+				1755465E2FE7E3E100F4BBF2 /* GoogleSignIn in Frameworks */,
 				179559962F66D6E60071E7FB /* FirebaseCore in Frameworks */,
 				176AC9AC2E48FB1C00A4F009 /* voicevox_core.xcframework in Frameworks */,
 				179559982F66D6E60071E7FB /* FirebaseCrashlytics in Frameworks */,
@@ -198,6 +202,8 @@
 				179559952F66D6E60071E7FB /* FirebaseCore */,
 				179559972F66D6E60071E7FB /* FirebaseCrashlytics */,
 				17F2A0012FCE390000000001 /* GoogleMobileAds */,
+				1755465D2FE7E3E100F4BBF2 /* GoogleSignIn */,
+				1755465F2FE7E3E100F4BBF2 /* GoogleSignInSwift */,
 			);
 			productName = ZunTalk;
 			productReference = 1780EE602E313B1A00CF634A /* ZunTalk.app */;
@@ -284,6 +290,7 @@
 			packageReferences = (
 				179559902F66D6E60071E7FB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				17F2A0002FCE390000000001 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+				1755465C2FE7E0EB00F4BBF2 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1780EE612E313B1A00CF634A /* Products */;
@@ -704,6 +711,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		1755465C2FE7E0EB00F4BBF2 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.2.0;
+			};
+		};
 		179559902F66D6E60071E7FB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -723,6 +738,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		1755465D2FE7E3E100F4BBF2 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1755465C2FE7E0EB00F4BBF2 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		1755465F2FE7E3E100F4BBF2 /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1755465C2FE7E0EB00F4BBF2 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
+		};
 		179559912F66D6E60071E7FB /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 179559902F66D6E60071E7FB /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

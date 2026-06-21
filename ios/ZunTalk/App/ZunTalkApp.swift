@@ -2,6 +2,7 @@ import SwiftUI
 import FirebaseCore
 import FirebaseCrashlytics
 import AppTrackingTransparency
+import GoogleSignIn
 
 @main
 struct ZunTalkApp: App {
@@ -17,6 +18,14 @@ struct ZunTalkApp: App {
         WindowGroup {
             LaunchView()
                 .preferredColorScheme(.light)
+                .onOpenURL { url in
+                    // Google サインインの OAuth コールバックを処理する
+                    GIDSignIn.sharedInstance.handle(url)
+                }
+                .onAppear {
+                    // 前回の Google 連携を復元する
+                    GoogleAuthManager.shared.restore()
+                }
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active, !hasRequestedATT else { return }
