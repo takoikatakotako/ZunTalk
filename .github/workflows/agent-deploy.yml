@@ -1,0 +1,17 @@
+name: Agent Deploy (skeleton)
+
+# main にはスケルトンのみを置く（hello を出すだけ）。
+# 実際の build → push → Cloud Run deploy のロジックは feature ブランチ側の
+# 同名ワークフローに実装し、`gh workflow run agent-deploy.yml --ref <branch>` で
+# そのブランチ版を実行する（workflow_dispatch はワークフローが default ブランチに
+# 存在しないと使えないため、登録用にこの最小版を main へ載せる）。
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  hello:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hello
+        run: echo "ずんだもんエージェントのデプロイ workflow（スケルトン）なのだ！hello"
