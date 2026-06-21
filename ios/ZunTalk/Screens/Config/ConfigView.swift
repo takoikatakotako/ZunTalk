@@ -16,6 +16,9 @@ struct ConfigView: View {
                 NavigationLink(destination: ModelSelectionView()) {
                     Label("モデル選択", systemImage: "brain")
                 }
+                NavigationLink(destination: AgentTestView()) {
+                    Label("エージェント（テスト）", systemImage: "sparkles")
+                }
             }
 
             // Gmail / カレンダー連携（トークンは端末内のみ保持）

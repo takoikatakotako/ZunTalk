@@ -13,6 +13,7 @@ struct ContactView: View {
 
     @State private var isNavigatingToChat = false
     @State private var isNavigatingToCall = false
+    @State private var isNavigatingToAgent = false
 
     var body: some View {
         NavigationStack {
@@ -58,6 +59,17 @@ struct ContactView: View {
                                     .background(Color.green)
                                     .clipShape(Circle())
                             }
+
+                            Button(action: {
+                                isNavigatingToAgent = true
+                            }) {
+                                Image(systemName: "sparkles")
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 16))
+                                    .frame(width: 36, height: 36)
+                                    .background(Color.purple)
+                                    .clipShape(Circle())
+                            }
                         }
                     }
                     .padding(.vertical, 4)
@@ -76,6 +88,9 @@ struct ContactView: View {
             }
             .navigationDestination(isPresented: $isNavigatingToCall) {
                 CallView()
+            }
+            .navigationDestination(isPresented: $isNavigatingToAgent) {
+                AgentView()
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

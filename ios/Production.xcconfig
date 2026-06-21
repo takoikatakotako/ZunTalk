@@ -1,7 +1,13 @@
 // Release環境の設定
 
+// 機密設定（git管理外。AGENT_API_KEY を定義）。無くてもビルドは通る。
+#include? "Secrets.xcconfig"
+
 // API Base URL (TODO: 本番環境のURLに変更)
 API_BASE_URL = https:/$()/lywvkbddncitxwu436n6ypykd40hfytm.lambda-url.ap-northeast-1.on.aws
+
+// Agent (Cloud Run) Base URL
+AGENT_BASE_URL = https:/$()/zuntalk-agent-exxyf6d72a-an.a.run.app
 
 // App Icon
 ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon-Production

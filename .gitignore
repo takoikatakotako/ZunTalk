@@ -145,3 +145,6 @@ site/
 
 # Claude Code
 .claude/settings.local.json
+
+# iOS のローカル機密設定（APIキー等）
+ios/Secrets.xcconfig

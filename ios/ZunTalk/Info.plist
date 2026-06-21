@@ -17,6 +17,10 @@
 	<false/>
 	<key>API_BASE_URL</key>
 	<string>$(API_BASE_URL)</string>
+	<key>AGENT_BASE_URL</key>
+	<string>$(AGENT_BASE_URL)</string>
+	<key>AGENT_API_KEY</key>
+	<string>$(AGENT_API_KEY)</string>
 	<key>CFBundleIconName</key>
 	<string>$(ASSETCATALOG_COMPILER_APPICON_NAME)</string>
 	<key>GADApplicationIdentifier</key>
