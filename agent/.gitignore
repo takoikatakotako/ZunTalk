@@ -1,0 +1,10 @@
+# 環境変数（GCPプロジェクトIDなど）
+.env
+
+# ビルド成果物
+/agent
+/server
+*.exe
+
+# OS
+.DS_Store
