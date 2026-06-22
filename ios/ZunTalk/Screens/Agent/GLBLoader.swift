@@ -74,25 +74,22 @@ enum GLBLoader {
                 // モーフターゲット（POSITION の差分）を名前つきで追加する。
                 if let targets = primitive.targets, !targets.isEmpty {
                     let morpher = SCNMorpher()
-                    // additive: 結果 = base + Σ weight*(target - base)。
-                    // よって target は「絶対座標（base + delta）」で渡す必要がある。
+                    // additive: 結果 = base + Σ weight*target。target は glTF の差分(delta)をそのまま渡す。
                     morpher.calculationMode = .additive
                     var targetGeometries: [SCNGeometry] = []
                     for (i, target) in targets.enumerated() {
                         guard let tp = target["POSITION"] else { continue }
                         let deltas = reader.readVec3(gltf.accessors[tp])
-                        var absolute = [SCNVector3]()
-                        absolute.reserveCapacity(positions.count)
-                        let n = Swift.min(positions.count, deltas.count)
-                        for j in 0..<n {
-                            let b = positions[j], d = deltas[j]
-                            absolute.append(SCNVector3(b.x + d.x, b.y + d.y, b.z + d.z))
+                        let tname = i < targetNames.count ? targetNames[i] : "target\(i)"
+                        if tname == "Blink" || tname == "Joy" {
+                            let mx = deltas.map { Swift.max(abs($0.x), abs($0.y), abs($0.z)) }.max() ?? 0
+                            print("📏 morph \(tname) maxDelta=\(mx) count=\(deltas.count)")
                         }
                         let tGeo = SCNGeometry(
-                            sources: [SCNGeometrySource(vertices: absolute)],
+                            sources: [SCNGeometrySource(vertices: deltas)],
                             elements: [element]
                         )
-                        tGeo.name = i < targetNames.count ? targetNames[i] : "target\(i)"
+                        tGeo.name = tname
                         targetGeometries.append(tGeo)
                     }
                     morpher.targets = targetGeometries

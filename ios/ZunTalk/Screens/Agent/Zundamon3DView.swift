@@ -104,8 +104,6 @@ final class SceneRig: NSObject, SCNSceneRendererDelegate, ObservableObject {
         "見開き白目", "ジト目1", "にっこり", "涙", "なごみ目"
     ]
 
-    private var frameCount = 0
-
     func attach(to scene: SCNScene) {
         scene.rootNode.enumerateChildNodes { node, _ in
             if let m = node.morpher, !m.targets.isEmpty {
@@ -113,17 +111,16 @@ final class SceneRig: NSObject, SCNSceneRendererDelegate, ObservableObject {
             }
         }
         modelRoot = scene.rootNode.childNode(withName: "modelRoot", recursively: false)
-        print("🟢 attach morpher=\(morpher != nil) modelRoot=\(modelRoot != nil)")
     }
 
     // 毎フレーム呼ばれる。
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
-        // DEBUG: 揺れを大きくして「画面が毎フレーム更新されているか」をはっきり確認する。
-        modelRoot?.eulerAngles.y = Float(sin(time * 1.2) * 0.3)
+        // アイドルの軽い揺れ
+        modelRoot?.eulerAngles.y = Float(sin(time * 0.8) * 0.08)
 
         guard let morpher else { return }
 
-        // 表情（まばたき/口パクは一旦止めて、表情だけ確認）
+        // 表情
         for name in expressionMorphs { morpher.setWeight(0, forTargetNamed: name) }
         switch expression {
         case .idle, .neutral:
@@ -139,6 +136,17 @@ final class SceneRig: NSObject, SCNSceneRendererDelegate, ObservableObject {
             morpher.setWeight(1.0, forTargetNamed: "見開き白目")
         case .troubled:
             morpher.setWeight(1.0, forTargetNamed: "困り眉1")
+        }
+
+        // DEBUG: Blink を 1.0 固定（目が閉じたままになるか確認）。
+        morpher.setWeight(1.0, forTargetNamed: "Blink")
+
+        // 口パク（喋り中だけ A を開閉）
+        if speaking {
+            let open = CGFloat(sin(time * 18) * 0.5 + 0.5) * 0.6
+            morpher.setWeight(open, forTargetNamed: "A")
+        } else {
+            morpher.setWeight(0, forTargetNamed: "A")
         }
     }
 }
