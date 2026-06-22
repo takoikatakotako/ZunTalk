@@ -4,6 +4,7 @@ import SwiftUI
 struct AgentView: View {
     @StateObject private var viewModel = AgentViewModel()
     @FocusState private var isInputFocused: Bool
+    @State private var modelStatus: ZundamonModelStatus = .loading
 
     var body: some View {
         VStack(spacing: 0) {
@@ -52,9 +53,35 @@ struct AgentView: View {
 
     private var zundamonHeader: some View {
         VStack(spacing: 6) {
-            Zundamon3DView()
+            ZStack {
+                Zundamon3DView(
+                    expression: viewModel.expression,
+                    speaking: viewModel.isPlayingVoice,
+                    status: $modelStatus
+                )
                 .frame(height: 240)
                 .frame(maxWidth: .infinity)
+
+                switch modelStatus {
+                case .loading:
+                    VStack(spacing: 10) {
+                        ProgressView()
+                        Text("ずんだもんを読み込み中なのだ…")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                case .failed:
+                    VStack(spacing: 10) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                        Text("モデルの読み込みに失敗したのだ")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                case .loaded:
+                    EmptyView()
+                }
+            }
 
             Text(statusText)
                 .font(.caption)

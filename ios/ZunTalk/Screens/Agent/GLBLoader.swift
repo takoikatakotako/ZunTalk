@@ -19,14 +19,27 @@ enum GLBLoader {
         case decodeFailed(String)
     }
 
-    /// glb を読み込み、SCNScene を返す。各メッシュノードの morpher には名前つき target が入る。
-    static func loadScene(url: URL) throws -> SCNScene {
+    /// 読み込み結果（シーン＋モデルのルートノード＋境界ボックス）。
+    struct LoadedModel {
+        let scene: SCNScene
+        let root: SCNNode
+        let min: SCNVector3
+        let max: SCNVector3
+    }
+
+    /// glb を読み込み、シーンと境界を返す。各メッシュノードの morpher には名前つき target が入る。
+    static func loadScene(url: URL) throws -> LoadedModel {
         let data = try Data(contentsOf: url)
         let (json, bin) = try splitGLB(data)
         let gltf = try JSONDecoder().decode(GLTF.self, from: json)
 
         let scene = SCNScene()
+        let modelRoot = SCNNode()
+        modelRoot.name = "modelRoot"
         let reader = AccessorReader(gltf: gltf, bin: bin)
+
+        var minV = SCNVector3(Float.greatestFiniteMagnitude, Float.greatestFiniteMagnitude, Float.greatestFiniteMagnitude)
+        var maxV = SCNVector3(-Float.greatestFiniteMagnitude, -Float.greatestFiniteMagnitude, -Float.greatestFiniteMagnitude)
 
         for mesh in gltf.meshes {
             let targetNames = mesh.extras?.targetNames ?? []
@@ -34,6 +47,11 @@ enum GLBLoader {
             for primitive in mesh.primitives {
                 guard let posAccessor = primitive.attributes["POSITION"] else { continue }
                 let positions = reader.readVec3(gltf.accessors[posAccessor])
+
+                for p in positions {
+                    minV.x = Swift.min(minV.x, p.x); minV.y = Swift.min(minV.y, p.y); minV.z = Swift.min(minV.z, p.z)
+                    maxV.x = Swift.max(maxV.x, p.x); maxV.y = Swift.max(maxV.y, p.y); maxV.z = Swift.max(maxV.z, p.z)
+                }
 
                 var sources: [SCNGeometrySource] = [SCNGeometrySource(vertices: positions)]
                 if let n = primitive.attributes["NORMAL"] {
@@ -56,13 +74,22 @@ enum GLBLoader {
                 // モーフターゲット（POSITION の差分）を名前つきで追加する。
                 if let targets = primitive.targets, !targets.isEmpty {
                     let morpher = SCNMorpher()
+                    // additive: 結果 = base + Σ weight*(target - base)。
+                    // よって target は「絶対座標（base + delta）」で渡す必要がある。
                     morpher.calculationMode = .additive
                     var targetGeometries: [SCNGeometry] = []
                     for (i, target) in targets.enumerated() {
                         guard let tp = target["POSITION"] else { continue }
                         let deltas = reader.readVec3(gltf.accessors[tp])
+                        var absolute = [SCNVector3]()
+                        absolute.reserveCapacity(positions.count)
+                        let n = Swift.min(positions.count, deltas.count)
+                        for j in 0..<n {
+                            let b = positions[j], d = deltas[j]
+                            absolute.append(SCNVector3(b.x + d.x, b.y + d.y, b.z + d.z))
+                        }
                         let tGeo = SCNGeometry(
-                            sources: [SCNGeometrySource(vertices: deltas)],
+                            sources: [SCNGeometrySource(vertices: absolute)],
                             elements: [element]
                         )
                         tGeo.name = i < targetNames.count ? targetNames[i] : "target\(i)"
@@ -72,11 +99,12 @@ enum GLBLoader {
                     node.morpher = morpher
                 }
 
-                scene.rootNode.addChildNode(node)
+                modelRoot.addChildNode(node)
             }
         }
 
-        return scene
+        scene.rootNode.addChildNode(modelRoot)
+        return LoadedModel(scene: scene, root: modelRoot, min: minV, max: maxV)
     }
 
     // MARK: - GLB container
@@ -111,8 +139,9 @@ enum GLBLoader {
 
     private static func material(for index: Int?, gltf: GLTF, reader: AccessorReader) -> SCNMaterial {
         let mat = SCNMaterial()
-        mat.lightingModel = .physicallyBased
-        mat.isDoubleSided = true // スパイク中は裏面カリングの事故を避ける
+        // VRM は本来アンリット（MToon）。陰影で破綻しないようテクスチャそのまま表示する。
+        mat.lightingModel = .constant
+        mat.isDoubleSided = true
 
         guard let index = index, let materials = gltf.materials, index < materials.count else {
             mat.diffuse.contents = UIColor.systemGreen
@@ -126,6 +155,12 @@ enum GLBLoader {
             mat.diffuse.contents = UIColor(red: CGFloat(f[0]), green: CGFloat(f[1]), blue: CGFloat(f[2]), alpha: CGFloat(f.count > 3 ? f[3] : 1))
         } else {
             mat.diffuse.contents = UIColor.systemGreen
+        }
+
+        // 眉・口・目のハイライト等は透過テクスチャ。アルファを有効化する。
+        if m.alphaMode == "BLEND" || m.alphaMode == "MASK" {
+            mat.transparencyMode = .aOne
+            mat.blendMode = .alpha
         }
         return mat
     }
@@ -143,19 +178,42 @@ private final class AccessorReader {
         self.bin = bin
     }
 
-    /// glTF UV(原点 左上) → SceneKit 用に V を反転（環境により要調整）。
-    private let flipV = true
+    /// glTF UV(原点 左上)。SceneKit も左上原点なので反転しない。
+    private let flipV = false
 
     func readVec3(_ acc: GLTF.Accessor) -> [SCNVector3] {
-        guard let bvIndex = acc.bufferView else { return [] }
-        let bv = gltf.bufferViews[bvIndex]
-        let base = (bv.byteOffset ?? 0) + (acc.byteOffset ?? 0)
-        let stride = (bv.byteStride ?? 0) == 0 ? 12 : bv.byteStride!
-        var out = [SCNVector3]()
-        out.reserveCapacity(acc.count)
-        for i in 0..<acc.count {
-            let o = base + i * stride
-            out.append(SCNVector3(readF32(bin, o), readF32(bin, o + 4), readF32(bin, o + 8)))
+        // ベース（密）部分。bufferView が無ければ全て 0（morph 差分の定番）。
+        var out: [SCNVector3]
+        if let bvIndex = acc.bufferView {
+            let bv = gltf.bufferViews[bvIndex]
+            let base = (bv.byteOffset ?? 0) + (acc.byteOffset ?? 0)
+            let stride = (bv.byteStride ?? 0) == 0 ? 12 : bv.byteStride!
+            out = (0..<acc.count).map { i in
+                let o = base + i * stride
+                return SCNVector3(readF32(bin, o), readF32(bin, o + 4), readF32(bin, o + 8))
+            }
+        } else {
+            out = Array(repeating: SCNVector3(0, 0, 0), count: acc.count)
+        }
+
+        // sparse 部分（変化した頂点だけ上書き）。VRM の morph 差分はこれで来る。
+        if let sparse = acc.sparse {
+            let idxBV = gltf.bufferViews[sparse.indices.bufferView]
+            let idxBase = (idxBV.byteOffset ?? 0) + (sparse.indices.byteOffset ?? 0)
+            let valBV = gltf.bufferViews[sparse.values.bufferView]
+            let valBase = (valBV.byteOffset ?? 0) + (sparse.values.byteOffset ?? 0)
+            for k in 0..<sparse.count {
+                let vi: Int
+                switch sparse.indices.componentType {
+                case 5121: vi = Int(bin[bin.startIndex + idxBase + k])
+                case 5123: vi = Int(readU16(bin, idxBase + k * 2))
+                case 5125: vi = Int(readU32(bin, idxBase + k * 4))
+                default: vi = -1
+                }
+                guard vi >= 0 && vi < out.count else { continue }
+                let o = valBase + k * 12
+                out[vi] = SCNVector3(readF32(bin, o), readF32(bin, o + 4), readF32(bin, o + 8))
+            }
         }
         return out
     }
@@ -239,6 +297,22 @@ struct GLTF: Decodable {
         let componentType: Int
         let count: Int
         let type: String
+        let sparse: Sparse?
+
+        struct Sparse: Decodable {
+            let count: Int
+            let indices: Indices
+            let values: Values
+            struct Indices: Decodable {
+                let bufferView: Int
+                let byteOffset: Int?
+                let componentType: Int
+            }
+            struct Values: Decodable {
+                let bufferView: Int
+                let byteOffset: Int?
+            }
+        }
     }
     struct BufferView: Decodable {
         let byteOffset: Int?
@@ -259,6 +333,7 @@ struct GLTF: Decodable {
     }
     struct Material: Decodable {
         let pbrMetallicRoughness: PBR?
+        let alphaMode: String?
         struct PBR: Decodable {
             let baseColorTexture: TexInfo?
             let baseColorFactor: [Float]?
