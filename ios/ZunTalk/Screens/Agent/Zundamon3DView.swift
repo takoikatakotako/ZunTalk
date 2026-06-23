@@ -1,5 +1,6 @@
 import SwiftUI
 import SceneKit
+import UIKit
 
 /// 3Dモデルの読み込み状態。
 enum ZundamonModelStatus {
@@ -15,6 +16,7 @@ enum ZundamonModelStatus {
 struct Zundamon3DView: View {
     var expression: ZundamonExpression
     var speaking: Bool
+    var framing: ZundamonFraming = .face
     var appliesExpressionMorphs = true
     var manualMorphWeights: [String: CGFloat] = [:]
     var manualMorphScale: CGFloat = 1
@@ -42,6 +44,7 @@ struct Zundamon3DView: View {
         .onAppear(perform: loadIfNeeded)
         .onChange(of: expression) { _, newValue in rig.expression = newValue }
         .onChange(of: speaking) { _, newValue in rig.speaking = newValue }
+        .onChange(of: framing) { _, newValue in rig.framing = newValue }
         .onChange(of: appliesExpressionMorphs) { _, newValue in rig.appliesExpressionMorphs = newValue }
         .onChange(of: manualMorphWeights) { _, newValue in rig.manualMorphWeights = newValue }
         .onChange(of: manualMorphScale) { _, newValue in rig.manualMorphScale = newValue }
@@ -53,6 +56,7 @@ struct Zundamon3DView: View {
         guard scene == nil else { return }
         let expr = expression
         let spk = speaking
+        let framing = framing
         let appliesExpressionMorphs = appliesExpressionMorphs
         let morphWeights = manualMorphWeights
         let morphScale = manualMorphScale
@@ -67,11 +71,13 @@ struct Zundamon3DView: View {
             do {
                 let model = try GLBLoader.loadScene(url: url)
                 DispatchQueue.main.async {
-                    let cam = Self.makeCamera(model)
+                    model.scene.background.contents = UIColor.clear
+                    let cam = Self.makeCamera(model, framing: framing)
                     model.scene.rootNode.addChildNode(cam)
                     rig.attach(to: model.scene)
                     rig.expression = expr
                     rig.speaking = spk
+                    rig.framing = framing
                     rig.appliesExpressionMorphs = appliesExpressionMorphs
                     rig.manualMorphWeights = morphWeights
                     rig.manualMorphScale = morphScale
@@ -88,24 +94,40 @@ struct Zundamon3DView: View {
         }
     }
 
-    private static func makeCamera(_ model: GLBLoader.LoadedModel) -> SCNNode {
+    private static func makeCamera(_ model: GLBLoader.LoadedModel, framing: ZundamonFraming) -> SCNNode {
         let lo = model.min, hi = model.max
         let height = max(hi.y - lo.y, 0.01)
         let cx = (lo.x + hi.x) / 2
-        let faceY = hi.y - height * 0.08 // 顔（目〜額）あたり。少し上を見て頭・耳まで入れる。
+        let targetY: Float
+        let distance: Float
+        let fieldOfView: CGFloat
+        switch framing {
+        case .face:
+            targetY = hi.y - height * 0.08 // 顔（目〜額）あたり。少し上を見て頭・耳まで入れる。
+            distance = height * 0.72
+            fieldOfView = 35
+        case .fullBody:
+            targetY = lo.y + height * 0.50
+            distance = height * 1.55
+            fieldOfView = 32
+        }
 
         let cameraNode = SCNNode()
         let camera = SCNCamera()
-        camera.fieldOfView = 35
+        camera.fieldOfView = fieldOfView
         camera.zNear = 0.01
         camera.zFar = 100
         cameraNode.camera = camera
         // 正面は -Z 側。前面(min z)からさらに前へ置き、向きを 180°回して +Z（モデル方向）を見る。
-        let distance = height * 0.72
-        cameraNode.position = SCNVector3(cx, faceY, lo.z - distance)
+        cameraNode.position = SCNVector3(cx, targetY, lo.z - distance)
         cameraNode.eulerAngles = SCNVector3(0, Float.pi, 0)
         return cameraNode
     }
+}
+
+enum ZundamonFraming {
+    case face
+    case fullBody
 }
 
 enum ZundamonEyeDebugMode: String, CaseIterable, Identifiable {
@@ -122,6 +144,7 @@ final class SceneRig: NSObject, SCNSceneRendererDelegate, ObservableObject {
     // 外から設定される望ましい状態（main から書き、render スレッドで読む）。
     var expression: ZundamonExpression = .idle
     var speaking = false
+    var framing: ZundamonFraming = .face
     var appliesExpressionMorphs = true
     var manualMorphWeights: [String: CGFloat] = [:]
     var manualMorphScale: CGFloat = 1
@@ -189,8 +212,7 @@ final class SceneRig: NSObject, SCNSceneRendererDelegate, ObservableObject {
 
     // 毎フレーム呼ばれる。
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
-        // アイドルの軽い揺れ
-        modelRoot?.eulerAngles.y = Float(sin(time * 0.8) * 0.08)
+        applyBodyMotion(time: time)
         applyEyeDebug()
 
         guard !morphers.isEmpty else { return }
@@ -224,6 +246,23 @@ final class SceneRig: NSObject, SCNSceneRendererDelegate, ObservableObject {
         for namedMorpher in morphers {
             guard let index = namedMorpher.targetIndexByName[name] else { continue }
             namedMorpher.morpher.setWeight(weight, forTargetAt: index)
+        }
+    }
+
+    private func applyBodyMotion(time: TimeInterval) {
+        guard let modelRoot else { return }
+        let talkBoost = speaking ? 1.0 : 0.0
+        switch framing {
+        case .face:
+            modelRoot.position.y = Float(sin(time * 1.2) * 0.006)
+            modelRoot.eulerAngles.x = Float(sin(time * 0.9) * 0.018)
+            modelRoot.eulerAngles.y = Float(sin(time * 0.8) * 0.08)
+            modelRoot.eulerAngles.z = Float(sin(time * 0.65) * 0.012)
+        case .fullBody:
+            modelRoot.position.y = Float(sin(time * 1.15) * (0.012 + talkBoost * 0.006))
+            modelRoot.eulerAngles.x = Float(sin(time * 0.9) * 0.012)
+            modelRoot.eulerAngles.y = Float(sin(time * 0.72) * (0.09 + talkBoost * 0.025))
+            modelRoot.eulerAngles.z = Float(sin(time * 0.58) * (0.025 + talkBoost * 0.01))
         }
     }
 
