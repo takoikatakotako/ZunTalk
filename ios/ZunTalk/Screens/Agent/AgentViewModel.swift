@@ -86,9 +86,6 @@ final class AgentViewModel: NSObject, ObservableObject {
 
     private func playVoice(text: String) async {
         do {
-            // 表情は呼び出し側で感情に応じて設定済み。ここでは喋り中フラグのみ。
-            isPlayingVoice = true
-
             try await voicevoxRepository.installVoicevox()
             try voicevoxRepository.setupSynthesizer()
 
@@ -100,6 +97,8 @@ final class AgentViewModel: NSObject, ObservableObject {
             audioPlayer = try AVAudioPlayer(data: audioData)
             audioPlayer?.delegate = self
             audioPlayer?.prepareToPlay()
+            // 合成完了後、実際の再生開始に合わせて口パクを始める。
+            isPlayingVoice = true
             audioPlayer?.play()
 
             await withCheckedContinuation { continuation in

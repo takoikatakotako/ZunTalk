@@ -15,6 +15,11 @@ enum ZundamonModelStatus {
 struct Zundamon3DView: View {
     var expression: ZundamonExpression
     var speaking: Bool
+    var appliesExpressionMorphs = true
+    var manualMorphWeights: [String: CGFloat] = [:]
+    var manualMorphScale: CGFloat = 1
+    var eyeDebugMode: ZundamonEyeDebugMode = .normal
+    var eyeDepthOffset: CGFloat = 0
     @Binding var status: ZundamonModelStatus
 
     @State private var scene: SCNScene?
@@ -37,12 +42,22 @@ struct Zundamon3DView: View {
         .onAppear(perform: loadIfNeeded)
         .onChange(of: expression) { _, newValue in rig.expression = newValue }
         .onChange(of: speaking) { _, newValue in rig.speaking = newValue }
+        .onChange(of: appliesExpressionMorphs) { _, newValue in rig.appliesExpressionMorphs = newValue }
+        .onChange(of: manualMorphWeights) { _, newValue in rig.manualMorphWeights = newValue }
+        .onChange(of: manualMorphScale) { _, newValue in rig.manualMorphScale = newValue }
+        .onChange(of: eyeDebugMode) { _, newValue in rig.eyeDebugMode = newValue }
+        .onChange(of: eyeDepthOffset) { _, newValue in rig.eyeDepthOffset = newValue }
     }
 
     private func loadIfNeeded() {
         guard scene == nil else { return }
         let expr = expression
         let spk = speaking
+        let appliesExpressionMorphs = appliesExpressionMorphs
+        let morphWeights = manualMorphWeights
+        let morphScale = manualMorphScale
+        let eyeDebugMode = eyeDebugMode
+        let eyeDepthOffset = eyeDepthOffset
         DispatchQueue.global(qos: .userInitiated).async {
             guard let url = Bundle.main.url(forResource: "zundamon", withExtension: "glb") else {
                 print("⚠️ zundamon.glb が見つからないのだ")
@@ -57,6 +72,11 @@ struct Zundamon3DView: View {
                     rig.attach(to: model.scene)
                     rig.expression = expr
                     rig.speaking = spk
+                    rig.appliesExpressionMorphs = appliesExpressionMorphs
+                    rig.manualMorphWeights = morphWeights
+                    rig.manualMorphScale = morphScale
+                    rig.eyeDebugMode = eyeDebugMode
+                    rig.eyeDepthOffset = eyeDepthOffset
                     scene = model.scene
                     pov = cam
                     status = .loaded
@@ -88,28 +108,82 @@ struct Zundamon3DView: View {
     }
 }
 
+enum ZundamonEyeDebugMode: String, CaseIterable, Identifiable {
+    case normal = "通常"
+    case highlighted = "赤表示"
+    case hidden = "非表示"
+
+    var id: String { rawValue }
+}
+
 /// SceneView の delegate 兼モーフ駆動リグ。毎フレーム呼ばれる `updateAtTime` で
 /// 表情・口パク・まばたき・揺れを反映する（これにより連続描画も保証される）。
 final class SceneRig: NSObject, SCNSceneRendererDelegate, ObservableObject {
     // 外から設定される望ましい状態（main から書き、render スレッドで読む）。
     var expression: ZundamonExpression = .idle
     var speaking = false
+    var appliesExpressionMorphs = true
+    var manualMorphWeights: [String: CGFloat] = [:]
+    var manualMorphScale: CGFloat = 1
+    var eyeDebugMode: ZundamonEyeDebugMode = .normal
+    var eyeDepthOffset: CGFloat = 0
 
-    private var morpher: SCNMorpher?
+    private struct NamedMorpher {
+        let morpher: SCNMorpher
+        let targetIndexByName: [String: Int]
+    }
+
+    private struct EyeNodeState {
+        weak var node: SCNNode?
+        let baseZ: Float
+        let material: SCNMaterial
+        let diffuseContents: Any?
+        let emissionContents: Any?
+        let transparency: CGFloat
+    }
+
+    private var morphers: [NamedMorpher] = []
+    private var eyeNodeStates: [EyeNodeState] = []
     private weak var modelRoot: SCNNode?
 
-    /// 表情に関係するモーフ（毎フレーム一旦 0 に戻す対象）。
-    private let expressionMorphs = [
-        "Joy", "Angry", "Sorrow", "Fun", "困り眉1", "困り眉2",
-        "見開き白目", "ジト目1", "にっこり", "涙", "なごみ目"
+    /// 毎フレーム一旦 0 に戻すモーフ。idle の見た目がモデル初期値に引きずられないよう広めに含める。
+    private let resetMorphs = [
+        "Joy", "Angry", "Sorrow", "Fun",
+        "怒り眉", "上がり眉", "困り眉1", "困り眉2",
+        "普通目2", "普通目3", "ジト目1", "ジト目2", "ジト白目", "見開き白目",
+        "なごみ目", "にっこり", "にっこり2", "まばたき", "キャッチライト", "〇〇", "UU", "＞＜",
+        "涙", "汗", "汗2", "ほっぺ", "ほっぺ赤め", "青ざめ", "かげり",
+        "A", "I", "U", "E", "O", "Blink", "Blink_L", "Blink_R",
+        "むー", "お", "んー", "んへー", "んあー", "△", "むふ", "ほー", "ほあ", "ほあー"
     ]
 
     func attach(to scene: SCNScene) {
+        morphers.removeAll()
+        eyeNodeStates.removeAll()
         scene.rootNode.enumerateChildNodes { node, _ in
             if let m = node.morpher, !m.targets.isEmpty {
-                self.morpher = m
+                let targetIndexByName = Dictionary(
+                    uniqueKeysWithValues: m.targets.enumerated().compactMap { index, target in
+                        target.name.map { ($0, index) }
+                    }
+                )
+                self.morphers.append(NamedMorpher(
+                    morpher: m,
+                    targetIndexByName: targetIndexByName
+                ))
+            }
+            if let material = node.geometry?.firstMaterial, material.name == "Eye" {
+                self.eyeNodeStates.append(EyeNodeState(
+                    node: node,
+                    baseZ: node.position.z,
+                    material: material,
+                    diffuseContents: material.diffuse.contents,
+                    emissionContents: material.emission.contents,
+                    transparency: material.transparency
+                ))
             }
         }
+        resetAllMorphs()
         modelRoot = scene.rootNode.childNode(withName: "modelRoot", recursively: false)
     }
 
@@ -117,36 +191,59 @@ final class SceneRig: NSObject, SCNSceneRendererDelegate, ObservableObject {
     func renderer(_ renderer: SCNSceneRenderer, updateAtTime time: TimeInterval) {
         // アイドルの軽い揺れ
         modelRoot?.eulerAngles.y = Float(sin(time * 0.8) * 0.08)
+        applyEyeDebug()
 
-        guard let morpher else { return }
+        guard !morphers.isEmpty else { return }
 
         // 表情
-        for name in expressionMorphs { morpher.setWeight(0, forTargetNamed: name) }
-        switch expression {
-        case .idle, .neutral:
-            break
-        case .thinking:
-            morpher.setWeight(0.6, forTargetNamed: "ジト目1")
-        case .happy:
-            morpher.setWeight(1.0, forTargetNamed: "Joy")
-        case .sad:
-            morpher.setWeight(1.0, forTargetNamed: "Sorrow")
-            morpher.setWeight(0.6, forTargetNamed: "涙")
-        case .surprised:
-            morpher.setWeight(1.0, forTargetNamed: "見開き白目")
-        case .troubled:
-            morpher.setWeight(1.0, forTargetNamed: "困り眉1")
+        resetAllMorphs()
+        if appliesExpressionMorphs {
+            for (name, weight) in expression.morphWeights {
+                setWeight(weight, forTargetNamed: name)
+            }
         }
 
-        // DEBUG: Blink を 1.0 固定（目が閉じたままになるか確認）。
-        morpher.setWeight(1.0, forTargetNamed: "Blink")
+        for (name, weight) in manualMorphWeights where weight > 0 {
+            setWeight(weight * manualMorphScale, forTargetNamed: name)
+        }
 
         // 口パク（喋り中だけ A を開閉）
         if speaking {
             let open = CGFloat(sin(time * 18) * 0.5 + 0.5) * 0.6
-            morpher.setWeight(open, forTargetNamed: "A")
-        } else {
-            morpher.setWeight(0, forTargetNamed: "A")
+            setWeight(open, forTargetNamed: "A")
+        }
+    }
+
+    private func resetAllMorphs() {
+        for name in resetMorphs {
+            setWeight(0, forTargetNamed: name)
+        }
+    }
+
+    private func setWeight(_ weight: CGFloat, forTargetNamed name: String) {
+        for namedMorpher in morphers {
+            guard let index = namedMorpher.targetIndexByName[name] else { continue }
+            namedMorpher.morpher.setWeight(weight, forTargetAt: index)
+        }
+    }
+
+    private func applyEyeDebug() {
+        for state in eyeNodeStates {
+            state.node?.position.z = state.baseZ + Float(eyeDepthOffset)
+            switch eyeDebugMode {
+            case .normal:
+                state.material.diffuse.contents = state.diffuseContents
+                state.material.emission.contents = state.emissionContents
+                state.material.transparency = state.transparency
+            case .highlighted:
+                state.material.diffuse.contents = UIColor.systemRed
+                state.material.emission.contents = UIColor.systemRed
+                state.material.transparency = 1
+            case .hidden:
+                state.material.diffuse.contents = state.diffuseContents
+                state.material.emission.contents = state.emissionContents
+                state.material.transparency = 0
+            }
         }
     }
 }

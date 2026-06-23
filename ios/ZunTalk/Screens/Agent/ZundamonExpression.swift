@@ -1,4 +1,5 @@
 import Foundation
+import CoreGraphics
 
 /// ずんだもんの表情。エージェントのライフサイクル状態（待機/考え中）と、
 /// 返答の感情（neutral/happy/sad/surprised/troubled）の両方を1つの enum で表す。
@@ -22,6 +23,26 @@ enum ZundamonExpression {
         case "surprised": return .surprised
         case "troubled":  return .troubled
         default:          return .neutral
+        }
+    }
+
+    /// この表情で使う標準モーフ値。
+    var morphWeights: [String: CGFloat] {
+        switch self {
+        case .idle:
+            return ["Fun": 0.45]
+        case .neutral:
+            return [:]
+        case .thinking:
+            return ["ジト目1": 0.6]
+        case .happy:
+            return ["Joy": 1.0]
+        case .sad:
+            return ["Sorrow": 1.0, "涙": 0.6]
+        case .surprised:
+            return ["見開き白目": 1.0]
+        case .troubled:
+            return ["困り眉1": 1.0]
         }
     }
 

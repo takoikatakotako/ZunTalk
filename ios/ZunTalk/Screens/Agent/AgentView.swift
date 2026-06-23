@@ -55,7 +55,7 @@ struct AgentView: View {
         VStack(spacing: 6) {
             ZStack {
                 Zundamon3DView(
-                    expression: viewModel.expression,
+                    expression: .neutral,
                     speaking: viewModel.isPlayingVoice,
                     status: $modelStatus
                 )

@@ -71,22 +71,20 @@ enum GLBLoader {
                 let node = SCNNode(geometry: geometry)
                 node.name = mesh.name
 
-                // モーフターゲット（POSITION の差分）を名前つきで追加する。
+                // モーフターゲット（glTF は POSITION の差分）を SceneKit 用の絶対座標に変換して追加する。
                 if let targets = primitive.targets, !targets.isEmpty {
                     let morpher = SCNMorpher()
-                    // additive: 結果 = base + Σ weight*target。target は glTF の差分(delta)をそのまま渡す。
-                    morpher.calculationMode = .additive
                     var targetGeometries: [SCNGeometry] = []
                     for (i, target) in targets.enumerated() {
                         guard let tp = target["POSITION"] else { continue }
                         let deltas = reader.readVec3(gltf.accessors[tp])
                         let tname = i < targetNames.count ? targetNames[i] : "target\(i)"
-                        if tname == "Blink" || tname == "Joy" {
-                            let mx = deltas.map { Swift.max(abs($0.x), abs($0.y), abs($0.z)) }.max() ?? 0
-                            print("📏 morph \(tname) maxDelta=\(mx) count=\(deltas.count)")
+                        guard deltas.count == positions.count else { continue }
+                        let morphedPositions = zip(positions, deltas).map { base, delta in
+                            SCNVector3(base.x + delta.x, base.y + delta.y, base.z + delta.z)
                         }
                         let tGeo = SCNGeometry(
-                            sources: [SCNGeometrySource(vertices: deltas)],
+                            sources: [SCNGeometrySource(vertices: morphedPositions)],
                             elements: [element]
                         )
                         tGeo.name = tname
@@ -145,9 +143,11 @@ enum GLBLoader {
             return mat
         }
         let m = materials[index]
+        mat.name = m.name
         if let texInfo = m.pbrMetallicRoughness?.baseColorTexture,
            let image = reader.image(textureIndex: texInfo.index) {
             mat.diffuse.contents = image
+            applyTextureSampler(textureIndex: texInfo.index, to: mat.diffuse, gltf: gltf)
         } else if let f = m.pbrMetallicRoughness?.baseColorFactor, f.count >= 3 {
             mat.diffuse.contents = UIColor(red: CGFloat(f[0]), green: CGFloat(f[1]), blue: CGFloat(f[2]), alpha: CGFloat(f.count > 3 ? f[3] : 1))
         } else {
@@ -160,6 +160,32 @@ enum GLBLoader {
             mat.blendMode = .alpha
         }
         return mat
+    }
+
+    private static func applyTextureSampler(textureIndex: Int, to property: SCNMaterialProperty, gltf: GLTF) {
+        guard let textures = gltf.textures,
+              textureIndex < textures.count,
+              let samplerIndex = textures[textureIndex].sampler,
+              let samplers = gltf.samplers,
+              samplerIndex < samplers.count else {
+            return
+        }
+        let sampler = samplers[samplerIndex]
+        property.wrapS = wrapMode(from: sampler.wrapS)
+        property.wrapT = wrapMode(from: sampler.wrapT)
+    }
+
+    private static func wrapMode(from gltfValue: Int?) -> SCNWrapMode {
+        switch gltfValue ?? 10497 {
+        case 33071:
+            return .clamp
+        case 33648:
+            return .mirror
+        case 10497:
+            return .repeat
+        default:
+            return .repeat
+        }
     }
 }
 
@@ -286,6 +312,7 @@ struct GLTF: Decodable {
     let meshes: [Mesh]
     let materials: [Material]?
     let textures: [Texture]?
+    let samplers: [Sampler]?
     let images: [Image]?
 
     struct Accessor: Decodable {
@@ -329,6 +356,7 @@ struct GLTF: Decodable {
         let targets: [[String: Int]]?
     }
     struct Material: Decodable {
+        let name: String?
         let pbrMetallicRoughness: PBR?
         let alphaMode: String?
         struct PBR: Decodable {
@@ -337,6 +365,7 @@ struct GLTF: Decodable {
         }
         struct TexInfo: Decodable { let index: Int }
     }
-    struct Texture: Decodable { let source: Int? }
+    struct Texture: Decodable { let sampler: Int?; let source: Int? }
+    struct Sampler: Decodable { let wrapS: Int?; let wrapT: Int? }
     struct Image: Decodable { let bufferView: Int?; let mimeType: String? }
 }
