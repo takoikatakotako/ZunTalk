@@ -208,6 +208,7 @@ final class SceneRig: NSObject, SCNSceneRendererDelegate, ObservableObject {
         }
         resetAllMorphs()
         modelRoot = scene.rootNode.childNode(withName: "modelRoot", recursively: false)
+        applyStandingPose(in: scene)
     }
 
     // 毎フレーム呼ばれる。
@@ -264,6 +265,26 @@ final class SceneRig: NSObject, SCNSceneRendererDelegate, ObservableObject {
             modelRoot.eulerAngles.y = Float(sin(time * 0.72) * (0.09 + talkBoost * 0.025))
             modelRoot.eulerAngles.z = Float(sin(time * 0.58) * (0.025 + talkBoost * 0.01))
         }
+    }
+
+    private func applyStandingPose(in scene: SCNScene) {
+        setEulerAngles("Shoulder.L", in: scene, x: 0.0, y: 0.0, z: 0.12)
+        setEulerAngles("Upper_Arm.L", in: scene, x: -0.10, y: 0.08, z: 1.28)
+        setEulerAngles("Lower_Arm.L", in: scene, x: 0.0, y: 0.0, z: 0.18)
+        setEulerAngles("Hand.L", in: scene, x: 0.0, y: 0.0, z: -0.10)
+
+        setEulerAngles("Shoulder.R", in: scene, x: 0.0, y: 0.0, z: -0.12)
+        setEulerAngles("Upper_Arm.R", in: scene, x: -0.10, y: -0.08, z: -1.28)
+        setEulerAngles("Lower_Arm.R", in: scene, x: 0.0, y: 0.0, z: -0.18)
+        setEulerAngles("Hand.R", in: scene, x: 0.0, y: 0.0, z: 0.10)
+
+        setEulerAngles("Chest", in: scene, x: -0.03, y: 0.0, z: 0.0)
+        setEulerAngles("Upper_Chest", in: scene, x: -0.04, y: 0.0, z: 0.0)
+    }
+
+    private func setEulerAngles(_ nodeName: String, in scene: SCNScene, x: Float, y: Float, z: Float) {
+        guard let node = scene.rootNode.childNode(withName: nodeName, recursively: true) else { return }
+        node.eulerAngles = SCNVector3(x, y, z)
     }
 
     private func applyEyeDebug() {

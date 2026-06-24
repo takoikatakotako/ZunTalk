@@ -37,11 +37,27 @@ enum GLBLoader {
         let modelRoot = SCNNode()
         modelRoot.name = "modelRoot"
         let reader = AccessorReader(gltf: gltf, bin: bin)
+        let gltfNodes = gltf.nodes ?? []
+        let sceneIndex = gltf.scene ?? 0
+        let sceneRoots = gltf.scenes.indices.contains(sceneIndex) ? gltf.scenes[sceneIndex].nodes : []
+        let sceneNodes = gltfNodes.enumerated().map { index, nodeDef in
+            makeNode(index: index, definition: nodeDef)
+        }
+
+        struct PendingSkin {
+            let node: SCNNode
+            let skinIndex: Int
+            let jointAccessor: Int
+            let weightAccessor: Int
+        }
+        var pendingSkins: [PendingSkin] = []
 
         var minV = SCNVector3(Float.greatestFiniteMagnitude, Float.greatestFiniteMagnitude, Float.greatestFiniteMagnitude)
         var maxV = SCNVector3(-Float.greatestFiniteMagnitude, -Float.greatestFiniteMagnitude, -Float.greatestFiniteMagnitude)
 
-        for mesh in gltf.meshes {
+        for (nodeIndex, nodeDef) in gltfNodes.enumerated() {
+            guard let meshIndex = nodeDef.mesh, gltf.meshes.indices.contains(meshIndex) else { continue }
+            let mesh = gltf.meshes[meshIndex]
             let targetNames = mesh.extras?.targetNames ?? []
 
             for primitive in mesh.primitives {
@@ -71,6 +87,17 @@ enum GLBLoader {
                 let node = SCNNode(geometry: geometry)
                 node.name = mesh.name
 
+                if let skinIndex = nodeDef.skin,
+                   primitive.attributes["JOINTS_0"] != nil,
+                   primitive.attributes["WEIGHTS_0"] != nil {
+                    pendingSkins.append(PendingSkin(
+                        node: node,
+                        skinIndex: skinIndex,
+                        jointAccessor: primitive.attributes["JOINTS_0"]!,
+                        weightAccessor: primitive.attributes["WEIGHTS_0"]!
+                    ))
+                }
+
                 // モーフターゲット（glTF は POSITION の差分）を SceneKit 用の絶対座標に変換して追加する。
                 if let targets = primitive.targets, !targets.isEmpty {
                     let morpher = SCNMorpher()
@@ -94,12 +121,80 @@ enum GLBLoader {
                     node.morpher = morpher
                 }
 
-                modelRoot.addChildNode(node)
+                sceneNodes[nodeIndex].addChildNode(node)
             }
+        }
+
+        for (index, nodeDef) in gltfNodes.enumerated() {
+            for child in nodeDef.children ?? [] where sceneNodes.indices.contains(child) {
+                sceneNodes[index].addChildNode(sceneNodes[child])
+            }
+        }
+
+        for rootIndex in sceneRoots where sceneNodes.indices.contains(rootIndex) {
+            modelRoot.addChildNode(sceneNodes[rootIndex])
+        }
+
+        for pendingSkin in pendingSkins {
+            guard let skins = gltf.skins,
+                  skins.indices.contains(pendingSkin.skinIndex),
+                  let geometry = pendingSkin.node.geometry else { continue }
+            let skin = skins[pendingSkin.skinIndex]
+            let bones = skin.joints.compactMap { sceneNodes.indices.contains($0) ? sceneNodes[$0] : nil }
+            guard bones.count == skin.joints.count else { continue }
+            let inverseBindTransforms = skin.inverseBindMatrices.flatMap { accessorIndex -> [NSValue]? in
+                guard gltf.accessors.indices.contains(accessorIndex) else { return nil }
+                return reader.readMat4(gltf.accessors[accessorIndex]).map { NSValue(scnMatrix4: $0) }
+            } ?? bones.map { _ in NSValue(scnMatrix4: SCNMatrix4Identity) }
+            let boneWeights = reader.readVec4GeometrySource(
+                gltf.accessors[pendingSkin.weightAccessor],
+                semantic: .boneWeights
+            )
+            let boneIndices = reader.readJointGeometrySource(
+                gltf.accessors[pendingSkin.jointAccessor],
+                semantic: .boneIndices
+            )
+            pendingSkin.node.skinner = SCNSkinner(
+                baseGeometry: geometry,
+                bones: bones,
+                boneInverseBindTransforms: inverseBindTransforms,
+                boneWeights: boneWeights,
+                boneIndices: boneIndices
+            )
         }
 
         scene.rootNode.addChildNode(modelRoot)
         return LoadedModel(scene: scene, root: modelRoot, min: minV, max: maxV)
+    }
+
+    private static func makeNode(index: Int, definition: GLTF.Node) -> SCNNode {
+        let node = SCNNode()
+        node.name = definition.name ?? "node\(index)"
+
+        if let matrix = definition.matrix, matrix.count == 16 {
+            node.transform = matrix4(from: matrix)
+        } else {
+            if let translation = definition.translation, translation.count == 3 {
+                node.position = SCNVector3(translation[0], translation[1], translation[2])
+            }
+            if let rotation = definition.rotation, rotation.count == 4 {
+                node.orientation = SCNQuaternion(rotation[0], rotation[1], rotation[2], rotation[3])
+            }
+            if let scale = definition.scale, scale.count == 3 {
+                node.scale = SCNVector3(scale[0], scale[1], scale[2])
+            }
+        }
+
+        return node
+    }
+
+    private static func matrix4(from values: [Float]) -> SCNMatrix4 {
+        SCNMatrix4(
+            m11: values[0], m12: values[1], m13: values[2], m14: values[3],
+            m21: values[4], m22: values[5], m23: values[6], m24: values[7],
+            m31: values[8], m32: values[9], m33: values[10], m34: values[11],
+            m41: values[12], m42: values[13], m43: values[14], m44: values[15]
+        )
     }
 
     // MARK: - GLB container
@@ -257,6 +352,61 @@ private final class AccessorReader {
         return out
     }
 
+    func readMat4(_ acc: GLTF.Accessor) -> [SCNMatrix4] {
+        guard let bvIndex = acc.bufferView else { return [] }
+        let bv = gltf.bufferViews[bvIndex]
+        let base = (bv.byteOffset ?? 0) + (acc.byteOffset ?? 0)
+        let stride = (bv.byteStride ?? 0) == 0 ? 64 : bv.byteStride!
+        return (0..<acc.count).map { i in
+            let o = base + i * stride
+            let values = (0..<16).map { readF32(bin, o + $0 * 4) }
+            return SCNMatrix4(
+                m11: values[0], m12: values[1], m13: values[2], m14: values[3],
+                m21: values[4], m22: values[5], m23: values[6], m24: values[7],
+                m31: values[8], m32: values[9], m33: values[10], m34: values[11],
+                m41: values[12], m42: values[13], m43: values[14], m44: values[15]
+            )
+        }
+    }
+
+    func readVec4GeometrySource(_ acc: GLTF.Accessor, semantic: SCNGeometrySource.Semantic) -> SCNGeometrySource {
+        guard let bvIndex = acc.bufferView else {
+            return floatGeometrySource(values: Array(repeating: 0, count: acc.count * 4), semantic: semantic)
+        }
+        let bv = gltf.bufferViews[bvIndex]
+        let base = (bv.byteOffset ?? 0) + (acc.byteOffset ?? 0)
+        let componentSize = byteSize(for: acc.componentType)
+        let stride = (bv.byteStride ?? 0) == 0 ? componentSize * 4 : bv.byteStride!
+        var values: [Float] = []
+        values.reserveCapacity(acc.count * 4)
+        for i in 0..<acc.count {
+            let o = base + i * stride
+            for component in 0..<4 {
+                values.append(readComponentAsFloat(acc.componentType, o + component * componentSize))
+            }
+        }
+        return floatGeometrySource(values: values, semantic: semantic)
+    }
+
+    func readJointGeometrySource(_ acc: GLTF.Accessor, semantic: SCNGeometrySource.Semantic) -> SCNGeometrySource {
+        guard let bvIndex = acc.bufferView else {
+            return jointGeometrySource(values: Array(repeating: 0, count: acc.count * 4), semantic: semantic)
+        }
+        let bv = gltf.bufferViews[bvIndex]
+        let base = (bv.byteOffset ?? 0) + (acc.byteOffset ?? 0)
+        let componentSize = byteSize(for: acc.componentType)
+        let stride = (bv.byteStride ?? 0) == 0 ? componentSize * 4 : bv.byteStride!
+        var values: [UInt16] = []
+        values.reserveCapacity(acc.count * 4)
+        for i in 0..<acc.count {
+            let o = base + i * stride
+            for component in 0..<4 {
+                values.append(readComponentAsUInt16(acc.componentType, o + component * componentSize))
+            }
+        }
+        return jointGeometrySource(values: values, semantic: semantic)
+    }
+
     func readIndices(_ acc: GLTF.Accessor) -> [Int32] {
         guard let bvIndex = acc.bufferView else { return [] }
         let bv = gltf.bufferViews[bvIndex]
@@ -290,6 +440,61 @@ private final class AccessorReader {
         if let ui { imageCache[source] = ui }
         return ui
     }
+
+    private func byteSize(for componentType: Int) -> Int {
+        switch componentType {
+        case 5120, 5121: return 1
+        case 5122, 5123: return 2
+        case 5125, 5126: return 4
+        default: return 4
+        }
+    }
+
+    private func readComponentAsFloat(_ componentType: Int, _ offset: Int) -> Float {
+        switch componentType {
+        case 5121: return Float(bin[bin.startIndex + offset]) / 255
+        case 5123: return Float(readU16(bin, offset)) / 65535
+        case 5126: return readF32(bin, offset)
+        default: return 0
+        }
+    }
+
+    private func readComponentAsUInt16(_ componentType: Int, _ offset: Int) -> UInt16 {
+        switch componentType {
+        case 5121: return UInt16(bin[bin.startIndex + offset])
+        case 5123: return readU16(bin, offset)
+        case 5125: return UInt16(clamping: readU32(bin, offset))
+        default: return 0
+        }
+    }
+
+    private func floatGeometrySource(values: [Float], semantic: SCNGeometrySource.Semantic) -> SCNGeometrySource {
+        let data = values.withUnsafeBufferPointer { Data(buffer: $0) }
+        return SCNGeometrySource(
+            data: data,
+            semantic: semantic,
+            vectorCount: values.count / 4,
+            usesFloatComponents: true,
+            componentsPerVector: 4,
+            bytesPerComponent: MemoryLayout<Float>.size,
+            dataOffset: 0,
+            dataStride: MemoryLayout<Float>.size * 4
+        )
+    }
+
+    private func jointGeometrySource(values: [UInt16], semantic: SCNGeometrySource.Semantic) -> SCNGeometrySource {
+        let data = values.withUnsafeBufferPointer { Data(buffer: $0) }
+        return SCNGeometrySource(
+            data: data,
+            semantic: semantic,
+            vectorCount: values.count / 4,
+            usesFloatComponents: false,
+            componentsPerVector: 4,
+            bytesPerComponent: MemoryLayout<UInt16>.size,
+            dataOffset: 0,
+            dataStride: MemoryLayout<UInt16>.size * 4
+        )
+    }
 }
 
 // MARK: - バイト読み出しヘルパー
@@ -310,6 +515,10 @@ struct GLTF: Decodable {
     let accessors: [Accessor]
     let bufferViews: [BufferView]
     let meshes: [Mesh]
+    let nodes: [Node]?
+    let skins: [Skin]?
+    let scenes: [Scene]
+    let scene: Int?
     let materials: [Material]?
     let textures: [Texture]?
     let samplers: [Sampler]?
@@ -354,6 +563,24 @@ struct GLTF: Decodable {
         let indices: Int?
         let material: Int?
         let targets: [[String: Int]]?
+    }
+    struct Node: Decodable {
+        let name: String?
+        let mesh: Int?
+        let skin: Int?
+        let children: [Int]?
+        let translation: [Float]?
+        let rotation: [Float]?
+        let scale: [Float]?
+        let matrix: [Float]?
+    }
+    struct Skin: Decodable {
+        let joints: [Int]
+        let inverseBindMatrices: Int?
+        let skeleton: Int?
+    }
+    struct Scene: Decodable {
+        let nodes: [Int]
     }
     struct Material: Decodable {
         let name: String?
