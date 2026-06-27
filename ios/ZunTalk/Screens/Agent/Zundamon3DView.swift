@@ -107,8 +107,8 @@ struct Zundamon3DView: View {
             fieldOfView = 35
         case .fullBody:
             targetY = lo.y + height * 0.50
-            distance = height * 1.55
-            fieldOfView = 32
+            distance = height * 1.82
+            fieldOfView = 34
         }
 
         let cameraNode = SCNNode()
