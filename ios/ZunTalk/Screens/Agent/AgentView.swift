@@ -44,14 +44,9 @@ struct AgentView: View {
     // MARK: - Subviews
 
     private var roomBackground: some View {
-        LinearGradient(
-            colors: [
-                Color(red: 0.96, green: 0.98, blue: 0.94),
-                Color(red: 0.83, green: 0.90, blue: 0.76)
-            ],
-            startPoint: .top,
-            endPoint: .bottom
-        )
+        Image("agent-room-background")
+            .resizable()
+            .scaledToFill()
     }
 
     private func characterLayer(height: CGFloat) -> some View {

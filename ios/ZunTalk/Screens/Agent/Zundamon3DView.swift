@@ -9,9 +9,9 @@ enum ZundamonModelStatus {
     case failed
 }
 
-/// ずんだもんの3Dモデル（VRM=glb）を SwiftUI の `SceneView` で表示する。
+/// ずんだもんの3Dモデル（VRM=glb）を透明な `SCNView` で表示する。
 ///
-/// 描画ループを確実に回すため、SceneView に delegate（SceneRig）を渡し、
+/// 描画ループを確実に回すため、SCNView に delegate（SceneRig）を渡し、
 /// その毎フレームコールバックで表情・口パク・まばたき・揺れのモーフを駆動する。
 struct Zundamon3DView: View {
     var expression: ZundamonExpression
@@ -31,10 +31,9 @@ struct Zundamon3DView: View {
     var body: some View {
         Group {
             if let scene, let pov {
-                SceneView(
+                TransparentSceneView(
                     scene: scene,
                     pointOfView: pov,
-                    options: [.rendersContinuously],
                     delegate: rig
                 )
             } else {
@@ -122,6 +121,40 @@ struct Zundamon3DView: View {
         cameraNode.position = SCNVector3(cx, targetY, lo.z - distance)
         cameraNode.eulerAngles = SCNVector3(0, Float.pi, 0)
         return cameraNode
+    }
+}
+
+private struct TransparentSceneView: UIViewRepresentable {
+    let scene: SCNScene
+    let pointOfView: SCNNode
+    let delegate: SCNSceneRendererDelegate
+
+    func makeUIView(context: Context) -> SCNView {
+        let view = SCNView(frame: .zero)
+        view.backgroundColor = .clear
+        view.isOpaque = false
+        view.scene = scene
+        view.pointOfView = pointOfView
+        view.delegate = delegate
+        view.rendersContinuously = true
+        view.isPlaying = true
+        view.allowsCameraControl = false
+        view.autoenablesDefaultLighting = false
+        return view
+    }
+
+    func updateUIView(_ view: SCNView, context: Context) {
+        view.backgroundColor = .clear
+        view.isOpaque = false
+        if view.scene !== scene {
+            view.scene = scene
+        }
+        if view.pointOfView !== pointOfView {
+            view.pointOfView = pointOfView
+        }
+        view.delegate = delegate
+        view.rendersContinuously = true
+        view.isPlaying = true
     }
 }
 
