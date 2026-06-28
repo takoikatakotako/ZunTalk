@@ -7,46 +7,51 @@ struct AgentView: View {
     @FocusState private var isInputFocused: Bool
     @State private var modelStatus: ZundamonModelStatus = .loading
     @State private var keyboardHeight: CGFloat = 0
+    @State private var safeAreaBottom: CGFloat = 0
 
     var body: some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .bottom) {
-                roomBackground
-                    .ignoresSafeArea(.container)
+        ZStack(alignment: .bottom) {
+            roomBackground
+                .ignoresSafeArea()
 
+            GeometryReader { proxy in
                 characterLayer(height: characterViewportHeight(proxy.size.height))
-
-                modelStatusOverlay
-
-                if !isInputFocused {
-                    dialogueOverlay(bottomInset: proxy.safeAreaInsets.bottom)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-
-                inputOverlay
-                    .padding(.bottom, inputBottomPadding(safeAreaBottom: proxy.safeAreaInsets.bottom))
-                    .zIndex(10)
+                    .onAppear { safeAreaBottom = proxy.safeAreaInsets.bottom }
+                    .onChange(of: proxy.safeAreaInsets.bottom) { _, newValue in
+                        safeAreaBottom = newValue
+                    }
             }
-            .ignoresSafeArea(.keyboard, edges: .bottom)
-            .animation(.easeOut(duration: 0.18), value: isInputFocused)
-            .animation(.easeOut(duration: 0.22), value: keyboardHeight)
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
-                keyboardHeight = keyboardOverlap(from: notification)
-            }
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-                keyboardHeight = 0
-            }
+
+            dialogueOverlay
+
+            inputOverlay
+                .padding(.bottom, inputBottomPadding)
+                .zIndex(10)
         }
-        .toolbar(.hidden, for: .navigationBar)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .animation(.easeOut(duration: 0.18), value: isInputFocused)
+        .animation(.easeOut(duration: 0.22), value: keyboardHeight)
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
+            keyboardHeight = keyboardOverlap(from: notification)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardHeight = 0
+        }
+        .navigationTitle("ずんだもん")
+        .navigationBarTitleDisplayMode(.inline)
         .onDisappear { viewModel.cleanup() }
     }
 
     // MARK: - Subviews
 
     private var roomBackground: some View {
-        Image("agent-room-background")
-            .resizable()
-            .scaledToFill()
+        GeometryReader { proxy in
+            Image("agent-room-background")
+                .resizable()
+                .scaledToFill()
+                .frame(width: proxy.size.width, height: proxy.size.height)
+                .clipped()
+        }
     }
 
     private func characterLayer(height: CGFloat) -> some View {
@@ -104,6 +109,14 @@ struct AgentView: View {
     }
 
     private var dialogueText: String {
+        switch modelStatus {
+        case .loading:
+            return "Loading..."
+        case .failed:
+            return "モデルの読み込みに失敗したのだ"
+        case .loaded:
+            break
+        }
         if viewModel.isLoading {
             return "考え中なのだ…"
         }
@@ -120,94 +133,87 @@ struct AgentView: View {
             .frame(maxWidth: .infinity)
     }
 
-    private var modelStatusOverlay: some View {
-        Group {
-            switch modelStatus {
-            case .loading:
-                VStack(spacing: 10) {
-                    ProgressView()
-                        .tint(.white)
-                    Text("ずんだもんを読み込み中なのだ…")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.8))
-                }
-                .padding(18)
-                .background(.black.opacity(0.35), in: RoundedRectangle(cornerRadius: 16))
-            case .failed:
-                VStack(spacing: 10) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                    Text("モデルの読み込みに失敗したのだ")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.82))
-                }
-                .padding(18)
-                .background(.black.opacity(0.35), in: RoundedRectangle(cornerRadius: 16))
-            case .loaded:
-                EmptyView()
-            }
-        }
-    }
-
-    private func dialogueOverlay(bottomInset: CGFloat) -> some View {
+    private var dialogueOverlay: some View {
         VStack(spacing: 8) {
             dialoguePanel
             remainingText
         }
         .padding(.horizontal, 16)
-        .padding(.bottom, bottomInset + 88)
+        .padding(.bottom, effectiveSafeAreaBottom + 80)
     }
 
     private var inputOverlay: some View {
         inputBar
             .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity)
     }
 
     private var inputBar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 8) {
             TextField("話してみて…", text: $viewModel.inputText, axis: .vertical)
                 .textFieldStyle(.plain)
-                .font(.system(size: 18, weight: .medium))
-                .lineLimit(1...3)
+                .lineLimit(1...5)
                 .focused($isInputFocused)
                 .disabled(viewModel.isLoading)
-                .foregroundStyle(.white)
-                .tint(.white)
-                .padding(.horizontal, 22)
-                .frame(minHeight: 62)
-                .background(Color(red: 0.21, green: 0.28, blue: 0.19).opacity(0.78))
-                .clipShape(Capsule())
-                .overlay(Capsule().stroke(.white.opacity(0.12), lineWidth: 1))
-                .onSubmit { viewModel.send() }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color(.systemGray6))
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                .onSubmit { sendMessage() }
 
             Button {
-                viewModel.send()
+                sendMessage()
             } label: {
-                Image(systemName: "mic.fill")
-                    .font(.system(size: 32, weight: .semibold))
-                    .foregroundStyle(.white.opacity(isSendDisabled ? 0.45 : 0.95))
-                    .frame(width: 72, height: 72)
-                    .background(Color(red: 0.27, green: 0.34, blue: 0.26).opacity(0.88))
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(.white.opacity(0.14), lineWidth: 1))
+                Image(systemName: "arrow.up.circle.fill")
+                    .font(.system(size: 32))
+                    .foregroundStyle(sendButtonColor)
+                    .frame(width: 36, height: 36)
             }
             .disabled(isSendDisabled)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity)
     }
 
     private var isSendDisabled: Bool {
         viewModel.inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || viewModel.isLoading
     }
 
-    private func inputBottomPadding(safeAreaBottom: CGFloat) -> CGFloat {
+    private func sendMessage() {
+        viewModel.send()
+        isInputFocused = false
+        keyboardHeight = 0
+    }
+
+    private var sendButtonColor: Color {
+        isSendDisabled ? Color(.systemGray4) : .blue
+    }
+
+    private var inputBottomPadding: CGFloat {
         guard isInputFocused else {
-            return safeAreaBottom + 8
+            return effectiveSafeAreaBottom + 2
         }
 
-        // Some SwiftUI hosting layouts report keyboard changes late or not at all.
-        // Keep the input usable by falling back to a typical kana keyboard height.
-        let fallbackKeyboardHeight = UIScreen.main.bounds.height * 0.43
-        return max(keyboardHeight, fallbackKeyboardHeight) + 8
+        if keyboardHeight > 0 {
+            return max(0, keyboardHeight - effectiveSafeAreaBottom) + 6
+        }
+
+        let fallbackKeyboardHeight: CGFloat = 300
+        return fallbackKeyboardHeight + 6
+    }
+
+    private var effectiveSafeAreaBottom: CGFloat {
+        max(safeAreaBottom, windowSafeAreaBottom)
+    }
+
+    private var windowSafeAreaBottom: CGFloat {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .first { $0.isKeyWindow }?
+            .safeAreaInsets.bottom ?? 0
     }
 
     private func keyboardOverlap(from notification: Notification) -> CGFloat {

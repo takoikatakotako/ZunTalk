@@ -63,7 +63,7 @@ struct ContactView: View {
                             Button(action: {
                                 isNavigatingToAgent = true
                             }) {
-                                Image(systemName: "sparkles")
+                                Image(systemName: "bubble.left.and.bubble.right.fill")
                                     .foregroundColor(.white)
                                     .font(.system(size: 16))
                                     .frame(width: 36, height: 36)
