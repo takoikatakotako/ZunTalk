@@ -37,6 +37,10 @@ struct AgentView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             keyboardHeight = 0
         }
+        .onChange(of: modelStatus) { _, newValue in
+            guard newValue == .loaded else { return }
+            viewModel.playInitialGreetingIfNeeded()
+        }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .onDisappear { viewModel.cleanup() }
@@ -123,7 +127,7 @@ struct AgentView: View {
         if let assistantMessage = viewModel.messages.last(where: { $0.role == .assistant }) {
             return assistantMessage.content
         }
-        return "こんばんは。今日は何を話すのだ？"
+        return "Loading..."
     }
 
     private var dialogueOverlay: some View {
