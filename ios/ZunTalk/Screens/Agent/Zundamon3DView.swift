@@ -198,8 +198,14 @@ final class SceneRig: NSObject, SCNSceneRendererDelegate, ObservableObject {
         let transparency: CGFloat
     }
 
+    private struct PoseNodeState {
+        weak var node: SCNNode?
+        let baseEulerAngles: SCNVector3
+    }
+
     private var morphers: [NamedMorpher] = []
     private var eyeNodeStates: [EyeNodeState] = []
+    private var upperBodyPoseNodes: [String: PoseNodeState] = [:]
     private weak var modelRoot: SCNNode?
 
     /// 毎フレーム一旦 0 に戻すモーフ。idle の見た目がモデル初期値に引きずられないよう広めに含める。
@@ -242,6 +248,7 @@ final class SceneRig: NSObject, SCNSceneRendererDelegate, ObservableObject {
         resetAllMorphs()
         modelRoot = scene.rootNode.childNode(withName: "modelRoot", recursively: false)
         applyStandingPose(in: scene)
+        captureUpperBodyPoseNodes(in: scene)
     }
 
     // 毎フレーム呼ばれる。
@@ -293,11 +300,32 @@ final class SceneRig: NSObject, SCNSceneRendererDelegate, ObservableObject {
             modelRoot.eulerAngles.y = Float(sin(time * 0.8) * 0.08)
             modelRoot.eulerAngles.z = Float(sin(time * 0.65) * 0.012)
         case .fullBody:
-            modelRoot.position.y = Float(sin(time * 1.15) * (0.012 + talkBoost * 0.006))
-            modelRoot.eulerAngles.x = Float(sin(time * 0.9) * 0.012)
-            modelRoot.eulerAngles.y = Float(sin(time * 0.72) * (0.09 + talkBoost * 0.025))
-            modelRoot.eulerAngles.z = Float(sin(time * 0.58) * (0.025 + talkBoost * 0.01))
+            // Keep the feet planted. Full-body idle motion should come from upper-body bones,
+            // not from moving the root node vertically.
+            modelRoot.position.y = 0
+            modelRoot.eulerAngles = SCNVector3Zero
+            applyUpperBodySway(time: time, talkBoost: talkBoost)
         }
+    }
+
+    private func applyUpperBodySway(time: TimeInterval, talkBoost: Double) {
+        let bodySway = Float(sin(time * 0.78) * (0.035 + talkBoost * 0.010))
+        let breath = Float(sin(time * 1.45) * (0.010 + talkBoost * 0.004))
+        let nod = Float(sin(time * 0.92) * (0.012 + talkBoost * 0.006))
+
+        applyPoseOffset("Chest", x: breath, y: bodySway * 0.28, z: bodySway * 0.55)
+        applyPoseOffset("Upper_Chest", x: breath * 1.2, y: bodySway * 0.38, z: bodySway * 0.72)
+        applyPoseOffset("Neck", x: nod, y: -bodySway * 0.18, z: -bodySway * 0.25)
+        applyPoseOffset("Head", x: nod * 0.8, y: -bodySway * 0.22, z: -bodySway * 0.18)
+    }
+
+    private func applyPoseOffset(_ nodeName: String, x: Float, y: Float, z: Float) {
+        guard let state = upperBodyPoseNodes[nodeName], let node = state.node else { return }
+        node.eulerAngles = SCNVector3(
+            state.baseEulerAngles.x + x,
+            state.baseEulerAngles.y + y,
+            state.baseEulerAngles.z + z
+        )
     }
 
     private func applyStandingPose(in scene: SCNScene) {
@@ -313,6 +341,14 @@ final class SceneRig: NSObject, SCNSceneRendererDelegate, ObservableObject {
 
         setEulerAngles("Chest", in: scene, x: -0.03, y: 0.0, z: 0.0)
         setEulerAngles("Upper_Chest", in: scene, x: -0.04, y: 0.0, z: 0.0)
+    }
+
+    private func captureUpperBodyPoseNodes(in scene: SCNScene) {
+        upperBodyPoseNodes.removeAll()
+        for name in ["Chest", "Upper_Chest", "Neck", "Head"] {
+            guard let node = scene.rootNode.childNode(withName: name, recursively: true) else { continue }
+            upperBodyPoseNodes[name] = PoseNodeState(node: node, baseEulerAngles: node.eulerAngles)
+        }
     }
 
     private func setEulerAngles(_ nodeName: String, in scene: SCNScene, x: Float, y: Float, z: Float) {
