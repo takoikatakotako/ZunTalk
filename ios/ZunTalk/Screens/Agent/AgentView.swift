@@ -37,7 +37,7 @@ struct AgentView: View {
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             keyboardHeight = 0
         }
-        .navigationTitle("ずんだもん")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .onDisappear { viewModel.cleanup() }
     }
@@ -126,37 +126,27 @@ struct AgentView: View {
         return "こんばんは。今日は何を話すのだ？"
     }
 
-    private var remainingText: some View {
-        Text("残り3回")
-            .font(.system(size: 15, weight: .medium))
-            .foregroundStyle(.white.opacity(0.42))
-            .frame(maxWidth: .infinity)
-    }
-
     private var dialogueOverlay: some View {
-        VStack(spacing: 8) {
-            dialoguePanel
-            remainingText
-        }
+        dialoguePanel
         .padding(.horizontal, 16)
         .padding(.bottom, effectiveSafeAreaBottom + 80)
     }
 
     private var inputOverlay: some View {
         inputBar
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 12)
             .frame(maxWidth: .infinity)
     }
 
     private var inputBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             TextField("話してみて…", text: $viewModel.inputText, axis: .vertical)
                 .textFieldStyle(.plain)
                 .lineLimit(1...5)
                 .focused($isInputFocused)
                 .disabled(viewModel.isLoading)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 10)
                 .padding(.vertical, 8)
                 .background(Color(.systemGray6))
                 .clipShape(RoundedRectangle(cornerRadius: 20))
@@ -172,7 +162,7 @@ struct AgentView: View {
             }
             .disabled(isSendDisabled)
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 6)
         .padding(.vertical, 6)
         .frame(maxWidth: .infinity)
     }
