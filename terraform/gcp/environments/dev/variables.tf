@@ -1,5 +1,5 @@
 variable "project_id" {
-  description = "デプロイ先 GCP プロジェクト ID（既存 sandbox に相乗り）。本体は gcp-iac が管理するため、ここでは中のリソースのみ追加する。"
+  description = "デプロイ先 GCP プロジェクト ID。"
   type        = string
   default     = "sandbox-492513"
 }
@@ -11,7 +11,7 @@ variable "region" {
 }
 
 variable "vertex_location" {
-  description = "Vertex AI(Gemini) のロケーション。モデル可用性を優先し既定は us-central1。"
+  description = "Vertex AI(Gemini) のロケーション。"
   type        = string
   default     = "us-central1"
 }

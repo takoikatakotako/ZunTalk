@@ -6,13 +6,20 @@ on:
       - main
     paths:
       - 'agent/**'
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Deploy target environment
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - prod
 
 env:
   PROJECT_ID: sandbox-492513
   REGION: asia-northeast1
-  SERVICE: zuntalk-agent
-  REPO: zuntalk-agent
 
 jobs:
   build-and-deploy:
@@ -22,6 +29,14 @@ jobs:
       contents: read
 
     steps:
+      - name: Resolve deploy target
+        id: target
+        run: |
+          ENVIRONMENT="${{ github.event.inputs.environment || 'dev' }}"
+          echo "environment=$ENVIRONMENT" >> "$GITHUB_OUTPUT"
+          echo "service=zuntalk-agent-$ENVIRONMENT" >> "$GITHUB_OUTPUT"
+          echo "repo=zuntalk-agent-$ENVIRONMENT" >> "$GITHUB_OUTPUT"
+
       - name: Checkout code
         uses: actions/checkout@v6
 
@@ -43,14 +58,14 @@ jobs:
         id: build
         working-directory: ./agent
         run: |
-          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO }}/${{ env.SERVICE }}:${{ github.sha }}"
+          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ steps.target.outputs.repo }}/${{ steps.target.outputs.service }}:${{ github.sha }}"
           docker build -t "$IMAGE" .
           docker push "$IMAGE"
           echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
 
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy ${{ env.SERVICE }} \
+          gcloud run deploy ${{ steps.target.outputs.service }} \
             --image "${{ steps.build.outputs.image }}" \
             --region ${{ env.REGION }} \
             --project ${{ env.PROJECT_ID }} \
