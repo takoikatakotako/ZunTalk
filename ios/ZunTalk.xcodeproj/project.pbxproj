@@ -343,7 +343,7 @@
 				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${PRODUCT_NAME}",
 				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Info.plist",
 				"$(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)",
-				"${PROJECT_DIR}/ZunTalk/GoogleService-Info.plist",
+				"${PROJECT_DIR}/ZunTalk/$(FIREBASE_PLIST_NAME).plist",
 			);
 			name = "Upload dSYMs to Crashlytics";
 			outputFileListPaths = (
@@ -353,7 +353,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ -f \"${PROJECT_DIR}/ZunTalk/GoogleService-Info.plist\" ]; then\n  \"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\" -gsp \"${PROJECT_DIR}/ZunTalk/GoogleService-Info.plist\"\nelse\n  echo \"warning: GoogleService-Info.plist not found, skipping dSYM upload\"\nfi\ntouch \"${DERIVED_FILE_DIR}/crashlytics-upload-symbols\"\n";
+			shellScript = "FIREBASE_PLIST_PATH=\"${PROJECT_DIR}/ZunTalk/${FIREBASE_PLIST_NAME}.plist\"\nif [ -f \"${FIREBASE_PLIST_PATH}\" ]; then\n  \"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\" -gsp \"${FIREBASE_PLIST_PATH}\"\nelse\n  echo \"warning: ${FIREBASE_PLIST_PATH} not found, skipping dSYM upload\"\nfi\ntouch \"${DERIVED_FILE_DIR}/crashlytics-upload-symbols\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -486,7 +486,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5.1;
+				MARKETING_VERSION = 1.6.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -621,7 +621,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.5.1;
+				MARKETING_VERSION = 1.6.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";

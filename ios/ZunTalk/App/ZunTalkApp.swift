@@ -12,7 +12,7 @@ struct ZunTalkApp: App {
     @State private var hasRequestedATT = false
 
     init() {
-        FirebaseApp.configure()
+        Self.configureFirebase()
         Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
     }
 
@@ -49,5 +49,19 @@ struct ZunTalkApp: App {
     private func requestTrackingAuthorizationIfNeeded() async {
         guard ATTrackingManager.trackingAuthorizationStatus == .notDetermined else { return }
         _ = await ATTrackingManager.requestTrackingAuthorization()
+    }
+
+    private static func configureFirebase() {
+        let plistName = Bundle.main.object(forInfoDictionaryKey: "FirebasePlistName") as? String
+        guard
+            let plistName,
+            let filePath = Bundle.main.path(forResource: plistName, ofType: "plist"),
+            let options = FirebaseOptions(contentsOfFile: filePath)
+        else {
+            FirebaseApp.configure()
+            return
+        }
+
+        FirebaseApp.configure(options: options)
     }
 }

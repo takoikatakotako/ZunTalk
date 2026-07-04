@@ -3,13 +3,15 @@
 <plist version="1.0">
 <dict>
 	<key>GIDClientID</key>
-	<string>870183222406-j0cm370uj0i4scklaovp3glbhvsadu8h.apps.googleusercontent.com</string>
+	<string>$(GOOGLE_CLIENT_ID)</string>
+	<key>FirebasePlistName</key>
+	<string>$(FIREBASE_PLIST_NAME)</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.870183222406-j0cm370uj0i4scklaovp3glbhvsadu8h</string>
+				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
 			</array>
 		</dict>
 	</array>
