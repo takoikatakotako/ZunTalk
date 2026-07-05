@@ -10,11 +10,14 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/takoikatakotako/ZunTalk/agent/apns"
 	"github.com/takoikatakotako/ZunTalk/agent/config"
 	"github.com/takoikatakotako/ZunTalk/agent/handler"
 	"github.com/takoikatakotako/ZunTalk/agent/llm"
+	appmiddleware "github.com/takoikatakotako/ZunTalk/agent/middleware"
 	"github.com/takoikatakotako/ZunTalk/agent/model"
 	"github.com/takoikatakotako/ZunTalk/agent/orchestrator"
+	"github.com/takoikatakotako/ZunTalk/agent/store"
 )
 
 func main() {
@@ -37,11 +40,34 @@ func main() {
 	orch := orchestrator.New(gemini)
 	agentHandler := handler.NewAgentHandler(orch)
 
+	// Firestore（電話予約・端末トークンの保存先）を初期化（ADC でキーレス認証）。
+	st, err := store.New(ctx, cfg.GCPProjectID)
+	if err != nil {
+		log.Fatalf("failed to init Firestore client: %v", err)
+	}
+	defer st.Close()
+
+	// APNs クライアント。未設定・不正なら nil にして /internal/dispatch だけ 503 を返す
+	//（キーの不備で /agent まで落とさない）。
+	var apnsClient *apns.Client
+	if cfg.APNSAuthKey != "" && cfg.APNSKeyID != "" && cfg.APNSTeamID != "" {
+		apnsClient, err = apns.New([]byte(cfg.APNSAuthKey), cfg.APNSKeyID, cfg.APNSTeamID)
+		if err != nil {
+			slog.Error("failed to init APNs client; /internal/dispatch will return 503", "error", err)
+		}
+	} else {
+		slog.Warn("APNs credentials are not configured; /internal/dispatch will return 503")
+	}
+
+	deviceHandler := handler.NewDeviceHandler(st)
+	callHandler := handler.NewCallHandler(st)
+	dispatchHandler := handler.NewDispatchHandler(st, apnsClient)
+
 	if cfg.APIKey == "" {
 		slog.Warn("AGENT_API_KEY is empty; /agent API key verification is DISABLED (local dev only)")
 	}
 
-	e := setupServer(agentHandler, cfg.APIKey)
+	e := setupServer(agentHandler, deviceHandler, callHandler, dispatchHandler, cfg)
 
 	log.Printf("Starting agent server on port %s", cfg.Port)
 	if err := e.Start(":" + cfg.Port); err != nil {
@@ -49,7 +75,13 @@ func main() {
 	}
 }
 
-func setupServer(h *handler.AgentHandler, apiKey string) *echo.Echo {
+func setupServer(
+	h *handler.AgentHandler,
+	deviceHandler *handler.DeviceHandler,
+	callHandler *handler.CallHandler,
+	dispatchHandler *handler.DispatchHandler,
+	cfg *config.Config,
+) *echo.Echo {
 	e := echo.New()
 
 	e.Use(middleware.Logger())
@@ -60,8 +92,17 @@ func setupServer(h *handler.AgentHandler, apiKey string) *echo.Echo {
 	e.GET("/health", h.HandleHealth)
 	e.HEAD("/health", h.HandleHealth)
 
-	// /agent は X-Api-Key 検証を必須にする（鍵が設定されている場合）。
-	e.POST("/agent", h.HandleAgent, apiKeyMiddleware(apiKey))
+	// アプリ向け API は X-Api-Key 検証を必須にする（鍵が設定されている場合）。
+	apiKey := apiKeyMiddleware(cfg.APIKey)
+	e.POST("/agent", h.HandleAgent, apiKey)
+	e.PUT("/devices", deviceHandler.HandleUpsertDevice, apiKey)
+	e.POST("/calls", callHandler.HandleCreateCall, apiKey)
+	e.GET("/calls", callHandler.HandleListCalls, apiKey)
+	e.DELETE("/calls/:id", callHandler.HandleCancelCall, apiKey)
+
+	// /internal/dispatch は Cloud Scheduler（OIDC）からのみ呼べる。
+	e.POST("/internal/dispatch", dispatchHandler.HandleDispatch,
+		appmiddleware.SchedulerOIDC(cfg.SchedulerServiceAccount, cfg.DispatchAudience))
 
 	return e
 }

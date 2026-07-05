@@ -87,3 +87,53 @@ go build ./...     # ビルド（GCP認証なしでも通る）
 go vet ./...
 docker build -t zuntalk-agent .
 ```
+
+## 電話予約（VoIP push）
+
+指定時刻にずんだもんから電話がかかってくる機能のサーバー側。
+Firestore に予約を保存し、Cloud Scheduler（毎分）→ `/internal/dispatch` → APNs（VoIP push）→
+iOS の PushKit/CallKit で着信、という流れ。
+
+### エンドポイント
+
+| メソッド | パス | 認証 | 説明 |
+|---------|------|------|------|
+| PUT | `/devices` | X-Api-Key | VoIP トークンの登録（冪等） |
+| POST | `/calls` | X-Api-Key | 電話の予約作成 `{deviceId, scheduledAt(RFC3339)}` |
+| GET | `/calls?deviceId=` | X-Api-Key | 予約一覧 |
+| DELETE | `/calls/:id?deviceId=` | X-Api-Key | 予約キャンセル |
+| POST | `/internal/dispatch` | Scheduler OIDC | 期限到来分に VoIP push を送信 |
+
+### Firestore
+
+- `devices/{deviceId}`: voipToken / apnsEnv / bundleId / invalidatedAt
+- `scheduledCalls/{id}`: deviceId / scheduledAt(UTC) / status（scheduled→sending→sent|failed、canceled/missed）
+- 複合インデックス `(status ASC, scheduledAt ASC)` が必要（Terraform で定義済み）
+- **注意**: Firestore の `(default)` DB はプロジェクトに1つ。dev/prod は同じ DB・コレクションを共有する
+
+### 手動 push テスト（サーバー不要）
+
+実機で VoIP トークンを Xcode コンソールから拾い、直接 APNs に送る:
+
+```bash
+go run ./cmd/apns-push \
+  -p8 ~/Downloads/AuthKey_XXXXXXXXXX.p8 \
+  -key-id XXXXXXXXXX \
+  -token <VoIPトークン(hex)> \
+  -env sandbox \
+  -topic com.swiswiswift.zuntalk.dev.voip
+```
+
+アプリを kill・ロックした状態でもネイティブ着信 UI が出れば成功。
+
+### APNs キーの設定（Cloud Run）
+
+```bash
+# .p8 を Secret Manager に投入（Terraform が secret を作成した後）
+gcloud secrets versions add zuntalk-agent-dev-apns-key \
+  --data-file=AuthKey_XXXXXXXXXX.p8 --project sandbox-492513
+```
+
+`APNS_KEY_ID` は tfvar（`apns_key_id`）で注入する。
+Secret にバージョンが無い状態で Cloud Run に `APNS_AUTH_KEY` を参照させると
+リビジョンが起動に失敗するため、**先に .p8 を投入してから** terraform apply / デプロイすること。
