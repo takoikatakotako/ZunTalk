@@ -221,48 +221,60 @@ func (s *Store) CancelCall(ctx context.Context, callID, deviceID string) error {
 	})
 }
 
-// ClaimDueCalls は期限が到来した予約をトランザクションで sending に遷移させて返す。
-// 多重実行と重なっても、claim に成功した実行だけが push を送る。
-func (s *Store) ClaimDueCalls(ctx context.Context, now time.Time) ([]ScheduledCall, error) {
+// ListUpcomingCalls は「期限が到来済み〜horizon 以内に到来する」予約を返す（claim はしない）。
+// 毎分ポーリングでも秒精度で発火させるため、dispatcher は先読みして発火時刻まで待つ。
+func (s *Store) ListUpcomingCalls(ctx context.Context, now time.Time, horizon time.Duration) ([]ScheduledCall, error) {
 	now = now.UTC()
 	snaps, err := s.client.Collection(callsCollection).
 		Where("status", "==", model.CallStatusScheduled).
 		Where("scheduledAt", ">", now.Add(-dueGraceWindow)).
-		Where("scheduledAt", "<=", now).
+		Where("scheduledAt", "<=", now.Add(horizon)).
 		Limit(50).
 		Documents(ctx).GetAll()
 	if err != nil {
 		return nil, err
 	}
 
-	var claimed []ScheduledCall
+	calls := make([]ScheduledCall, 0, len(snaps))
 	for _, snap := range snaps {
-		ref := snap.Ref
 		var call ScheduledCall
-		err := s.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
-			fresh, err := tx.Get(ref)
-			if err != nil {
-				return err
-			}
-			if err := fresh.DataTo(&call); err != nil {
-				return err
-			}
-			if call.Status != model.CallStatusScheduled {
-				return ErrConflict // 別の実行が先に claim した
-			}
-			return tx.Update(ref, []firestore.Update{
-				{Path: "status", Value: model.CallStatusSending},
-				{Path: "updatedAt", Value: time.Now().UTC()},
-			})
-		})
-		if err != nil {
+		if err := snap.DataTo(&call); err != nil {
 			continue
 		}
-		call.ID = ref.ID
-		call.Status = model.CallStatusSending
-		claimed = append(claimed, call)
+		call.ID = snap.Ref.ID
+		calls = append(calls, call)
 	}
-	return claimed, nil
+	return calls, nil
+}
+
+// ClaimCall は予約をトランザクションで scheduled → sending に遷移させる。
+// 既に状態が変わっていた場合（キャンセル済み・別実行が claim 済み）は ErrConflict。
+// 送信の直前に claim することで、発火待ちの間のキャンセルも反映される。
+func (s *Store) ClaimCall(ctx context.Context, callID string) (*ScheduledCall, error) {
+	ref := s.client.Collection(callsCollection).Doc(callID)
+	var call ScheduledCall
+	err := s.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		fresh, err := tx.Get(ref)
+		if err != nil {
+			return err
+		}
+		if err := fresh.DataTo(&call); err != nil {
+			return err
+		}
+		if call.Status != model.CallStatusScheduled {
+			return ErrConflict
+		}
+		return tx.Update(ref, []firestore.Update{
+			{Path: "status", Value: model.CallStatusSending},
+			{Path: "updatedAt", Value: time.Now().UTC()},
+		})
+	})
+	if err != nil {
+		return nil, err
+	}
+	call.ID = ref.ID
+	call.Status = model.CallStatusSending
+	return &call, nil
 }
 
 // MarkCallResult は送信結果を記録する。

@@ -209,8 +209,10 @@ module "call_dispatch_scheduler" {
   project_id  = var.project_id
   region      = var.region
   name        = "${local.agent_name}-call-dispatch"
-  description = "期限到来した電話予約の VoIP push 送信（毎分）"
+  description = "期限到来した電話予約の VoIP push 送信（毎分・60秒先読みで秒精度発火）"
   schedule    = "* * * * *"
+  # dispatch は次の60秒以内の予約を発火時刻まで待ってから送るため、1分より長めに取る
+  attempt_deadline = "90s"
 
   uri                   = "${module.agent_cloud_run.service_uri}/internal/dispatch"
   service_account_email = module.call_dispatcher_service_account.email

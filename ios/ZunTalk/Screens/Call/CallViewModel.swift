@@ -16,7 +16,8 @@ class CallViewModel: NSObject, ObservableObject {
     // MARK: - Constants
 
     private enum Constants {
-        static let silenceDetectionTime: TimeInterval = 2.0
+        // 短いほど会話のテンポが上がるが、話の途中で区切られやすくなる
+        static let silenceDetectionTime: TimeInterval = 1.2
         static let maxConversationDuration: TimeInterval = 120.0
         static let conversationTimerInterval: TimeInterval = 1.0
         static let locale = Locale(identifier: "ja-JP")
@@ -29,10 +30,12 @@ class CallViewModel: NSObject, ObservableObject {
             最初のセリフは必ず「電話を受けた感のある挨拶」にしてください。
             例: 「もしもし〜？ずんだもんなのだ！」、「は〜い、ずんだもんなのだ！」、「お電話ありがとうなのだ！」など。
             例を参考にしつつ、毎回少し違う言い回しにしてください。
+            電話での会話なので、返答は1〜3文程度で短く、テンポよく話してください。
             暴力的・攻撃的・不快な発言はしないでください。
             """
 
         static let endConversationPrompt = "会話時間が2分を超えたので、ずんだもんらしく親しみやすい挨拶で会話を終了してください。"
+        static let noInputEndPrompt = "ユーザーの声が聞こえなくなったので、少し心配しつつ、ずんだもんらしい親しみやすい挨拶で会話を終了してください。"
     }
 
     // MARK: - Private Properties - Repositories
@@ -175,8 +178,14 @@ class CallViewModel: NSObject, ObservableObject {
     private func conversationLoop() async throws {
         guard !shouldDismiss else { return }
 
-        // ユーザーの音声を認識
-        let userInput = try await recognizeUserSpeech()
+        // ユーザーの音声を認識（無音や一時的な認識失敗は聞き直す）
+        guard let userInput = await recognizeUserSpeechWithRetry() else {
+            // 聞き取れないまま続いた場合は、エラーにせず挨拶して通話を終える
+            if !shouldDismiss {
+                try await endConversation(prompt: Constants.noInputEndPrompt)
+            }
+            return
+        }
         guard !shouldDismiss else { return }
 
         // 会話時間を確認
@@ -204,9 +213,9 @@ class CallViewModel: NSObject, ObservableObject {
         try await conversationLoop()
     }
 
-    private func endConversation() async throws {
+    private func endConversation(prompt: String = Constants.endConversationPrompt) async throws {
         // 終了メッセージを生成するためのプロンプトを追加
-        chatMessages.append(ChatMessage(role: .system, content: Constants.endConversationPrompt))
+        chatMessages.append(ChatMessage(role: .system, content: prompt))
 
         // 終了メッセージを生成
         status = .generatingScript
@@ -277,6 +286,40 @@ class CallViewModel: NSObject, ObservableObject {
     }
 
     // MARK: - Private Methods - Speech Recognition
+
+    /// 音声認識を最大3回試みる。無音（No speech detected 等）や一時的な失敗では
+    /// 会話を終わらせず聞き直し、全滅した場合のみ nil を返す。
+    private func recognizeUserSpeechWithRetry() async -> String? {
+        for attempt in 1...3 {
+            guard !shouldDismiss else { return nil }
+            do {
+                let input = try await recognizeUserSpeech()
+                if !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    return input
+                }
+                print("音声認識が空でした（\(attempt)回目）")
+            } catch {
+                print("音声認識エラー（\(attempt)回目）: \(error)")
+                CrashlyticsManager.record(error)
+            }
+            resetRecognition()
+        }
+        return nil
+    }
+
+    /// 認識まわりの状態を破棄して、次の recognizeUserSpeech() をやり直せる状態に戻す。
+    private func resetRecognition() {
+        silenceTimer?.invalidate()
+        silenceTimer = nil
+        task?.cancel()
+        task = nil
+        request = nil
+        recognitionContinuation = nil
+        if engine.isRunning {
+            engine.stop()
+            engine.inputNode.removeTap(onBus: 0)
+        }
+    }
 
     private func requestSpeechRecognitionPermission() async -> Bool {
         status = .requestingPermission
