@@ -117,8 +117,8 @@ libs/
 TempKey
 TempKey.*
 
-# Firebase
-**/GoogleService-Info.plist
+# Firebase（API キーを含むためコミットしない。CI は S3 の firebase/ から取得）
+**/GoogleService-Info*.plist
 
 # Go
 backend/tmp/
