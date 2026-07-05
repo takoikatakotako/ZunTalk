@@ -106,6 +106,10 @@ class CallViewModel: NSObject, ObservableObject {
                         }
 
                         text = "ごめんなさいなのだ。エラーが発生してしまったのだ。ちょっと時間をあけて、またリトライしてくれると嬉しいのだ〜。"
+                        #if DEBUG
+                        // ロック中着信など Xcode 非接続時のデバッグ用にエラー内容を画面に出す
+                        text += "\n\n[DEBUG] \(error)"
+                        #endif
                     }
                 }
             }
