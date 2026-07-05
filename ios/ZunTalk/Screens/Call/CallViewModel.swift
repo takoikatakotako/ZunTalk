@@ -130,6 +130,14 @@ class CallViewModel: NSObject, ObservableObject {
     // MARK: - Private Methods - Call Flow
 
     private func startCall() async throws {
+        // CallKit 経由: 準備完了（VOICEVOX 初期化＋応答生成）までの無音を呼び出し音で
+        // 埋める。音は AudioSession のアクティブ化後にしか出せないため先に待つ。
+        if mode == .callKit {
+            await CallKitManager.shared.waitForAudioSessionActivation()
+            guard !shouldDismiss else { return }
+            playRingtone()
+        }
+
         // VOICEVOX初期化
         try await initializeVoiceVox()
         guard !shouldDismiss else { return }
@@ -140,7 +148,7 @@ class CallViewModel: NSObject, ObservableObject {
         }
         guard !shouldDismiss else { return }
 
-        // 着信音を再生（CallKit 経由ではシステムが鳴らし済みのためスキップ）
+        // 着信音を再生（CallKit 経由では上で再生済み）
         if mode == .simulated {
             playRingtone()
         }
@@ -148,12 +156,6 @@ class CallViewModel: NSObject, ObservableObject {
 
         // 初回の応答を生成
         let initialScript = try await generateInitialResponse()
-        guard !shouldDismiss else { return }
-
-        // CallKit が AudioSession をアクティブ化するのを待ってから音を出す
-        if mode == .callKit {
-            await CallKitManager.shared.waitForAudioSessionActivation()
-        }
         guard !shouldDismiss else { return }
 
         // 着信音を停止
