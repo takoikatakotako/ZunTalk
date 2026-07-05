@@ -61,15 +61,18 @@ struct ContactView: View {
                                     .clipShape(Circle())
                             }
 
-                            Button(action: {
-                                isNavigatingToAgent = true
-                            }) {
-                                Image(systemName: "bubble.left.and.bubble.right.fill")
-                                    .foregroundColor(.white)
-                                    .font(.system(size: 16))
-                                    .frame(width: 36, height: 36)
-                                    .background(Color.purple)
-                                    .clipShape(Circle())
+                            // エージェント機能は Google OAuth 審査が通るまで本番では非表示
+                            if FeatureFlags.agentModeEnabled {
+                                Button(action: {
+                                    isNavigatingToAgent = true
+                                }) {
+                                    Image(systemName: "bubble.left.and.bubble.right.fill")
+                                        .foregroundColor(.white)
+                                        .font(.system(size: 16))
+                                        .frame(width: 36, height: 36)
+                                        .background(Color.purple)
+                                        .clipShape(Circle())
+                                }
                             }
 
                             Button(action: {
