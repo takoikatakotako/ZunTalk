@@ -29,8 +29,9 @@ const (
 )
 
 const (
-	// MaxPendingCallsPerDevice は1端末が同時に持てる予約数の上限（乱用防止）。
-	MaxPendingCallsPerDevice = 10
+	// MaxPendingCallsPerDevice は1端末が同時に持てる予約数の上限。
+	// UX をシンプルに保つため1件のみ（変更したい場合はキャンセルして取り直す）。
+	MaxPendingCallsPerDevice = 1
 	// MaxScheduleAhead は予約可能な未来の上限。
 	MaxScheduleAhead = 30 * 24 * time.Hour
 )

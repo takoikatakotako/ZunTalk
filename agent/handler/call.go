@@ -62,7 +62,7 @@ func (h *CallHandler) HandleCreateCall(c echo.Context) error {
 		if errors.Is(err, store.ErrLimitExceeded) {
 			return c.JSON(http.StatusBadRequest, model.ErrorResponse{
 				Code:    "LIMIT_EXCEEDED",
-				Message: "予約できる件数の上限に達しています",
+				Message: "予約できるのは1件までです。既存の予約をキャンセルしてください",
 			})
 		}
 		slog.Error("Failed to create call", "deviceId", req.DeviceID, "error", err)

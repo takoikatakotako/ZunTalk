@@ -30,11 +30,15 @@ struct ScheduleCallView: View {
                         Spacer()
                     }
                 }
-                .disabled(viewModel.isScheduling)
+                .disabled(viewModel.isScheduling || !viewModel.canSchedule)
             } header: {
                 Text("ずんだもんから電話をかけてもらう")
             } footer: {
-                Text("指定した時刻になると、ずんだもんから電話がかかってくるのだ。")
+                if viewModel.canSchedule {
+                    Text("指定した時刻になると、ずんだもんから電話がかかってくるのだ。")
+                } else {
+                    Text("予約できるのは1件までなのだ。時刻を変えたいときは、今の予約をキャンセルしてから取り直してほしいのだ。")
+                }
             }
 
             Section {

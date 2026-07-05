@@ -27,6 +27,11 @@ class ScheduleCallViewModel: ObservableObject {
         return start...end
     }
 
+    /// 新しく予約できるか。予約は1件まで（サーバー側でも制限している）。
+    var canSchedule: Bool {
+        calls.isEmpty
+    }
+
     // MARK: - Private Properties
 
     private let repository: CallScheduleRepository
