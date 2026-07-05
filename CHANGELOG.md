@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-07-06
+
+### Added
+- 指定した時刻にずんだもんから電話がかかってくる「電話の予約」機能（#99, #100）
+  - 連絡先画面の予約ボタンから時刻を指定すると、VoIP push + CallKit のネイティブ着信 UI で電話がかかってくる（ロック中・アプリ終了中でも着信）
+  - 応答後、会話の準備が整うまで呼び出し音を再生
+  - 予約は1件まで（キャンセルして取り直し可能）
+  - バックエンドは Cloud Run（Go）+ Firestore + Cloud Scheduler + APNs 直叩き（Terraform 管理）
+- ずんだもんエージェントモードの基盤（3Dずんだもん表示・Vertex AI Gemini・Gmail/Calendar 連携）（#100）
+  - Google OAuth 審査が通るまで本番ビルドでは `FeatureFlags` により非表示（Development ビルドのみ有効）
+
+### Changed
+- Firebase 設定ファイル（GoogleService-Info）を Development / Production で分離し、git 管理外に変更（CI は S3 から取得）。Google API キーには iOS bundle ID 制限を適用
+- `appStoreReceiptURL` の deprecation に対応（#93）
+
 ## [1.5.1] - 2026-06-11
 
 ### Changed
