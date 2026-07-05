@@ -22,6 +22,18 @@ variable "gemini_model" {
   default     = "gemini-2.5-flash"
 }
 
+variable "apns_key_id" {
+  description = "APNs Auth Key (.p8) の Key ID。Apple Developer > Keys で作成したもの。"
+  type        = string
+  default     = ""
+}
+
+variable "apns_team_id" {
+  description = "Apple Developer の Team ID。"
+  type        = string
+  default     = "5RH346BQ66"
+}
+
 variable "image" {
   description = "Cloud Run の初期イメージ。実イメージは CI(agent-deploy.yml)が更新し、TF は ignore_changes で無視する。"
   type        = string
