@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 import SceneKit
 import UIKit
@@ -28,7 +29,8 @@ enum GLBLoader {
     }
 
     /// glb を読み込み、シーンと境界を返す。各メッシュノードの morpher には名前つき target が入る。
-    static func loadScene(url: URL) throws -> LoadedModel {
+    /// glTF の構造（mesh/primitive/morph target）をなぞる都合で長く複雑になっている。
+    static func loadScene(url: URL) throws -> LoadedModel { // swiftlint:disable:this cyclomatic_complexity function_body_length
         let data = try Data(contentsOf: url)
         let (json, bin) = try splitGLB(data)
         let gltf = try JSONDecoder().decode(GLTF.self, from: json)
