@@ -1,0 +1,4 @@
+region = "ap-northeast-1"
+# Secrets are stored as SSM SecureString parameters, not Terraform variables.
+# Required paths:
+# - /zuntalk/stg/openai-api-key

@@ -13,6 +13,8 @@ struct ContactView: View {
 
     @State private var isNavigatingToChat = false
     @State private var isNavigatingToCall = false
+    @State private var isNavigatingToAgent = false
+    @State private var isNavigatingToScheduleCall = false
 
     var body: some View {
         NavigationStack {
@@ -58,6 +60,31 @@ struct ContactView: View {
                                     .background(Color.green)
                                     .clipShape(Circle())
                             }
+
+                            // エージェント機能は Google OAuth 審査が通るまで本番では非表示
+                            if FeatureFlags.agentModeEnabled {
+                                Button(action: {
+                                    isNavigatingToAgent = true
+                                }) {
+                                    Image(systemName: "bubble.left.and.bubble.right.fill")
+                                        .foregroundColor(.white)
+                                        .font(.system(size: 16))
+                                        .frame(width: 36, height: 36)
+                                        .background(Color.purple)
+                                        .clipShape(Circle())
+                                }
+                            }
+
+                            Button(action: {
+                                isNavigatingToScheduleCall = true
+                            }) {
+                                Image(systemName: "alarm.fill")
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 16))
+                                    .frame(width: 36, height: 36)
+                                    .background(Color.orange)
+                                    .clipShape(Circle())
+                            }
                         }
                     }
                     .padding(.vertical, 4)
@@ -76,6 +103,12 @@ struct ContactView: View {
             }
             .navigationDestination(isPresented: $isNavigatingToCall) {
                 CallView()
+            }
+            .navigationDestination(isPresented: $isNavigatingToAgent) {
+                AgentView()
+            }
+            .navigationDestination(isPresented: $isNavigatingToScheduleCall) {
+                ScheduleCallView()
             }
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {

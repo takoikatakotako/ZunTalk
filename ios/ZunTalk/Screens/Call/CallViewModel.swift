@@ -37,6 +37,7 @@ class CallViewModel: NSObject, ObservableObject {
 
     // MARK: - Private Properties - Repositories
 
+    private let mode: CallMode
     private let voicevoxRepository: TextToSpeechRepository
     private let textGenerationRepository: TextGenerationRepository
 
@@ -67,9 +68,11 @@ class CallViewModel: NSObject, ObservableObject {
     // MARK: - Initialization
 
     init(
+        mode: CallMode = .simulated,
         voicevoxRepository: TextToSpeechRepository = VoicevoxRepository(),
         textGenerationRepository: TextGenerationRepository? = nil
     ) {
+        self.mode = mode
         self.voicevoxRepository = voicevoxRepository
         self.textGenerationRepository = textGenerationRepository ?? TextGenerationRepositoryFactory.create()
     }
@@ -78,6 +81,14 @@ class CallViewModel: NSObject, ObservableObject {
 
     func onAppear() {
         guard status == .idle else { return }
+
+        // CallKit 経由の通話では、システム側（ロック画面等）の切断でも
+        // こちらのクリーンアップが走るようにしておく
+        if mode == .callKit {
+            CallKitManager.shared.onSystemEndCall = { [weak self] in
+                self?.requestDismiss()
+            }
+        }
 
         mainTask = Task {
             do {
@@ -95,6 +106,10 @@ class CallViewModel: NSObject, ObservableObject {
                         }
 
                         text = "ごめんなさいなのだ。エラーが発生してしまったのだ。ちょっと時間をあけて、またリトライしてくれると嬉しいのだ〜。"
+                        #if DEBUG
+                        // ロック中着信など Xcode 非接続時のデバッグ用にエラー内容を画面に出す
+                        text += "\n\n[DEBUG] \(error)"
+                        #endif
                     }
                 }
             }
@@ -102,13 +117,27 @@ class CallViewModel: NSObject, ObservableObject {
     }
 
     func requestDismiss() {
+        guard !shouldDismiss else { return }
         cleanupResources()
+        if mode == .callKit {
+            // システムの通話状態を確実にクリアする（既に終了済みなら no-op）
+            CallKitManager.shared.endActiveCall()
+            CallKitManager.shared.onSystemEndCall = nil
+        }
         shouldDismiss = true
     }
 
     // MARK: - Private Methods - Call Flow
 
     private func startCall() async throws {
+        // CallKit 経由: 準備完了（VOICEVOX 初期化＋応答生成）までの無音を呼び出し音で
+        // 埋める。音は AudioSession のアクティブ化後にしか出せないため先に待つ。
+        if mode == .callKit {
+            await CallKitManager.shared.waitForAudioSessionActivation()
+            guard !shouldDismiss else { return }
+            playRingtone()
+        }
+
         // VOICEVOX初期化
         try await initializeVoiceVox()
         guard !shouldDismiss else { return }
@@ -119,8 +148,10 @@ class CallViewModel: NSObject, ObservableObject {
         }
         guard !shouldDismiss else { return }
 
-        // 着信音を再生
-        playRingtone()
+        // 着信音を再生（CallKit 経由では上で再生済み）
+        if mode == .simulated {
+            playRingtone()
+        }
         guard !shouldDismiss else { return }
 
         // 初回の応答を生成
@@ -192,6 +223,11 @@ class CallViewModel: NSObject, ObservableObject {
         status = .ended
         conversationTimer?.invalidate()
 
+        // ずんだもんが電話を切ったことをシステムに通知（通話画面は開いたまま）
+        if mode == .callKit {
+            CallKitManager.shared.reportRemoteEnded()
+        }
+
         // レビューダイアログを表示
         shouldRequestReview = true
     }
@@ -209,29 +245,8 @@ class CallViewModel: NSObject, ObservableObject {
         return try await voicevoxRepository.synthesize(text: script)
     }
 
-    private func splitTextIntoChunks(_ text: String) -> [String] {
-        let delimiters: Set<Character> = ["。", "！", "？"]
-        var chunks: [String] = []
-        var currentChunk = ""
-
-        for char in text {
-            currentChunk.append(char)
-            if delimiters.contains(char) {
-                chunks.append(currentChunk)
-                currentChunk = ""
-            }
-        }
-
-        // 最後の残りがあれば追加
-        if !currentChunk.isEmpty {
-            chunks.append(currentChunk)
-        }
-
-        return chunks.filter { !$0.isEmpty }
-    }
-
     private func synthesizeAndPlayVoiceInChunks(from text: String) async throws {
-        let chunks = splitTextIntoChunks(text)
+        let chunks = TextChunker.split(text)
 
         guard !chunks.isEmpty else { return }
 
@@ -288,9 +303,12 @@ class CallViewModel: NSObject, ObservableObject {
         status = .recognizingSpeech
         text = ""
 
-        let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .mixWithOthers])
-        try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+        // CallKit 通話中はカテゴリ固定・アクティブ化は CallKit 任せのため触らない
+        if mode == .simulated {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .mixWithOthers])
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+        }
 
         request = SFSpeechAudioBufferRecognitionRequest()
         request?.shouldReportPartialResults = true
@@ -386,9 +404,12 @@ class CallViewModel: NSObject, ObservableObject {
         status = .playingVoice
 
         // 再生用にAudioSessionをスピーカー出力に設定
-        let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(.playback, mode: .default, options: [])
-        try audioSession.setActive(true)
+        // （CallKit 通話中はカテゴリ固定・アクティブ化は CallKit 任せのため触らない）
+        if mode == .simulated {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(.playback, mode: .default, options: [])
+            try audioSession.setActive(true)
+        }
 
         audioPlayer = try AVAudioPlayer(data: audioData)
         audioPlayer?.delegate = self

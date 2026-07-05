@@ -117,8 +117,8 @@ libs/
 TempKey
 TempKey.*
 
-# Firebase
-**/GoogleService-Info.plist
+# Firebase（API キーを含むためコミットしない。CI は S3 の firebase/ から取得）
+**/GoogleService-Info*.plist
 
 # Go
 backend/tmp/
@@ -145,3 +145,6 @@ site/
 
 # Claude Code
 .claude/settings.local.json
+
+# iOS のローカル機密設定（APIキー等）
+ios/Secrets.xcconfig

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ConfigView: View {
     @State private var showResetAlert = false
+    @State private var showExpressionDebug = false
 
     private var appVersion: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "不明"
@@ -16,6 +17,22 @@ struct ConfigView: View {
                 NavigationLink(destination: ModelSelectionView()) {
                     Label("モデル選択", systemImage: "brain")
                 }
+                // エージェント関連は Google OAuth 審査が通るまで本番では非表示
+                if FeatureFlags.agentModeEnabled {
+                    NavigationLink(destination: AgentTestView()) {
+                        Label("エージェント（テスト）", systemImage: "sparkles")
+                    }
+                    Button {
+                        showExpressionDebug = true
+                    } label: {
+                        Label("ずんだもん表情確認", systemImage: "face.smiling")
+                    }
+                }
+            }
+
+            // Gmail / カレンダー連携（トークンは端末内のみ保持）
+            if FeatureFlags.agentModeEnabled {
+                GoogleLinkSection()
             }
 
             Section("サポート") {
@@ -96,6 +113,11 @@ struct ConfigView: View {
             }
         }
         .navigationTitle("設定")
+        .sheet(isPresented: $showExpressionDebug) {
+            NavigationStack {
+                ZundamonExpressionDebugView()
+            }
+        }
         .alert("すべての設定をリセット", isPresented: $showResetAlert) {
             Button("キャンセル", role: .cancel) {}
             Button("リセット", role: .destructive) {

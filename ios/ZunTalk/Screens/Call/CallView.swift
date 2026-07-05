@@ -2,9 +2,13 @@ import SwiftUI
 import StoreKit
 
 struct CallView: View {
-    @StateObject private var viewModel = CallViewModel()
+    @StateObject private var viewModel: CallViewModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.requestReview) private var requestReview
+
+    init(mode: CallMode = .simulated) {
+        _viewModel = StateObject(wrappedValue: CallViewModel(mode: mode))
+    }
 
     var body: some View {
         ZStack {

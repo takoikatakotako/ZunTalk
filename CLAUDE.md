@@ -35,13 +35,12 @@ ZunTalk/
 │   ├── model/             # データモデル
 │   ├── config/            # 環境変数管理
 │   └── Dockerfile         # Lambda Web Adapter使用
+├── agent/                  # ずんだもんエージェント（Go + Vertex AI / Cloud Run）
 ├── terraform/              # インフラ（IaC）
-│   ├── modules/           # 再利用可能モジュール（ecr, lambda）
-│   └── environments/      # 環境別設定
-│       ├── shared/        # ECR + GitHub Actions IAM
-│       ├── dev/           # 開発環境Lambda
-│       ├── stg/           # ステージング環境
-│       └── prod/          # 本番環境
+│   ├── aws/               # AWS（既存バックエンド）
+│   │   ├── modules/       # 再利用可能モジュール（ecr, lambda）
+│   │   └── environments/  # 環境別設定（shared/dev/stg/prod）
+│   └── gcp/               # GCP（エージェント: Cloud Run + Vertex AI + WIF）
 ├── docs/                   # ドキュメント
 │   └── api/openapi.yaml   # OpenAPI仕様書
 └── .github/workflows/      # CI/CD
@@ -94,7 +93,7 @@ docker build -t zuntalk-backend .
 
 ```bash
 # 初期化
-cd terraform/environments/dev
+cd terraform/aws/environments/dev
 terraform init
 
 # プラン確認
