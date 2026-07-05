@@ -39,6 +39,13 @@ const (
 // 呼び出し側はこのデバイストークンを無効化するべき。
 var ErrUnregistered = errors.New("apns: device token is no longer active")
 
+// ErrBadDeviceToken は APNs が 400 BadDeviceToken を返した場合のエラー。
+// トークンと環境（sandbox/production）の不一致が典型原因。
+// VoIP push は sandbox ゲートウェイの挙動が不安定なことで知られており、
+// development ビルドのトークンが production 側でしか通らないケースがある。
+// 呼び出し側は逆の環境で再送を試みてよい。
+var ErrBadDeviceToken = errors.New("apns: bad device token (environment mismatch)")
+
 // Client は APNs へ VoIP push を送るクライアント。
 // .p8 の APNs Auth Key（チーム単位・sandbox/production 共用）で ES256 JWT 認証する。
 type Client struct {
@@ -136,6 +143,9 @@ func (c *Client) Send(ctx context.Context, deviceToken string, env Env, topic st
 
 	respBody, _ := io.ReadAll(resp.Body)
 	reason := parseReason(respBody)
+	if reason == "BadDeviceToken" {
+		return fmt.Errorf("%w (env=%s)", ErrBadDeviceToken, env)
+	}
 	if resp.StatusCode == http.StatusGone {
 		return fmt.Errorf("%w (reason=%s)", ErrUnregistered, reason)
 	}

@@ -84,7 +84,31 @@ func (h *DispatchHandler) sendCall(c echo.Context, call store.ScheduledCall) err
 	}
 
 	topic := device.BundleID + ".voip"
-	err = h.apns.Send(ctx, device.VoIPToken, apns.Env(device.APNSEnv), topic, apns.NewVoIPPayload(call.ID))
+	payload := apns.NewVoIPPayload(call.ID)
+	err = h.apns.Send(ctx, device.VoIPToken, apns.Env(device.APNSEnv), topic, payload)
+
+	// BadDeviceToken = トークンと環境の不一致。VoIP push は sandbox ゲートウェイが
+	// 不安定なことで知られる（development ビルドのトークンが production 側でしか
+	// 通らないケースがある）ため、逆の環境で再送し、通ったらその環境を学習する。
+	if errors.Is(err, apns.ErrBadDeviceToken) {
+		fallbackEnv := apns.EnvProduction
+		if apns.Env(device.APNSEnv) == apns.EnvProduction {
+			fallbackEnv = apns.EnvSandbox
+		}
+		slog.Warn("BadDeviceToken; retrying with fallback env",
+			"deviceId", call.DeviceID, "registeredEnv", device.APNSEnv, "fallbackEnv", fallbackEnv)
+
+		if retryErr := h.apns.Send(ctx, device.VoIPToken, fallbackEnv, topic, payload); retryErr == nil {
+			if updateErr := h.store.UpdateDeviceAPNSEnv(ctx, call.DeviceID, string(fallbackEnv)); updateErr != nil {
+				slog.Error("Failed to update device apnsEnv", "deviceId", call.DeviceID, "error", updateErr)
+			}
+			slog.Info("Fallback env succeeded; device apnsEnv updated",
+				"deviceId", call.DeviceID, "apnsEnv", fallbackEnv)
+			return nil
+		}
+		return err
+	}
+
 	if errors.Is(err, apns.ErrUnregistered) {
 		// トークン失効 → 端末を無効化して以後の送信を止める
 		if markErr := h.store.MarkDeviceInvalid(ctx, call.DeviceID); markErr != nil {

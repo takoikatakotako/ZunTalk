@@ -128,6 +128,16 @@ func (s *Store) MarkDeviceInvalid(ctx context.Context, deviceID string) error {
 	return err
 }
 
+// UpdateDeviceAPNSEnv は端末の APNs 環境を更新する。
+// BadDeviceToken フォールバックで実際に通った環境を学習するために使う。
+func (s *Store) UpdateDeviceAPNSEnv(ctx context.Context, deviceID, apnsEnv string) error {
+	_, err := s.client.Collection(devicesCollection).Doc(deviceID).Update(ctx, []firestore.Update{
+		{Path: "apnsEnv", Value: apnsEnv},
+		{Path: "updatedAt", Value: time.Now().UTC()},
+	})
+	return err
+}
+
 // CreateCall は電話の予約を作成する。端末あたりの未発火予約数に上限を設ける。
 func (s *Store) CreateCall(ctx context.Context, deviceID string, scheduledAt time.Time) (*ScheduledCall, error) {
 	// 未発火の予約数を確認（equality のみのクエリなので複合インデックス不要）
