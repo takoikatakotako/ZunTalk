@@ -15,6 +15,11 @@
 	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>voip</string>
+		<string>audio</string>
+	</array>
 	<key>API_BASE_URL</key>
 	<string>$(API_BASE_URL)</string>
 	<key>AGENT_BASE_URL</key>

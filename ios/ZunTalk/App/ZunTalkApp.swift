@@ -6,6 +6,8 @@ import GoogleSignIn
 
 @main
 struct ZunTalkApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @StateObject private var callKitManager = CallKitManager.shared
     @Environment(\.scenePhase) private var scenePhase
     @State private var hasRequestedATT = false
 
@@ -25,6 +27,10 @@ struct ZunTalkApp: App {
                 .onAppear {
                     // 前回の Google 連携を復元する
                     GoogleAuthManager.shared.restore()
+                }
+                // CallKit の着信に応答したら、画面状態に関係なく通話画面を全画面で出す
+                .fullScreenCover(isPresented: $callKitManager.isPresentingCallScreen) {
+                    CallView(mode: .callKit)
                 }
         }
         .onChange(of: scenePhase) { _, newPhase in
