@@ -15,9 +15,8 @@ class CallViewModel: NSObject, ObservableObject {
 
     // MARK: - Constants
 
-    private enum Constants {
-        // 短いほど会話のテンポが上がるが、話の途中で区切られやすくなる
-        static let silenceDetectionTime: TimeInterval = 1.2
+    enum Constants {
+        static let silenceDetectionTime: TimeInterval = 2.0
         static let maxConversationDuration: TimeInterval = 120.0
         static let conversationTimerInterval: TimeInterval = 1.0
         static let locale = Locale(identifier: "ja-JP")
@@ -30,7 +29,6 @@ class CallViewModel: NSObject, ObservableObject {
             最初のセリフは必ず「電話を受けた感のある挨拶」にしてください。
             例: 「もしもし〜？ずんだもんなのだ！」、「は〜い、ずんだもんなのだ！」、「お電話ありがとうなのだ！」など。
             例を参考にしつつ、毎回少し違う言い回しにしてください。
-            電話での会話なので、返答は1〜3文程度で短く、テンポよく話してください。
             暴力的・攻撃的・不快な発言はしないでください。
             """
 
@@ -40,17 +38,17 @@ class CallViewModel: NSObject, ObservableObject {
 
     // MARK: - Private Properties - Repositories
 
-    private let mode: CallMode
+    let mode: CallMode
     private let voicevoxRepository: TextToSpeechRepository
     private let textGenerationRepository: TextGenerationRepository
 
     // MARK: - Private Properties - Speech Recognition
 
-    private let recognizer = SFSpeechRecognizer(locale: Constants.locale)
-    private let engine = AVAudioEngine()
-    private var request: SFSpeechAudioBufferRecognitionRequest?
-    private var task: SFSpeechRecognitionTask?
-    private var recognitionContinuation: CheckedContinuation<String, Error>?
+    let recognizer = SFSpeechRecognizer(locale: Constants.locale)
+    let engine = AVAudioEngine()
+    var request: SFSpeechAudioBufferRecognitionRequest?
+    var task: SFSpeechRecognitionTask?
+    var recognitionContinuation: CheckedContinuation<String, Error>?
 
     // MARK: - Private Properties - Audio Playback
 
@@ -59,7 +57,7 @@ class CallViewModel: NSObject, ObservableObject {
 
     // MARK: - Private Properties - Timers
 
-    private var silenceTimer: Timer?
+    var silenceTimer: Timer?
     private var conversationTimer: Timer?
     private var speechRecognitionStartTime: Date?
 
@@ -283,133 +281,6 @@ class CallViewModel: NSObject, ObservableObject {
         if let audioData = currentAudioData {
             try await playVoice(audioData)
         }
-    }
-
-    // MARK: - Private Methods - Speech Recognition
-
-    /// 音声認識を最大3回試みる。無音（No speech detected 等）や一時的な失敗では
-    /// 会話を終わらせず聞き直し、全滅した場合のみ nil を返す。
-    private func recognizeUserSpeechWithRetry() async -> String? {
-        for attempt in 1...3 {
-            guard !shouldDismiss else { return nil }
-            do {
-                let input = try await recognizeUserSpeech()
-                if !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    return input
-                }
-                print("音声認識が空でした（\(attempt)回目）")
-            } catch {
-                print("音声認識エラー（\(attempt)回目）: \(error)")
-                CrashlyticsManager.record(error)
-            }
-            resetRecognition()
-        }
-        return nil
-    }
-
-    /// 認識まわりの状態を破棄して、次の recognizeUserSpeech() をやり直せる状態に戻す。
-    private func resetRecognition() {
-        silenceTimer?.invalidate()
-        silenceTimer = nil
-        task?.cancel()
-        task = nil
-        request = nil
-        recognitionContinuation = nil
-        if engine.isRunning {
-            engine.stop()
-            engine.inputNode.removeTap(onBus: 0)
-        }
-    }
-
-    private func requestSpeechRecognitionPermission() async -> Bool {
-        status = .requestingPermission
-
-        let authStatus = SFSpeechRecognizer.authorizationStatus()
-
-        switch authStatus {
-        case .authorized:
-            return true
-        case .denied, .restricted:
-            return false
-        case .notDetermined:
-            return await withCheckedContinuation { continuation in
-                SFSpeechRecognizer.requestAuthorization { status in
-                    continuation.resume(returning: status == .authorized)
-                }
-            }
-        @unknown default:
-            return false
-        }
-    }
-
-    private func recognizeUserSpeech() async throws -> String {
-        status = .recognizingSpeech
-        text = ""
-
-        // CallKit 通話中はカテゴリ固定・アクティブ化は CallKit 任せのため触らない
-        if mode == .simulated {
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playAndRecord, mode: .voiceChat, options: [.defaultToSpeaker, .mixWithOthers])
-            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-        }
-
-        request = SFSpeechAudioBufferRecognitionRequest()
-        request?.shouldReportPartialResults = true
-
-        let input = engine.inputNode
-        let format = input.outputFormat(forBus: 0)
-
-        input.removeTap(onBus: 0)
-        input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-            self?.request?.append(buffer)
-        }
-
-        task = recognizer?.recognitionTask(with: request!) { [weak self] result, error in
-            guard let self = self else { return }
-
-            if let error = error {
-                print("音声認識エラー: \(error.localizedDescription)")
-                Task { @MainActor in
-                    self.recognitionContinuation?.resume(throwing: CallError.speechRecognitionFailed(error))
-                    self.recognitionContinuation = nil
-                }
-                return
-            }
-
-            guard let result = result, !result.isFinal else { return }
-
-            let recognizedText = result.bestTranscription.formattedString
-
-            DispatchQueue.main.async {
-                self.text = recognizedText
-            }
-
-            self.silenceTimer?.invalidate()
-            self.silenceTimer = Timer.scheduledTimer(
-                withTimeInterval: Constants.silenceDetectionTime,
-                repeats: false
-            ) { _ in
-                Task { @MainActor in
-                    self.stopRecognition()
-                }
-            }
-        }
-
-        try engine.start()
-
-        return try await withCheckedThrowingContinuation { continuation in
-            recognitionContinuation = continuation
-        }
-    }
-
-    private func stopRecognition() {
-        engine.stop()
-        engine.inputNode.removeTap(onBus: 0)
-        request?.endAudio()
-        task?.finish()
-
-        recognitionContinuation?.resume(returning: text)
-        recognitionContinuation = nil
     }
 
     // MARK: - Private Methods - Text Generation
