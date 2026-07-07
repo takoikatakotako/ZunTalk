@@ -118,12 +118,25 @@ open ios/ZunTalk.xcodeproj
 
 ## APIエンドポイント
 
+### チャットAPI（AWS Lambda / `backend/`）
+
 | メソッド | パス | 説明 |
 |---------|------|------|
 | POST | `/api/chat` | AI会話生成 |
 | GET | `/api/info` | アプリ情報取得（メンテナンス状態、最小バージョン） |
 | GET | `/api/error` | エラーテスト（Slack通知確認用） |
 | GET | `/health` | ヘルスチェック |
+
+### エージェント / 電話予約（GCP Cloud Run / `agent/`）
+
+| メソッド | パス | 説明 |
+|---------|------|------|
+| POST | `/agent` | エージェント往復（planner→端末ツール→responder。X-Api-Key） |
+| PUT | `/devices` | VoIP トークン登録（X-Api-Key） |
+| POST/GET/DELETE | `/calls` | 電話予約の作成・一覧・キャンセル（X-Api-Key） |
+| POST | `/internal/dispatch` | 期限到来分に VoIP push 送信（Scheduler OIDC 専用） |
+
+詳細は `agent/README.md`。カレンダーツールは EventKit（端末内）、`/agent` は deviceId ごとの日次利用回数制限あり。
 
 ### /api/chat リクエスト例
 

@@ -14,7 +14,13 @@ iOS SpeechFrameworkでユーザーの音声を認識
 VOICEVOX Coreでずんだもんの声を生成
 
 ### ☁️ サーバーレス
-AWS Lambda + Goでスケーラブルなバックエンド
+AWS Lambda（チャットAPI）+ GCP Cloud Run（エージェント・電話予約）でスケーラブルなバックエンド
+
+### 🤖 エージェントモード
+Vertex AI（Gemini）が司令塔となり、EventKit カレンダー等の端末ツールを組み合わせて応答
+
+### 📞 電話予約
+指定時刻にずんだもんから VoIP 着信（Cloud Run + Firestore + Cloud Scheduler + APNs）
 
 ## クイックスタート
 
@@ -64,11 +70,12 @@ AWS Lambda + Goでスケーラブルなバックエンド
 ### バックエンド
 - Go 1.24
 - Echo v4
-- AWS Lambda
-- OpenAI API
+- AWS Lambda（チャットAPI）+ OpenAI API
+- GCP Cloud Run（エージェント・電話予約）+ Vertex AI（Gemini）
 
 ### インフラ
 - AWS (Lambda, ECR, S3)
+- GCP (Cloud Run, Firestore, Cloud Scheduler, Secret Manager)
 - Terraform
 - GitHub Actions
 

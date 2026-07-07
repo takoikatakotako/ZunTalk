@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- エージェントモードを本番でも有効化（#105, #106, #107）
+  - カレンダーツールを Google Calendar API から **EventKit（iOS 標準カレンダー）** に移行し、Google OAuth 審査を不要にした。Google アカウント同期済みの予定も読める
+  - 端末が実行可能なツールを申告する capability ネゴシエーションを追加（本番は `calendar` のみ、開発は Google 連携時に `gmail` も）
+  - deviceId ごとの `/agent` 日次利用回数制限（`AGENT_DAILY_LIMIT`、デフォルト50）で Vertex AI のコスト保護。上限超過は 429 でずんだもん口調のメッセージを表示
+- プライバシーポリシーにカレンダーデータの扱いを追記
+
+### Changed
+- `FeatureFlags` を分割: `agentModeEnabled` を本番でも有効に、Gmail 等の開発者向け UI は `debugToolsEnabled`（Debug 限定）に分離
+
 ## [1.6.0] - 2026-07-06
 
 ### Added
