@@ -30,7 +30,7 @@ struct ConfigView: View {
                 }
             }
 
-            // Gmail / カレンダー連携（トークンは端末内のみ保持）
+            // Gmail 連携（トークンは端末内のみ保持。カレンダーは EventKit で連携不要）
             if FeatureFlags.agentModeEnabled {
                 GoogleLinkSection()
             }

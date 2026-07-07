@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// 設定画面の「Google連携」セクション。
-/// Gmail / カレンダー連携の開始・解除と、連携状態を表示する。
+/// Gmail 連携の開始・解除と、連携状態を表示する。
 struct GoogleLinkSection: View {
     @ObservedObject private var auth = GoogleAuthManager.shared
     @State private var errorMessage: String?
@@ -43,7 +43,7 @@ struct GoogleLinkSection: View {
         } header: {
             Text("連携")
         } footer: {
-            Text("Gmail とカレンダーの読み取りに使います。トークンはこの端末内にのみ保存され、サーバーには送られません。")
+            Text("Gmail の読み取りに使います。トークンはこの端末内にのみ保存され、サーバーには送られません。カレンダーは iOS 標準カレンダーから読むため連携不要です。")
         }
         .alert("連携エラー", isPresented: $showError) {
             Button("OK", role: .cancel) {}

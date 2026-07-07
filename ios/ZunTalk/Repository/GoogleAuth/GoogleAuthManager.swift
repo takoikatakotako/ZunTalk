@@ -17,10 +17,10 @@ final class GoogleAuthManager: ObservableObject {
 
     var isLinked: Bool { linkedEmail != nil }
 
-    /// 端末から Gmail / Calendar を読むためのスコープ（読み取りのみ）。
+    /// 端末から Gmail を読むためのスコープ（読み取りのみ）。
+    /// カレンダーは EventKit（端末内）に移行したため Google スコープは不要になった。
     static let scopes = [
-        "https://www.googleapis.com/auth/gmail.readonly",
-        "https://www.googleapis.com/auth/calendar.readonly"
+        "https://www.googleapis.com/auth/gmail.readonly"
     ]
 
     private init() {}
@@ -93,7 +93,7 @@ enum GoogleAuthError: Error, LocalizedError {
         case .noPresenter:
             return "画面の取得に失敗したのだ"
         case .scopeNotGranted:
-            return "Gmail / カレンダーの権限が許可されなかったのだ"
+            return "Gmail の権限が許可されなかったのだ"
         case .notLinked:
             return "Google と連携されていないのだ"
         }
