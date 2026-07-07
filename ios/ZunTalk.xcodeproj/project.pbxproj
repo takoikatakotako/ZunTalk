@@ -474,6 +474,7 @@
 				INFOPLIST_FILE = ZunTalk/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(APP_DISPLAY_NAME)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "ずんだもんがあなたの予定を確認して会話でお伝えするために使用します。予定の内容が外部に共有されることはありません。";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ずんだもんと音声で会話するために使用します。あなたの声をずんだもんに届けます。";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "あなたの声をテキストに変換して、ずんだもんとの会話に利用します。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -609,6 +610,7 @@
 				INFOPLIST_FILE = ZunTalk/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "$(APP_DISPLAY_NAME)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "ずんだもんがあなたの予定を確認して会話でお伝えするために使用します。予定の内容が外部に共有されることはありません。";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ずんだもんと音声で会話するために使用します。あなたの声をずんだもんに届けます。";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "あなたの声をテキストに変換して、ずんだもんとの会話に利用します。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
