@@ -81,6 +81,11 @@ final class AgentRepository {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+            // 429（日次利用回数の上限）はサーバーのずんだもん口調メッセージをそのまま届ける
+            if http.statusCode == 429 {
+                let body = try? JSONDecoder().decode(AgentErrorBody.self, from: data)
+                throw AgentError.rateLimited(body?.message ?? Self.fallbackRateLimitMessage)
+            }
             throw AgentError.api(http.statusCode, String(data: data, encoding: .utf8) ?? "")
         }
         return try JSONDecoder().decode(AgentResponse.self, from: data)
@@ -90,6 +95,16 @@ final class AgentRepository {
 private struct AgentRequestContext {
     let capabilities: [String]
     let deviceId: String
+}
+
+/// サーバーのエラーレスポンス {code, message}（Go の model.ErrorResponse と対応）。
+private struct AgentErrorBody: Decodable {
+    let code: String?
+    let message: String?
+}
+
+extension AgentRepository {
+    static let fallbackRateLimitMessage = "今日はもうたくさんお話ししたのだ。また明日お話ししてほしいのだ〜"
 }
 
 /// 往復1回の結果。
@@ -104,6 +119,8 @@ struct AgentRunResult {
 enum AgentError: Error, LocalizedError {
     case invalidURL
     case api(Int, String)
+    /// 日次利用回数の上限に達した（関連値はユーザーに見せるメッセージ）。
+    case rateLimited(String)
 
     var errorDescription: String? {
         switch self {
@@ -111,6 +128,8 @@ enum AgentError: Error, LocalizedError {
             return "エージェントの URL が不正なのだ"
         case .api(let code, let body):
             return "エージェントAPIエラー(\(code)): \(body)"
+        case .rateLimited(let message):
+            return message
         }
     }
 }

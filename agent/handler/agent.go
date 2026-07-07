@@ -49,12 +49,21 @@ func (h *AgentHandler) checkRateLimit(c echo.Context, deviceID string) bool {
 	return true
 }
 
+// normalizeAgentDeviceID は deviceID を Firestore のドキュメントID として安全な形に正規化する。
+// 正規のクライアントは Keychain の UUID を送るため、英数字とハイフン・アンダースコア以外を
+// 含むものや長すぎるものは不正値とみなして匿名バケットに落とす。
 func normalizeAgentDeviceID(deviceID string) string {
 	deviceID = strings.TrimSpace(deviceID)
-	if deviceID == "" {
+	if deviceID == "" || len(deviceID) > 64 {
 		return "anonymous"
 	}
-	return strings.NewReplacer("/", "_", "\\", "_").Replace(deviceID)
+	for _, r := range deviceID {
+		isAlnum := (r >= 'A' && r <= 'Z') || (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')
+		if !isAlnum && r != '-' && r != '_' {
+			return "anonymous"
+		}
+	}
+	return deviceID
 }
 
 // HandleAgent はステートレスなエージェント往復を処理する。
@@ -78,7 +87,9 @@ func (h *AgentHandler) HandleAgent(c echo.Context) error {
 	}
 
 	// 端末ごとの日次利用回数制限（Vertex AI のコスト保護）。
-	if !h.checkRateLimit(c, req.DeviceID) {
+	// カウントは1巡目のみ。2巡目（ツール実行結果あり）を対象にすると
+	// 上限の境界で会話が途中で打ち切られてしまうため、常に通す。
+	if len(req.Results) == 0 && !h.checkRateLimit(c, req.DeviceID) {
 		return c.JSON(http.StatusTooManyRequests, model.ErrorResponse{
 			Code:    "RATE_LIMITED",
 			Message: "今日はもうたくさんお話ししたのだ。また明日お話ししてほしいのだ〜",

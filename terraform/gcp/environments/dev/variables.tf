@@ -34,6 +34,12 @@ variable "apns_team_id" {
   default     = "5RH346BQ66"
 }
 
+variable "agent_daily_limit" {
+  description = "deviceId ごとの /agent 日次呼び出し上限。0以下で無制限。"
+  type        = number
+  default     = 50
+}
+
 variable "image" {
   description = "Cloud Run の初期イメージ。実イメージは CI(agent-deploy.yml)が更新し、TF は ignore_changes で無視する。"
   type        = string

@@ -67,6 +67,9 @@ Development iOS は Google 連携済みの場合に `gmail` も追加する。
 
 `AGENT_DAILY_LIMIT` で deviceId ごとの `/agent` 日次呼び出し上限を設定できる。
 デフォルトは `50`。`0` 以下にすると制限しない。
+カウントは1巡目（計画フェーズ）のみ。2巡目（ツール実行結果あり）は常に通し、
+上限の境界で会話が途中で打ち切られないようにしている。
+上限超過は 429 `RATE_LIMITED` を返す。
 
 ### `GET /health`
 `{ "status": "ok" }`
@@ -122,7 +125,7 @@ iOS の PushKit/CallKit で着信、という流れ。
 
 - `devices/{deviceId}`: voipToken / apnsEnv / bundleId / invalidatedAt
 - `scheduledCalls/{id}`: deviceId / scheduledAt(UTC) / status（scheduled→sending→sent|failed、canceled/missed）
-- `agentUsageDaily/{yyyy-mm-dd}/devices/{deviceId}`: /agent の日次呼び出し回数
+- `agentUsage/{yyyy-mm-dd}_{deviceId}`: /agent の日次呼び出し回数（expireAt の TTL で7日後に自動削除）
 - 複合インデックス `(status ASC, scheduledAt ASC)` が必要（Terraform で定義済み）
 - **注意**: Firestore の `(default)` DB はプロジェクトに1つ。dev/prod は同じ DB・コレクションを共有する
 

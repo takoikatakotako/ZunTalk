@@ -17,10 +17,13 @@ import (
 )
 
 const (
-	devicesCollection = "devices"
-	callsCollection   = "scheduledCalls"
-	agentUsageDaily   = "agentUsageDaily"
-	agentUsageDevices = "devices"
+	devicesCollection    = "devices"
+	callsCollection      = "scheduledCalls"
+	agentUsageCollection = "agentUsage"
+
+	// agentUsageRetention を過ぎた利用回数ドキュメントは Firestore の TTL ポリシーで
+	// 自動削除される（expireAt フィールド。Terraform で定義）。
+	agentUsageRetention = 7 * 24 * time.Hour
 
 	// dueGraceWindow を超えて滞留した予約は missed にする
 	//（障害復帰後に古い着信が大量発火するのを防ぐ）。
@@ -60,10 +63,13 @@ type ScheduledCall struct {
 }
 
 // AgentUsage は deviceId ごとの日次 /agent 呼び出し回数。
+// ドキュメントID は "{yyyy-mm-dd}_{deviceId}"。
 type AgentUsage struct {
 	Count     int64     `firestore:"count"`
 	CreatedAt time.Time `firestore:"createdAt"`
 	UpdatedAt time.Time `firestore:"updatedAt"`
+	// ExpireAt を過ぎると TTL ポリシーで自動削除される。
+	ExpireAt time.Time `firestore:"expireAt"`
 }
 
 // Store は Firestore クライアントのラッパー。
@@ -87,8 +93,7 @@ func (s *Store) Close() error {
 
 // IncrementAgentUsage は deviceID の当日利用回数を1加算し、加算後の値を返す。
 func (s *Store) IncrementAgentUsage(ctx context.Context, deviceID, day string) (int64, error) {
-	ref := s.client.Collection(agentUsageDaily).Doc(day).
-		Collection(agentUsageDevices).Doc(deviceID)
+	ref := s.client.Collection(agentUsageCollection).Doc(day + "_" + deviceID)
 	now := time.Now().UTC()
 	var count int64
 	err := s.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
@@ -111,6 +116,7 @@ func (s *Store) IncrementAgentUsage(ctx context.Context, deviceID, day string) (
 			Count:     count,
 			CreatedAt: createdAt,
 			UpdatedAt: now,
+			ExpireAt:  now.Add(agentUsageRetention),
 		})
 	})
 	if err != nil {

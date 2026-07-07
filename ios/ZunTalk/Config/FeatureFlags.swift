@@ -6,11 +6,11 @@ enum FeatureFlags {
     /// カレンダーは EventKit を使うため、本番でも Google OAuth 審査なしで利用できる。
     static let agentModeEnabled = true
 
-    /// Gmail 系の Google 連携 UI を有効にするか。
-    /// Gmail は Google OAuth のテストモード運用に留めるため Debug 限定にする。
+    /// 開発者向け UI（Gmail の Google 連携・エージェントテスト・表情確認）を有効にするか。
+    /// Gmail は Google OAuth のテストモード運用（開発者アカウント専用）に留めるため Debug 限定にする。
     #if DEBUG
-    static let googleLinkEnabled = true
+    static let debugToolsEnabled = true
     #else
-    static let googleLinkEnabled = false
+    static let debugToolsEnabled = false
     #endif
 }

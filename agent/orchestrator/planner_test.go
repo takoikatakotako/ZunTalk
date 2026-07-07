@@ -24,9 +24,9 @@ func TestNormalizeCapabilities(t *testing.T) {
 			want:      []model.Capability{model.CapabilityCalendar},
 		},
 		{
-			name:      "only unknown values fall back to all capabilities",
+			name:      "only unknown values yield no capabilities",
 			requested: []model.Capability{model.Capability("unknown")},
-			want:      []model.Capability{model.CapabilityCalendar, model.CapabilityGmail},
+			want:      []model.Capability{},
 		},
 	}
 

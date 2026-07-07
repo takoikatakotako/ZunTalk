@@ -17,22 +17,20 @@ struct ConfigView: View {
                 NavigationLink(destination: ModelSelectionView()) {
                     Label("モデル選択", systemImage: "brain")
                 }
-                if FeatureFlags.agentModeEnabled {
-                    if FeatureFlags.googleLinkEnabled {
-                        NavigationLink(destination: AgentTestView()) {
-                            Label("エージェント（テスト）", systemImage: "sparkles")
-                        }
-                        Button {
-                            showExpressionDebug = true
-                        } label: {
-                            Label("ずんだもん表情確認", systemImage: "face.smiling")
-                        }
+                if FeatureFlags.debugToolsEnabled {
+                    NavigationLink(destination: AgentTestView()) {
+                        Label("エージェント（テスト）", systemImage: "sparkles")
+                    }
+                    Button {
+                        showExpressionDebug = true
+                    } label: {
+                        Label("ずんだもん表情確認", systemImage: "face.smiling")
                     }
                 }
             }
 
             // Gmail 連携（トークンは端末内のみ保持。カレンダーは EventKit で連携不要）
-            if FeatureFlags.googleLinkEnabled {
+            if FeatureFlags.debugToolsEnabled {
                 GoogleLinkSection()
             }
 

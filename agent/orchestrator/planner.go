@@ -20,7 +20,8 @@ var capabilityDescriptions = map[model.Capability]string{
 var allCapabilities = []model.Capability{model.CapabilityCalendar, model.CapabilityGmail}
 
 // normalizeCapabilities はクライアント申告の capabilities を検証して返す。
-// 空・欠落なら全ツール、未知の値は除外する。
+// 空・欠落なら全ツール（後方互換）、未知の値は除外する。
+// 全部未知なら空を返す（端末が実行できると申告した既知のツールが1つも無い）。
 func normalizeCapabilities(requested []model.Capability) []model.Capability {
 	if len(requested) == 0 {
 		return allCapabilities
@@ -30,9 +31,6 @@ func normalizeCapabilities(requested []model.Capability) []model.Capability {
 		if _, ok := capabilityDescriptions[c]; ok {
 			capabilities = append(capabilities, c)
 		}
-	}
-	if len(capabilities) == 0 {
-		return allCapabilities
 	}
 	return capabilities
 }
@@ -88,6 +86,11 @@ func planSchema(capabilities []model.Capability) *genai.Schema {
 // requested はクライアントが利用できるツールの申告（空なら全ツール）。
 func (o *Orchestrator) Plan(ctx context.Context, userInput string, requested []model.Capability) ([]model.PlanStep, error) {
 	capabilities := normalizeCapabilities(requested)
+
+	// 実行できるツールが1つも無い端末には計画を立てず、雑談として応答させる。
+	if len(capabilities) == 0 {
+		return nil, nil
+	}
 
 	raw, err := o.llm.GenerateJSON(ctx, plannerPrompt(capabilities), userInput, planSchema(capabilities))
 	if err != nil {
