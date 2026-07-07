@@ -19,6 +19,8 @@ import (
 const (
 	devicesCollection = "devices"
 	callsCollection   = "scheduledCalls"
+	agentUsageDaily   = "agentUsageDaily"
+	agentUsageDevices = "devices"
 
 	// dueGraceWindow を超えて滞留した予約は missed にする
 	//（障害復帰後に古い着信が大量発火するのを防ぐ）。
@@ -57,6 +59,13 @@ type ScheduledCall struct {
 	UpdatedAt   time.Time `firestore:"updatedAt"`
 }
 
+// AgentUsage は deviceId ごとの日次 /agent 呼び出し回数。
+type AgentUsage struct {
+	Count     int64     `firestore:"count"`
+	CreatedAt time.Time `firestore:"createdAt"`
+	UpdatedAt time.Time `firestore:"updatedAt"`
+}
+
 // Store は Firestore クライアントのラッパー。
 type Store struct {
 	client *firestore.Client
@@ -74,6 +83,40 @@ func New(ctx context.Context, projectID string) (*Store, error) {
 // Close はクライアントを閉じる。
 func (s *Store) Close() error {
 	return s.client.Close()
+}
+
+// IncrementAgentUsage は deviceID の当日利用回数を1加算し、加算後の値を返す。
+func (s *Store) IncrementAgentUsage(ctx context.Context, deviceID, day string) (int64, error) {
+	ref := s.client.Collection(agentUsageDaily).Doc(day).
+		Collection(agentUsageDevices).Doc(deviceID)
+	now := time.Now().UTC()
+	var count int64
+	err := s.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		snap, err := tx.Get(ref)
+		createdAt := now
+		if err == nil {
+			var usage AgentUsage
+			if err := snap.DataTo(&usage); err != nil {
+				return err
+			}
+			count = usage.Count
+			if !usage.CreatedAt.IsZero() {
+				createdAt = usage.CreatedAt
+			}
+		} else if status.Code(err) != codes.NotFound {
+			return err
+		}
+		count++
+		return tx.Set(ref, AgentUsage{
+			Count:     count,
+			CreatedAt: createdAt,
+			UpdatedAt: now,
+		})
+	})
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 // UpsertDevice は端末情報を登録・更新する（冪等）。

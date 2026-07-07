@@ -3,7 +3,7 @@
 ずんだもんの「エージェントモード」用バックエンド。ユーザーの発話に対し、
 
 1. **planner**（Gemini）が必要なツール（Gmail / Calendar）を計画
-2. **端末(iOS)** がその計画を Keychain のトークンで実行（Gmail/Calendar API は端末から直接叩く）
+2. **端末(iOS)** がその計画を実行（Calendar は EventKit、Gmail API は端末から直接叩く）
 3. **responder**（Gemini）が結果を踏まえてずんだもん口調で応答
 
 を行う、AI オーケストレーション専任のサーバー（Go + Echo + Vertex AI）。
@@ -31,7 +31,11 @@ orchestrator/          planner / responder（司令塔）
 **1巡目（計画）**
 ```jsonc
 // リクエスト
-{ "message": "予定とメールを確認して" }
+{
+  "message": "予定とメールを確認して",
+  "capabilities": ["calendar"],
+  "deviceId": "device-uuid"
+}
 // レスポンス
 { "type": "tool_calls",
   "plan": [
@@ -52,7 +56,17 @@ orchestrator/          planner / responder（司令塔）
 { "type": "final", "reply": "今日は14時に歯医者なのだ！…" }
 ```
 
+`capabilities` は端末が実行できるツールの申告。Production iOS は `calendar` のみ、
+Development iOS は Google 連携済みの場合に `gmail` も追加する。
+未指定の場合は後方互換として `calendar` / `gmail` の両方を利用可能とみなす。
+`deviceId` は日次利用回数制限に使う。
+
 雑談（ツール不要）の場合は1巡目で即 `type: "final"` が返る。
+
+### 利用回数制限
+
+`AGENT_DAILY_LIMIT` で deviceId ごとの `/agent` 日次呼び出し上限を設定できる。
+デフォルトは `50`。`0` 以下にすると制限しない。
 
 ### `GET /health`
 `{ "status": "ok" }`
@@ -108,6 +122,7 @@ iOS の PushKit/CallKit で着信、という流れ。
 
 - `devices/{deviceId}`: voipToken / apnsEnv / bundleId / invalidatedAt
 - `scheduledCalls/{id}`: deviceId / scheduledAt(UTC) / status（scheduled→sending→sent|failed、canceled/missed）
+- `agentUsageDaily/{yyyy-mm-dd}/devices/{deviceId}`: /agent の日次呼び出し回数
 - 複合インデックス `(status ASC, scheduledAt ASC)` が必要（Terraform で定義済み）
 - **注意**: Firestore の `(default)` DB はプロジェクトに1つ。dev/prod は同じ DB・コレクションを共有する
 

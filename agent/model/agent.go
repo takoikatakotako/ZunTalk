@@ -21,6 +21,12 @@ type AgentRequest struct {
 	Message string `json:"message"`
 	// Results は端末がツールを実行した結果（2巡目以降のみ）。空なら計画フェーズ。
 	Results []StepResult `json:"results,omitempty"`
+	// Capabilities は端末が実行できるツールの申告（例: 本番ビルドは calendar のみ）。
+	// 空・欠落なら全ツール利用可能とみなす（後方互換）。
+	Capabilities []Capability `json:"capabilities,omitempty"`
+	// DeviceID は利用回数制限のための端末識別子（Keychain の UUID）。
+	// 空でも動くが、制限の対象外にはならず匿名バケットで数えられる。
+	DeviceID string `json:"deviceId,omitempty"`
 }
 
 // PlanStep は planner が立てた「端末に実行してほしいツール呼び出し」1件。

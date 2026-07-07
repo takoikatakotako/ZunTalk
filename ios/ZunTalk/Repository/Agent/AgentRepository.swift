@@ -7,15 +7,27 @@ import Foundation
 /// 3. POST /agent {message, results} → final（ずんだもんの返答）
 final class AgentRepository {
     private let executor: AgentToolExecuting
+    private let deviceIdRepository: DeviceIdRepository
 
-    init(executor: AgentToolExecuting = ToolExecutor()) {
+    init(executor: AgentToolExecuting = ToolExecutor(), deviceIdRepository: DeviceIdRepository = .shared) {
         self.executor = executor
+        self.deviceIdRepository = deviceIdRepository
     }
 
     /// 1回の発話に対する往復を実行し、最終結果（返答＋計画＋実行結果）を返す。
     func run(message: String) async throws -> AgentRunResult {
+        let requestContext = AgentRequestContext(
+            capabilities: await Self.availableCapabilities(),
+            deviceId: deviceIdRepository.deviceId()
+        )
+
         // 1巡目: 計画を取得
-        let first = try await post(AgentRequest(message: message, results: nil))
+        let first = try await post(AgentRequest(
+            message: message,
+            capabilities: requestContext.capabilities,
+            deviceId: requestContext.deviceId,
+            results: nil
+        ))
 
         // ツール不要（雑談など）→ そのまま返答
         if first.type == AgentResponseType.final {
@@ -32,8 +44,26 @@ final class AgentRepository {
         }
 
         // 2巡目: 結果を渡して最終応答を取得
-        let second = try await post(AgentRequest(message: message, results: results))
+        let second = try await post(AgentRequest(
+            message: message,
+            capabilities: requestContext.capabilities,
+            deviceId: requestContext.deviceId,
+            results: results
+        ))
         return AgentRunResult(reply: second.reply ?? "", emotion: second.emotion, plan: plan, results: results)
+    }
+
+    private static func availableCapabilities() async -> [String] {
+        var capabilities = [AgentCapability.calendar.rawValue]
+        #if DEBUG
+        let isGoogleLinked = await MainActor.run {
+            GoogleAuthManager.shared.isLinked
+        }
+        if isGoogleLinked {
+            capabilities.append(AgentCapability.gmail.rawValue)
+        }
+        #endif
+        return capabilities
     }
 
     private func post(_ body: AgentRequest) async throws -> AgentResponse {
@@ -55,6 +85,11 @@ final class AgentRepository {
         }
         return try JSONDecoder().decode(AgentResponse.self, from: data)
     }
+}
+
+private struct AgentRequestContext {
+    let capabilities: [String]
+    let deviceId: String
 }
 
 /// 往復1回の結果。

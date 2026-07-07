@@ -61,7 +61,6 @@ struct ContactView: View {
                                     .clipShape(Circle())
                             }
 
-                            // エージェント機能は Google OAuth 審査が通るまで本番では非表示
                             if FeatureFlags.agentModeEnabled {
                                 Button(action: {
                                     isNavigatingToAgent = true

@@ -3,20 +3,58 @@ package handler
 import (
 	"log/slog"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/takoikatakotako/ZunTalk/agent/model"
 	"github.com/takoikatakotako/ZunTalk/agent/orchestrator"
+	"github.com/takoikatakotako/ZunTalk/agent/store"
 )
+
+// jst は利用回数の日次リセット境界（日本時間の0時）。
+var jst = time.FixedZone("JST", 9*60*60)
 
 // AgentHandler は /agent と /health を処理する。
 type AgentHandler struct {
 	orch *orchestrator.Orchestrator
+	// store は利用回数制限のカウンタ保存先。nil なら制限しない（ローカル開発用）。
+	store *store.Store
+	// dailyLimit は端末ごとの1日の /agent 呼び出し上限。0以下なら制限しない。
+	dailyLimit int
 }
 
 // NewAgentHandler は AgentHandler を生成する。
-func NewAgentHandler(o *orchestrator.Orchestrator) *AgentHandler {
-	return &AgentHandler{orch: o}
+func NewAgentHandler(o *orchestrator.Orchestrator, s *store.Store, dailyLimit int) *AgentHandler {
+	return &AgentHandler{orch: o, store: s, dailyLimit: dailyLimit}
+}
+
+// checkRateLimit は端末ごとの日次利用回数を加算し、上限超過なら false を返す。
+// カウンタの障害でエージェントを止めないため、エラー時は許可に倒す。
+func (h *AgentHandler) checkRateLimit(c echo.Context, deviceID string) bool {
+	if h.store == nil || h.dailyLimit <= 0 {
+		return true
+	}
+	deviceID = normalizeAgentDeviceID(deviceID)
+	day := time.Now().In(jst).Format("2006-01-02")
+	count, err := h.store.IncrementAgentUsage(c.Request().Context(), deviceID, day)
+	if err != nil {
+		slog.Error("Failed to count agent usage", "deviceId", deviceID, "error", err)
+		return true
+	}
+	if count > int64(h.dailyLimit) {
+		slog.Warn("Agent daily limit exceeded", "deviceId", deviceID, "count", count)
+		return false
+	}
+	return true
+}
+
+func normalizeAgentDeviceID(deviceID string) string {
+	deviceID = strings.TrimSpace(deviceID)
+	if deviceID == "" {
+		return "anonymous"
+	}
+	return strings.NewReplacer("/", "_", "\\", "_").Replace(deviceID)
 }
 
 // HandleAgent はステートレスなエージェント往復を処理する。
@@ -36,6 +74,14 @@ func (h *AgentHandler) HandleAgent(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, model.ErrorResponse{
 			Code:    "INVALID_REQUEST",
 			Message: "メッセージが空です",
+		})
+	}
+
+	// 端末ごとの日次利用回数制限（Vertex AI のコスト保護）。
+	if !h.checkRateLimit(c, req.DeviceID) {
+		return c.JSON(http.StatusTooManyRequests, model.ErrorResponse{
+			Code:    "RATE_LIMITED",
+			Message: "今日はもうたくさんお話ししたのだ。また明日お話ししてほしいのだ〜",
 		})
 	}
 
@@ -59,7 +105,7 @@ func (h *AgentHandler) HandleAgent(c echo.Context) error {
 	}
 
 	// 1巡目: 計画を立てる。
-	plan, err := h.orch.Plan(ctx, req.Message)
+	plan, err := h.orch.Plan(ctx, req.Message, req.Capabilities)
 	if err != nil {
 		slog.Error("Failed to plan", "error", err)
 		return c.JSON(http.StatusInternalServerError, model.ErrorResponse{
