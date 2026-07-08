@@ -13,9 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 端末が実行可能なツールを申告する capability ネゴシエーションを追加（現状は `calendar` のみ）
   - deviceId ごとの `/agent` 日次利用回数制限（`AGENT_DAILY_LIMIT`、デフォルト50）で Vertex AI のコスト保護。上限超過は 429 でずんだもん口調のメッセージを表示
 - プライバシーポリシーにカレンダーデータの扱いを追記
+- prod GCP 環境を完全化（電話予約インフラ一式）し、本番アプリを prod Cloud Run へ切り替え（#108）
 
 ### Changed
 - `FeatureFlags` を分割: `agentModeEnabled` を本番でも有効に、開発者向け UI（エージェントテスト・表情確認）は `debugToolsEnabled`（Debug 限定）に分離
+- Firestore を dev/prod で分離。接続先DBを `FIRESTORE_DATABASE` で切り替え（dev=`(default)` / prod=`zuntalk-prod`）。各環境が自分のDB・インデックス・TTL を所有し、prod のプロジェクト分割にコード変更なしで対応できる構成に（#108）
 
 ### Removed
 - Gmail 連携（Google Sign-In）を全面削除。設定画面の Google 連携 UI・`GoogleAuthManager`・`GmailTool`・`gmail` capability、GoogleSignIn SDK と OAuth 設定（client ID・URL スキーム）を撤去。カレンダーは EventKit のみで完結（Firebase / AdMob は影響なし）

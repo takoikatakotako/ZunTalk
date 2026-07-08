@@ -70,9 +70,9 @@ module "call_dispatcher_service_account" {
 # =============================================================================
 # Firestore
 # =============================================================================
-# 注意: Firestore の (default) データベースはプロジェクトに1つのみ。
-# dev/prod は同じ sandbox プロジェクトを使うため、DB とインデックスは
-# dev 側でのみ定義し、prod は同じ DB（コレクションも共有）を参照する。
+# dev は (default) データベースを使う。prod は prod 環境が専用の名前付きDB
+# （zuntalk-prod）を別途定義し、データを完全分離する。将来 prod を別プロジェクト・
+# 別アカウントに移しても、各環境が自分のDB・インデックスを所有しているので追従できる。
 
 resource "google_firestore_database" "default" {
   project     = var.project_id
@@ -179,11 +179,12 @@ module "agent_cloud_run" {
   image                 = var.image
 
   environment_variables = {
-    APP_ENV           = local.environment
-    GCP_PROJECT_ID    = var.project_id
-    VERTEX_LOCATION   = var.vertex_location
-    GEMINI_MODEL      = var.gemini_model
-    AGENT_DAILY_LIMIT = tostring(var.agent_daily_limit)
+    APP_ENV            = local.environment
+    GCP_PROJECT_ID     = var.project_id
+    FIRESTORE_DATABASE = google_firestore_database.default.name
+    VERTEX_LOCATION    = var.vertex_location
+    GEMINI_MODEL       = var.gemini_model
+    AGENT_DAILY_LIMIT  = tostring(var.agent_daily_limit)
 
     APNS_KEY_ID               = var.apns_key_id
     APNS_TEAM_ID              = var.apns_team_id

@@ -40,7 +40,7 @@ func main() {
 	orch := orchestrator.New(gemini)
 
 	// Firestore（電話予約・端末トークンの保存先）を初期化（ADC でキーレス認証）。
-	st, err := store.New(ctx, cfg.GCPProjectID)
+	st, err := store.New(ctx, cfg.GCPProjectID, cfg.FirestoreDatabase)
 	if err != nil {
 		log.Fatalf("failed to init Firestore client: %v", err)
 	}
