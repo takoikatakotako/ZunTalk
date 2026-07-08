@@ -7,8 +7,7 @@
 API_BASE_URL = https:/$()/lywvkbddncitxwu436n6ypykd40hfytm.lambda-url.ap-northeast-1.on.aws
 
 // Agent (Cloud Run) Base URL
-// TODO: prod 環境（zuntalk-agent-prod）構築後に切り替える。それまでは dev を参照
-AGENT_BASE_URL = https:/$()/zuntalk-agent-dev-exxyf6d72a-an.a.run.app
+AGENT_BASE_URL = https:/$()/zuntalk-agent-prod-exxyf6d72a-an.a.run.app
 
 // Bundle ID
 APP_BUNDLE_IDENTIFIER = com.swiswiswift.zuntalk

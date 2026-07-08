@@ -1,13 +1,19 @@
 locals {
-  environment       = "prod"
-  agent_name        = "zuntalk-agent-${local.environment}"
-  api_key_secret_id = "${local.agent_name}-api-key"
+  environment        = "prod"
+  agent_name         = "zuntalk-agent-${local.environment}"
+  api_key_secret_id  = "${local.agent_name}-api-key"
+  apns_key_secret_id = "${local.agent_name}-apns-key"
+  # Scheduler の OIDC トークンと dispatch エンドポイントの照合に使う audience。
+  # Cloud Run の URL に依存させると自己参照になるため固定文字列にする。
+  dispatch_audience = "${local.agent_name}-dispatch"
   required_services = [
     "run.googleapis.com",
     "aiplatform.googleapis.com",
     "artifactregistry.googleapis.com",
     "secretmanager.googleapis.com",
     "iamcredentials.googleapis.com",
+    "firestore.googleapis.com",
+    "cloudscheduler.googleapis.com",
   ]
 }
 
@@ -43,6 +49,26 @@ resource "google_project_iam_member" "agent_runtime_vertex" {
   member  = "serviceAccount:${module.agent_runtime_service_account.email}"
 }
 
+# /agent の日次利用回数カウンタ（agentUsage）・電話予約（devices/scheduledCalls）を
+# Firestore に読み書きするため。DB 自体は dev 側が同一プロジェクトで共有管理している
+# （(default) は1プロジェクト1つ。dev/prod は同じ DB・コレクションを共有）。
+resource "google_project_iam_member" "agent_runtime_datastore" {
+  project = var.project_id
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:${module.agent_runtime_service_account.email}"
+}
+
+# /internal/dispatch を毎分叩く Cloud Scheduler ジョブ用 SA
+module "call_dispatcher_service_account" {
+  source = "../../modules/service-account"
+
+  project_id   = var.project_id
+  account_id   = "call-dispatcher-${local.environment}"
+  display_name = "ZunTalk ${local.environment} 電話予約ディスパッチャ (Cloud Scheduler)"
+
+  depends_on = [module.project_services]
+}
+
 # =============================================================================
 # Artifact Registry
 # =============================================================================
@@ -75,6 +101,22 @@ module "agent_api_key" {
   depends_on = [module.project_services]
 }
 
+# APNs Auth Key (.p8) の中身。値は手動で投入する（TF には書かない）:
+#   gcloud secrets versions add zuntalk-agent-prod-apns-key --data-file=AuthKey_XXXX.p8 --project sandbox-492513
+# バージョン未投入のまま Cloud Run をデプロイすると起動に失敗するので注意。
+module "agent_apns_key" {
+  source = "../../modules/secret-manager-secret"
+
+  project_id           = var.project_id
+  secret_id            = local.apns_key_secret_id
+  replication_location = var.region
+  accessor_members = [
+    "serviceAccount:${module.agent_runtime_service_account.email}",
+  ]
+
+  depends_on = [module.project_services]
+}
+
 # =============================================================================
 # Cloud Run
 # =============================================================================
@@ -89,15 +131,25 @@ module "agent_cloud_run" {
   image                 = var.image
 
   environment_variables = {
-    APP_ENV         = local.environment
-    GCP_PROJECT_ID  = var.project_id
-    VERTEX_LOCATION = var.vertex_location
-    GEMINI_MODEL    = var.gemini_model
+    APP_ENV           = local.environment
+    GCP_PROJECT_ID    = var.project_id
+    VERTEX_LOCATION   = var.vertex_location
+    GEMINI_MODEL      = var.gemini_model
+    AGENT_DAILY_LIMIT = tostring(var.agent_daily_limit)
+
+    APNS_KEY_ID               = var.apns_key_id
+    APNS_TEAM_ID              = var.apns_team_id
+    SCHEDULER_SERVICE_ACCOUNT = module.call_dispatcher_service_account.email
+    DISPATCH_AUDIENCE         = local.dispatch_audience
   }
 
   secret_environment_variables = {
     AGENT_API_KEY = {
       secret_id = module.agent_api_key.secret_id
+      version   = "latest"
+    }
+    APNS_AUTH_KEY = {
+      secret_id = module.agent_apns_key.secret_id
       version   = "latest"
     }
   }
@@ -107,6 +159,31 @@ module "agent_cloud_run" {
   depends_on = [
     module.project_services,
     module.agent_api_key,
+    module.agent_apns_key,
     google_project_iam_member.agent_runtime_vertex,
+    google_project_iam_member.agent_runtime_datastore,
   ]
+}
+
+# =============================================================================
+# Cloud Scheduler
+# =============================================================================
+
+# 毎分 /internal/dispatch を叩き、期限が到来した電話予約に VoIP push を送らせる。
+module "call_dispatch_scheduler" {
+  source = "../../modules/cloud-scheduler-job"
+
+  project_id  = var.project_id
+  region      = var.region
+  name        = "${local.agent_name}-call-dispatch"
+  description = "期限到来した電話予約の VoIP push 送信（毎分・60秒先読みで秒精度発火）"
+  schedule    = "* * * * *"
+  # dispatch は次の60秒以内の予約を発火時刻まで待ってから送るため、1分より長めに取る
+  attempt_deadline = "90s"
+
+  uri                   = "${module.agent_cloud_run.service_uri}/internal/dispatch"
+  service_account_email = module.call_dispatcher_service_account.email
+  audience              = local.dispatch_audience
+
+  depends_on = [module.project_services]
 }
