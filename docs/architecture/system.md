@@ -89,9 +89,9 @@
 
 #### 技術スタック
 - **言語**: Go 1.24 + Echo v4
-- **実行環境**: Cloud Run（`zuntalk-agent-dev`）
+- **実行環境**: Cloud Run（`zuntalk-agent-dev` / `zuntalk-agent-prod`）
 - **AI**: Vertex AI（Gemini、ADC キーレス認証）
-- **データストア**: Firestore（devices / scheduledCalls / agentUsage）
+- **データストア**: Firestore（devices / scheduledCalls / agentUsage）。接続先DBは `FIRESTORE_DATABASE` で切り替え、dev は `(default)`・prod は `zuntalk-prod` でデータ分離
 
 #### エンドポイント
 - `POST /agent`: エージェント往復（X-Api-Key）
@@ -121,13 +121,12 @@
 - **Dev** (039612872248): 開発環境Lambda
 - **Prod** (986921280333): 本番環境Lambda
 
-#### GCP構成（エージェント / 電話予約）
-- **Cloud Run**: エージェントサーバー実行環境
+- **Cloud Run**: エージェントサーバー実行環境（dev / prod の2サービス）
 - **Vertex AI**: Gemini 呼び出し
-- **Firestore**: 端末トークン・電話予約・利用回数カウンタ（TTL ポリシー含め Terraform 管理）
-- **Cloud Scheduler**: 毎分のディスパッチ（OIDC 認証）
+- **Firestore**: 端末トークン・電話予約・利用回数カウンタ（TTL ポリシー含め Terraform 管理）。dev は `(default)` DB、prod は名前付きDB `zuntalk-prod` で**完全分離**。各環境が自分のDB・インデックス・TTL を所有し、将来 prod を別プロジェクト・別アカウントへ移せる構成
+- **Cloud Scheduler**: 毎分のディスパッチ（OIDC 認証）。dev / prod それぞれが自分のDBの `scheduledCalls` を処理する
 - **Secret Manager**: API キー・APNs Auth Key (.p8)
-- **プロジェクト**: sandbox-492513（`terraform/gcp/environments/dev`。prod 環境は未構築で、本番アプリも当面 dev Cloud Run を参照）
+- **プロジェクト**: 現状は dev/prod とも sandbox-492513 内（`terraform/gcp/environments/{dev,prod}`）。Firestore はDBレベルで分離済みなので、prod のプロジェクト分割にコード変更なしで対応できる
 
 ## データフロー
 

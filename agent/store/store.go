@@ -78,8 +78,13 @@ type Store struct {
 }
 
 // New は Firestore クライアントを初期化する。
-func New(ctx context.Context, projectID string) (*Store, error) {
-	client, err := firestore.NewClient(ctx, projectID)
+// databaseID で接続先データベースを指定する（dev/prod 分離用）。
+// 空なら "(default)" を使う。
+func New(ctx context.Context, projectID, databaseID string) (*Store, error) {
+	if databaseID == "" {
+		databaseID = "(default)"
+	}
+	client, err := firestore.NewClientWithDatabase(ctx, projectID, databaseID)
 	if err != nil {
 		return nil, fmt.Errorf("store: failed to init firestore client: %w", err)
 	}

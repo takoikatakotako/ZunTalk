@@ -11,6 +11,9 @@ type Config struct {
 	Port string
 	// GCPProjectID は Vertex AI を呼ぶ Google Cloud プロジェクトID。
 	GCPProjectID string
+	// FirestoreDatabase は接続する Firestore データベースID。
+	// dev/prod で分離するために使う。空・未設定なら "(default)"。
+	FirestoreDatabase string
 	// VertexLocation は Vertex AI のリージョン（例: us-central1, asia-northeast1）。
 	VertexLocation string
 	// GeminiModel は使用する Gemini モデル名。
@@ -38,12 +41,13 @@ type Config struct {
 // Load は環境変数から設定を読み込む。
 func Load() *Config {
 	return &Config{
-		Port:            getEnv("PORT", "8080"),
-		GCPProjectID:    getEnv("GCP_PROJECT_ID", ""),
-		VertexLocation:  getEnv("VERTEX_LOCATION", "us-central1"),
-		GeminiModel:     getEnv("GEMINI_MODEL", "gemini-2.5-flash"),
-		APIKey:          getEnv("AGENT_API_KEY", ""),
-		AgentDailyLimit: getEnvInt("AGENT_DAILY_LIMIT", 50),
+		Port:              getEnv("PORT", "8080"),
+		GCPProjectID:      getEnv("GCP_PROJECT_ID", ""),
+		FirestoreDatabase: getEnv("FIRESTORE_DATABASE", "(default)"),
+		VertexLocation:    getEnv("VERTEX_LOCATION", "us-central1"),
+		GeminiModel:       getEnv("GEMINI_MODEL", "gemini-2.5-flash"),
+		APIKey:            getEnv("AGENT_API_KEY", ""),
+		AgentDailyLimit:   getEnvInt("AGENT_DAILY_LIMIT", 50),
 
 		APNSKeyID:               getEnv("APNS_KEY_ID", ""),
 		APNSTeamID:              getEnv("APNS_TEAM_ID", ""),

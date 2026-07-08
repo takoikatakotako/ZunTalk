@@ -127,7 +127,10 @@ iOS の PushKit/CallKit で着信、という流れ。
 - `scheduledCalls/{id}`: deviceId / scheduledAt(UTC) / status（scheduled→sending→sent|failed、canceled/missed）
 - `agentUsage/{yyyy-mm-dd}_{deviceId}`: /agent の日次呼び出し回数（expireAt の TTL で7日後に自動削除）
 - 複合インデックス `(status ASC, scheduledAt ASC)` が必要（Terraform で定義済み）
-- **注意**: Firestore の `(default)` DB はプロジェクトに1つ。dev/prod は同じ DB・コレクションを共有する
+- **接続先データベースは `FIRESTORE_DATABASE` で切り替える**（未設定なら `(default)`）。
+  dev は `(default)`、prod は専用の名前付きDB `zuntalk-prod` を使い、**データを完全分離**する。
+  各環境が自分のDB・インデックス・TTL を Terraform で所有するため、将来 prod を
+  別プロジェクト・別アカウントへ移しても追従できる。
 
 ### 手動 push テスト（サーバー不要）
 
