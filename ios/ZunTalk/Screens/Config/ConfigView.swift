@@ -29,6 +29,11 @@ struct ConfigView: View {
                 }
             }
 
+            // カレンダー連携（エージェントが EventKit で端末内カレンダーを読む）
+            if FeatureFlags.agentModeEnabled {
+                CalendarLinkSection()
+            }
+
             Section("サポート") {
                 // swiftlint:disable:next line_length
                 Link(destination: URL(string: "https://docs.google.com/forms/d/e/1FAIpQLSfqxPpkdiG7JW5qIiz0pf0oisne4HIJZiL8nkhmPmgFAlRwCA/viewform")!) {
