@@ -5,7 +5,6 @@ import Foundation
 /// 端末が実行するツールの種類。
 enum AgentCapability: String {
     case calendar
-    case gmail
 }
 
 /// /agent へのリクエスト。

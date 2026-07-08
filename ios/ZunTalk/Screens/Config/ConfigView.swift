@@ -29,11 +29,6 @@ struct ConfigView: View {
                 }
             }
 
-            // Gmail 連携（トークンは端末内のみ保持。カレンダーは EventKit で連携不要）
-            if FeatureFlags.debugToolsEnabled {
-                GoogleLinkSection()
-            }
-
             Section("サポート") {
                 // swiftlint:disable:next line_length
                 Link(destination: URL(string: "https://docs.google.com/forms/d/e/1FAIpQLSfqxPpkdiG7JW5qIiz0pf0oisne4HIJZiL8nkhmPmgFAlRwCA/viewform")!) {

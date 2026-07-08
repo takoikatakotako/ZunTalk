@@ -54,16 +54,8 @@ final class AgentRepository {
     }
 
     private static func availableCapabilities() async -> [String] {
-        var capabilities = [AgentCapability.calendar.rawValue]
-        #if DEBUG
-        let isGoogleLinked = await MainActor.run {
-            GoogleAuthManager.shared.isLinked
-        }
-        if isGoogleLinked {
-            capabilities.append(AgentCapability.gmail.rawValue)
-        }
-        #endif
-        return capabilities
+        // カレンダーは EventKit で端末内から読む。Gmail 等の Google 連携は廃止。
+        [AgentCapability.calendar.rawValue]
     }
 
     private func post(_ body: AgentRequest) async throws -> AgentResponse {

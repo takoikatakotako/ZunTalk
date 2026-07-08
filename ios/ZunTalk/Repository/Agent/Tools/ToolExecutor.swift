@@ -7,7 +7,6 @@ protocol AgentToolExecuting {
 
 /// plan の各ステップを端末側のツールで実行する。
 /// - calendar: EventKit（端末内カレンダー DB）。Google 連携・トークン不要
-/// - gmail: Gmail API。トークンは GoogleAuthManager（端末内）から取得し、サーバーには渡さない
 final class ToolExecutor: AgentToolExecuting {
     func execute(capability: String, query: String) async -> AgentStepResult {
         do {
@@ -15,9 +14,6 @@ final class ToolExecutor: AgentToolExecuting {
             switch AgentCapability(rawValue: capability) {
             case .calendar:
                 content = try await CalendarTool.fetch(query: query)
-            case .gmail:
-                let token = try await GoogleAuthManager.shared.accessToken()
-                content = try await GmailTool.fetch(accessToken: token, query: query)
             case .none:
                 return AgentStepResult(capability: capability, query: query, content: "",
                                        error: "未知のツール: \(capability)")
