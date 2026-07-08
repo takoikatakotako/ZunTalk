@@ -1,6 +1,9 @@
 package config
 
-import "os"
+import (
+	"os"
+	"strconv"
+)
 
 // Config はエージェントサーバーの設定。環境変数から読み込む。
 type Config struct {
@@ -15,6 +18,8 @@ type Config struct {
 	// APIKey は /agent を保護する共有シークレット（X-Api-Key ヘッダーと照合）。
 	// 空の場合はローカル開発用に検証をスキップする。
 	APIKey string
+	// AgentDailyLimit は deviceId ごとの /agent 日次呼び出し上限。0以下なら制限しない。
+	AgentDailyLimit int
 
 	// APNSKeyID は APNs Auth Key (.p8) の Key ID。
 	APNSKeyID string
@@ -33,11 +38,12 @@ type Config struct {
 // Load は環境変数から設定を読み込む。
 func Load() *Config {
 	return &Config{
-		Port:           getEnv("PORT", "8080"),
-		GCPProjectID:   getEnv("GCP_PROJECT_ID", ""),
-		VertexLocation: getEnv("VERTEX_LOCATION", "us-central1"),
-		GeminiModel:    getEnv("GEMINI_MODEL", "gemini-2.5-flash"),
-		APIKey:         getEnv("AGENT_API_KEY", ""),
+		Port:            getEnv("PORT", "8080"),
+		GCPProjectID:    getEnv("GCP_PROJECT_ID", ""),
+		VertexLocation:  getEnv("VERTEX_LOCATION", "us-central1"),
+		GeminiModel:     getEnv("GEMINI_MODEL", "gemini-2.5-flash"),
+		APIKey:          getEnv("AGENT_API_KEY", ""),
+		AgentDailyLimit: getEnvInt("AGENT_DAILY_LIMIT", 50),
 
 		APNSKeyID:               getEnv("APNS_KEY_ID", ""),
 		APNSTeamID:              getEnv("APNS_TEAM_ID", ""),
@@ -52,4 +58,16 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+func getEnvInt(key string, defaultValue int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	parsed, err := strconv.Atoi(value)
+	if err != nil {
+		return defaultValue
+	}
+	return parsed
 }

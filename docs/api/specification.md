@@ -1,5 +1,7 @@
 # API仕様
 
+このページは **チャットAPI（AWS Lambda）** の仕様です。エージェント・電話予約の API は別バックエンド（GCP Cloud Run）で提供しており、仕様は [agent/README.md](../../agent/README.md) を参照してください（`POST /agent`, `PUT /devices`, `POST/GET/DELETE /calls`, `POST /internal/dispatch`）。
+
 ## ベースURL
 
 ### Dev環境

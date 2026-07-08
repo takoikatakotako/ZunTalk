@@ -14,23 +14,26 @@
 ## システム構成
 
 ```
-┌─────────────┐
-│  iOS App    │
-│  (Swift)    │
-└──────┬──────┘
-       │ HTTPS
-       ↓
-┌─────────────┐
-│ AWS Lambda  │
-│   (Go)      │
-└──────┬──────┘
-       │ API
-       ↓
-┌─────────────┐
-│  OpenAI     │
-│    API      │
-└─────────────┘
+                  ┌─────────────┐
+                  │  iOS App    │
+                  │  (Swift)    │
+                  └──┬───────┬──┘
+                     │ HTTPS │ HTTPS
+          ┌──────────┘       └──────────┐
+          ↓                             ↓
+   ┌─────────────┐             ┌──────────────────┐
+   │ AWS Lambda  │             │ GCP Cloud Run    │
+   │ (Go/チャット) │             │ (Go/エージェント   │
+   └──────┬──────┘             │    ・電話予約)     │
+          ↓                    └───┬──────┬───────┘
+   ┌─────────────┐                 ↓      ↓
+   │  OpenAI API │           ┌─────────┐ ┌──────────┐
+   └─────────────┘           │Vertex AI│ │Firestore │
+                             │(Gemini) │ │+Scheduler│
+                             └─────────┘ └──────────┘
 ```
+
+詳細は [システム構成](../architecture/system.md) を参照。
 
 ### コンポーネント
 
@@ -73,6 +76,17 @@
 - コールドスタート対策
 - コスト効率的
 
+### 5. エージェントモード
+- Vertex AI（Gemini）が発話から実行計画を立てる司令塔
+- 端末側でツールを実行（カレンダーは EventKit で iOS 標準カレンダーを読み取り）
+- deviceId ごとの日次利用回数制限でコスト保護
+- 詳細は [agent/README.md](../../agent/README.md)
+
+### 6. 電話予約（VoIP 着信）
+- 指定時刻にずんだもんから電話がかかってくる
+- Cloud Run + Firestore + Cloud Scheduler + APNs 直叩き
+- ロック中・アプリ終了中でも CallKit のネイティブ着信 UI で受けられる
+
 ## ディレクトリ構造
 
 ```
@@ -86,15 +100,20 @@ ZunTalk/
 │   │   └── Screens/       # UIビュー
 │   ├── Development.xcconfig   # Debug環境設定
 │   └── Production.xcconfig    # Release環境設定
-├── backend/                # Goバックエンド
+├── backend/                # Goバックエンド（チャットAPI / AWS Lambda）
 │   ├── main.go            # エントリーポイント
 │   ├── handler/           # HTTPハンドラー
 │   ├── service/           # ビジネスロジック
 │   ├── model/             # データモデル
 │   └── config/            # 環境変数管理
+├── agent/                  # エージェント / 電話予約（Go / GCP Cloud Run）
+│   ├── orchestrator/      # planner / responder（Vertex AI）
+│   ├── handler/           # /agent, /devices, /calls, /internal/dispatch
+│   ├── store/             # Firestore アクセス
+│   └── apns/              # APNs VoIP push
 ├── terraform/              # インフラ（IaC）
-│   ├── modules/           # 再利用可能モジュール
-│   └── environments/      # 環境別設定
+│   ├── aws/               # AWS（既存バックエンド）
+│   └── gcp/               # GCP（エージェント / 電話予約）
 ├── docs/                   # ドキュメント
 └── .github/workflows/      # CI/CD
 ```

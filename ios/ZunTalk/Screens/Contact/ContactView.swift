@@ -30,22 +30,26 @@ struct ContactView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(contact.name)
                                 .font(.headline)
+                                .lineLimit(1)
+                                .fixedSize()
 
                             Text("ずんだの妖精")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
+                                .lineLimit(1)
+                                .fixedSize()
                         }
 
-                        Spacer()
+                        Spacer(minLength: 8)
 
-                        HStack(spacing: 12) {
+                        HStack(spacing: 8) {
                             Button(action: {
                                 isNavigatingToChat = true
                             }) {
                                 Image(systemName: "message.fill")
                                     .foregroundColor(.white)
-                                    .font(.system(size: 16))
-                                    .frame(width: 36, height: 36)
+                                    .font(.system(size: 15))
+                                    .frame(width: 32, height: 32)
                                     .background(Color.blue)
                                     .clipShape(Circle())
                             }
@@ -55,21 +59,20 @@ struct ContactView: View {
                             }) {
                                 Image(systemName: "phone.fill")
                                     .foregroundColor(.white)
-                                    .font(.system(size: 16))
-                                    .frame(width: 36, height: 36)
+                                    .font(.system(size: 15))
+                                    .frame(width: 32, height: 32)
                                     .background(Color.green)
                                     .clipShape(Circle())
                             }
 
-                            // エージェント機能は Google OAuth 審査が通るまで本番では非表示
                             if FeatureFlags.agentModeEnabled {
                                 Button(action: {
                                     isNavigatingToAgent = true
                                 }) {
                                     Image(systemName: "bubble.left.and.bubble.right.fill")
                                         .foregroundColor(.white)
-                                        .font(.system(size: 16))
-                                        .frame(width: 36, height: 36)
+                                        .font(.system(size: 15))
+                                        .frame(width: 32, height: 32)
                                         .background(Color.purple)
                                         .clipShape(Circle())
                                 }
@@ -80,8 +83,8 @@ struct ContactView: View {
                             }) {
                                 Image(systemName: "alarm.fill")
                                     .foregroundColor(.white)
-                                    .font(.system(size: 16))
-                                    .frame(width: 36, height: 36)
+                                    .font(.system(size: 15))
+                                    .frame(width: 32, height: 32)
                                     .background(Color.orange)
                                     .clipShape(Circle())
                             }

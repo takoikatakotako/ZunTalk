@@ -5,7 +5,6 @@ import Foundation
 /// 端末が実行するツールの種類。
 enum AgentCapability: String {
     case calendar
-    case gmail
 }
 
 /// /agent へのリクエスト。
@@ -13,6 +12,10 @@ enum AgentCapability: String {
 /// - 2巡目: message ＋ results（端末の実行結果）→ サーバーは reply を返す
 struct AgentRequest: Codable {
     let message: String
+    /// 端末で実行できるツール。nil/空ならサーバー側で後方互換として全ツール扱い。
+    let capabilities: [String]?
+    /// 利用回数制限用の端末ID。
+    let deviceId: String?
     /// 端末でのツール実行結果（2巡目のみ。nil なら JSON から省略される）。
     let results: [AgentStepResult]?
 }

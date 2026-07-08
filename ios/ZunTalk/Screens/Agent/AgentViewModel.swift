@@ -59,6 +59,9 @@ final class AgentViewModel: NSObject, ObservableObject {
                 let result = try await agentRepository.run(message: initialGreetingPrompt())
                 greeting = result.reply.isEmpty ? Constants.fallbackInitialGreeting : result.reply
                 expression = ZundamonExpression.from(emotion: result.emotion)
+            } catch AgentError.rateLimited(let message) {
+                greeting = message
+                expression = .idle
             } catch {
                 CrashlyticsManager.record(error)
                 greeting = Constants.fallbackInitialGreeting
@@ -86,6 +89,10 @@ final class AgentViewModel: NSObject, ObservableObject {
                 // 返答の感情を表情に反映してから喋る
                 expression = ZundamonExpression.from(emotion: result.emotion)
                 await presentAndPlayAssistantMessage(reply)
+            } catch AgentError.rateLimited(let message) {
+                // 日次利用回数の上限。エラー扱いにせず、ずんだもんの言葉として届ける
+                expression = ZundamonExpression.from(emotion: "troubled")
+                await presentAndPlayAssistantMessage(message)
             } catch {
                 CrashlyticsManager.record(error)
                 isLoading = false

@@ -103,6 +103,20 @@ resource "google_firestore_index" "scheduled_calls_status_scheduled_at" {
   }
 }
 
+# /agent の日次利用回数カウンタ（agentUsage/{yyyy-mm-dd}_{deviceId}）を
+# expireAt フィールド基準の TTL で自動削除する（保持期間はアプリ側で7日に設定）。
+resource "google_firestore_field" "agent_usage_ttl" {
+  project    = var.project_id
+  database   = google_firestore_database.default.name
+  collection = "agentUsage"
+  field      = "expireAt"
+
+  ttl_config {}
+
+  # TTL 用フィールドにインデックスは不要
+  index_config {}
+}
+
 # =============================================================================
 # Artifact Registry
 # =============================================================================
@@ -165,10 +179,11 @@ module "agent_cloud_run" {
   image                 = var.image
 
   environment_variables = {
-    APP_ENV         = local.environment
-    GCP_PROJECT_ID  = var.project_id
-    VERTEX_LOCATION = var.vertex_location
-    GEMINI_MODEL    = var.gemini_model
+    APP_ENV           = local.environment
+    GCP_PROJECT_ID    = var.project_id
+    VERTEX_LOCATION   = var.vertex_location
+    GEMINI_MODEL      = var.gemini_model
+    AGENT_DAILY_LIMIT = tostring(var.agent_daily_limit)
 
     APNS_KEY_ID               = var.apns_key_id
     APNS_TEAM_ID              = var.apns_team_id

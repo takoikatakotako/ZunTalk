@@ -76,7 +76,7 @@ enum CalendarTool {
     private static func format(_ event: EKEvent) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ja_JP")
-        formatter.dateFormat = event.isAllDay ? "M/d(E) 終日" : "M/d(E) HH:mm"
+        formatter.dateFormat = event.isAllDay ? "M/d(E)" : "M/d(E) HH:mm"
         return formatter.string(from: event.startDate)
     }
 }

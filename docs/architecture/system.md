@@ -2,35 +2,40 @@
 
 ## 全体アーキテクチャ
 
+バックエンドは用途別に2系統ある。
+
+- **チャットAPI（AWS Lambda + OpenAI）**: 通常のAI会話生成
+- **エージェント/電話予約（GCP Cloud Run + Vertex AI）**: エージェントモードの司令塔と、指定時刻の VoIP 着信
+
 ```
-┌──────────────────────────────────────────────────┐
-│                   ユーザー                         │
-└───────────────────┬──────────────────────────────┘
-                    │
-            ┌───────▼────────┐
-            │   iOS App      │
-            │   (SwiftUI)    │
-            └───────┬────────┘
-                    │
-        ┌───────────┼───────────┐
-        │           │           │
-        ▼           ▼           ▼
-  ┌─────────┐ ┌─────────┐ ┌────────┐
-  │ Speech  │ │VOICEVOX │ │  API   │
-  │Framework│ │  Core   │ │ Client │
-  └─────────┘ └─────────┘ └────┬───┘
-                                │ HTTPS
-                                ▼
-                    ┌───────────────────┐
-                    │   AWS Lambda      │
-                    │   (Go + Echo)     │
-                    └────────┬──────────┘
-                             │ API
-                             ▼
-                    ┌───────────────────┐
-                    │   OpenAI API      │
-                    │   (gpt-4o)        │
-                    └───────────────────┘
+┌────────────────────────────────────────────────────────┐
+│                        ユーザー                          │
+└──────────────────────────┬─────────────────────────────┘
+                           │
+                  ┌────────▼────────┐
+                  │    iOS App      │
+                  │   (SwiftUI)     │
+                  └─┬────┬────┬───┬─┘
+       端末内で完結   │    │    │   │
+  ┌─────────┐◄──────┘    │    │   └──────►┌──────────┐
+  │ Speech  │ ┌──────────▼─┐  │           │ EventKit │
+  │Framework│ │VOICEVOX Core│  │           │(カレンダー)│
+  └─────────┘ └────────────┘  │           └──────────┘
+                              │ HTTPS
+              ┌───────────────┴───────────────┐
+              ▼                               ▼
+   ┌───────────────────┐          ┌─────────────────────────┐
+   │   AWS Lambda      │          │   GCP Cloud Run         │
+   │   (Go + Echo)     │          │   (Go + Echo)           │
+   │   チャットAPI       │          │   エージェント + 電話予約   │
+   └────────┬──────────┘          └──┬─────────┬─────────┬──┘
+            ▼                        ▼         ▼         ▼
+   ┌───────────────────┐    ┌──────────┐ ┌─────────┐ ┌───────────┐
+   │   OpenAI API      │    │Vertex AI │ │Firestore│ │ Cloud     │
+   │ (gpt-4o-mini/4o)  │    │ (Gemini) │ │         │ │ Scheduler │
+   └───────────────────┘    └──────────┘ └─────────┘ └─────┬─────┘
+                                                           │ 毎分
+                                              APNs (VoIP push)──► iOS 着信
 ```
 
 ## コンポーネント詳細
@@ -53,6 +58,8 @@
 - `TextToSpeechRepository`: 音声合成
 - `SpeechRecognitionRepository`: 音声認識
 - `KeychainRepository`: 認証情報管理
+- `AgentRepository` / `ToolExecutor`: エージェントの往復・端末ツール実行（EventKit カレンダー等）
+- `CallScheduleRepository` / `VoIPPushManager` / `CallKitManager`: 電話予約と VoIP 着信
 
 ### 2. バックエンドAPI
 
@@ -72,7 +79,36 @@
 - `GET /api/info`: アプリ情報取得
 - `GET /health`: ヘルスチェック
 
-### 3. インフラストラクチャ
+### 3. エージェント / 電話予約バックエンド（GCP）
+
+詳細は [agent/README.md](../../agent/README.md) を参照。
+
+#### 責務
+- **エージェントモード**: planner（Gemini）がユーザー発話から実行計画を立て、端末がツールを実行し、responder（Gemini）がずんだもん口調で応答を生成する（サーバーはオーケストレーション専任。ユーザーデータのツール実行は端末側）
+- **電話予約**: Firestore に予約を保存し、Cloud Scheduler（毎分）→ `/internal/dispatch` → APNs VoIP push → iOS の PushKit/CallKit で着信（秒精度）
+
+#### 技術スタック
+- **言語**: Go 1.24 + Echo v4
+- **実行環境**: Cloud Run（`zuntalk-agent-dev`）
+- **AI**: Vertex AI（Gemini、ADC キーレス認証）
+- **データストア**: Firestore（devices / scheduledCalls / agentUsage）
+
+#### エンドポイント
+- `POST /agent`: エージェント往復（X-Api-Key）
+- `PUT /devices`, `POST/GET/DELETE /calls`: 電話予約（X-Api-Key）
+- `POST /internal/dispatch`: Scheduler 専用（OIDC 検証）
+
+#### ツール（capability）と EventKit
+- 端末はリクエストで実行可能な capability を申告する（本番は `calendar` のみ、開発は Google 連携済みなら `gmail` も）
+- **カレンダーは EventKit で端末内の iOS 標準カレンダーを読む**（Google OAuth 審査が不要。Google アカウント同期済みの予定も読める）
+- Gmail は Google OAuth のテストモード運用（開発者専用、Debug ビルド限定）
+
+#### 利用回数制限
+- deviceId ごとに `/agent` を日次 `AGENT_DAILY_LIMIT` 回（デフォルト50、JST 0時リセット）まで。超過は 429
+- カウントは1巡目のみ・Firestore トランザクションで加算・障害時は許可に倒す（fail-open）
+- カウンタは `expireAt` の TTL ポリシーで7日後に自動削除
+
+### 4. インフラストラクチャ
 
 #### AWS構成
 - **Lambda**: サーバーレス実行環境
@@ -84,6 +120,14 @@
 - **Shared** (448049807848): ECR、GitHub Actions IAM
 - **Dev** (039612872248): 開発環境Lambda
 - **Prod** (986921280333): 本番環境Lambda
+
+#### GCP構成（エージェント / 電話予約）
+- **Cloud Run**: エージェントサーバー実行環境
+- **Vertex AI**: Gemini 呼び出し
+- **Firestore**: 端末トークン・電話予約・利用回数カウンタ（TTL ポリシー含め Terraform 管理）
+- **Cloud Scheduler**: 毎分のディスパッチ（OIDC 認証）
+- **Secret Manager**: API キー・APNs Auth Key (.p8)
+- **プロジェクト**: sandbox-492513（`terraform/gcp/environments/dev`。prod 環境は未構築で、本番アプリも当面 dev Cloud Run を参照）
 
 ## データフロー
 
@@ -109,6 +153,19 @@
    音声データ → AVAudioPlayer → スピーカー
    ```
 
+### エージェント会話フロー（2巡構造）
+
+1. **1巡目（計画）**: 端末 → `POST /agent {message, capabilities, deviceId}` → planner（Gemini）が実行計画を返す（ツール不要なら即最終応答）
+2. **端末ツール実行**: 計画の各ステップを端末で実行（calendar は EventKit、gmail は Gmail API を端末のトークンで直接）
+3. **2巡目（応答）**: 端末 → `POST /agent {message, results}` → responder（Gemini）がずんだもん口調の返答と感情を返す → VOICEVOX で再生
+
+### 電話予約フロー
+
+1. アプリが VoIP トークンを `PUT /devices` で登録、`POST /calls` で予約作成（端末ごと1件まで）
+2. Cloud Scheduler が毎分 `/internal/dispatch` を叩き、60秒先読みで対象を取得
+3. 予約時刻ちょうどに Firestore で予約を claim → APNs へ VoIP push（秒精度・直前キャンセル可）
+4. iOS が PushKit で受信 → CallKit のネイティブ着信 UI → 応答で会話開始
+
 ### VOICEVOXリソース配信フロー
 
 ```
@@ -124,7 +181,10 @@ S3 → GitHub Actions → Xcode Build → アプリバンドル
 ### 認証・認可
 - **OpenAI API Key**: Keychainに安全に保存
 - **Lambda URL**: パブリックアクセス（認証なし）
-- **GitHub Actions**: OIDC認証（AWSへのアクセス）
+- **Cloud Run（/agent 等）**: 共有 `X-Api-Key`（Secret Manager 管理）+ deviceId ごとの日次利用回数制限
+- **Cloud Run（/internal/dispatch）**: Cloud Scheduler の OIDC トークン検証（SA email + audience）
+- **GitHub Actions**: OIDC認証（AWS / GCP Workload Identity Federation）
+- **カレンダー**: EventKit で端末内読み取り（サーバーへは予定のタイトル・日時のみ送信。プラポリに明記）
 
 ### データ保護
 - **通信**: HTTPS/TLS 1.2以上

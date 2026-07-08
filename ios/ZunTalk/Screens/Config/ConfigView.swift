@@ -17,8 +17,7 @@ struct ConfigView: View {
                 NavigationLink(destination: ModelSelectionView()) {
                     Label("モデル選択", systemImage: "brain")
                 }
-                // エージェント関連は Google OAuth 審査が通るまで本番では非表示
-                if FeatureFlags.agentModeEnabled {
+                if FeatureFlags.debugToolsEnabled {
                     NavigationLink(destination: AgentTestView()) {
                         Label("エージェント（テスト）", systemImage: "sparkles")
                     }
@@ -30,9 +29,9 @@ struct ConfigView: View {
                 }
             }
 
-            // Gmail 連携（トークンは端末内のみ保持。カレンダーは EventKit で連携不要）
+            // カレンダー連携（エージェントが EventKit で端末内カレンダーを読む）
             if FeatureFlags.agentModeEnabled {
-                GoogleLinkSection()
+                CalendarLinkSection()
             }
 
             Section("サポート") {

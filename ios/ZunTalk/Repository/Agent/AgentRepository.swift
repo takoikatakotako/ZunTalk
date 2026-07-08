@@ -7,15 +7,27 @@ import Foundation
 /// 3. POST /agent {message, results} → final（ずんだもんの返答）
 final class AgentRepository {
     private let executor: AgentToolExecuting
+    private let deviceIdRepository: DeviceIdRepository
 
-    init(executor: AgentToolExecuting = ToolExecutor()) {
+    init(executor: AgentToolExecuting = ToolExecutor(), deviceIdRepository: DeviceIdRepository = .shared) {
         self.executor = executor
+        self.deviceIdRepository = deviceIdRepository
     }
 
     /// 1回の発話に対する往復を実行し、最終結果（返答＋計画＋実行結果）を返す。
     func run(message: String) async throws -> AgentRunResult {
+        let requestContext = AgentRequestContext(
+            capabilities: await Self.availableCapabilities(),
+            deviceId: deviceIdRepository.deviceId()
+        )
+
         // 1巡目: 計画を取得
-        let first = try await post(AgentRequest(message: message, results: nil))
+        let first = try await post(AgentRequest(
+            message: message,
+            capabilities: requestContext.capabilities,
+            deviceId: requestContext.deviceId,
+            results: nil
+        ))
 
         // ツール不要（雑談など）→ そのまま返答
         if first.type == AgentResponseType.final {
@@ -32,8 +44,18 @@ final class AgentRepository {
         }
 
         // 2巡目: 結果を渡して最終応答を取得
-        let second = try await post(AgentRequest(message: message, results: results))
+        let second = try await post(AgentRequest(
+            message: message,
+            capabilities: requestContext.capabilities,
+            deviceId: requestContext.deviceId,
+            results: results
+        ))
         return AgentRunResult(reply: second.reply ?? "", emotion: second.emotion, plan: plan, results: results)
+    }
+
+    private static func availableCapabilities() async -> [String] {
+        // カレンダーは EventKit で端末内から読む。Gmail 等の Google 連携は廃止。
+        [AgentCapability.calendar.rawValue]
     }
 
     private func post(_ body: AgentRequest) async throws -> AgentResponse {
@@ -51,10 +73,30 @@ final class AgentRepository {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         if let http = response as? HTTPURLResponse, http.statusCode != 200 {
+            // 429（日次利用回数の上限）はサーバーのずんだもん口調メッセージをそのまま届ける
+            if http.statusCode == 429 {
+                let body = try? JSONDecoder().decode(AgentErrorBody.self, from: data)
+                throw AgentError.rateLimited(body?.message ?? Self.fallbackRateLimitMessage)
+            }
             throw AgentError.api(http.statusCode, String(data: data, encoding: .utf8) ?? "")
         }
         return try JSONDecoder().decode(AgentResponse.self, from: data)
     }
+}
+
+private struct AgentRequestContext {
+    let capabilities: [String]
+    let deviceId: String
+}
+
+/// サーバーのエラーレスポンス {code, message}（Go の model.ErrorResponse と対応）。
+private struct AgentErrorBody: Decodable {
+    let code: String?
+    let message: String?
+}
+
+extension AgentRepository {
+    static let fallbackRateLimitMessage = "今日はもうたくさんお話ししたのだ。また明日お話ししてほしいのだ〜"
 }
 
 /// 往復1回の結果。
@@ -69,6 +111,8 @@ struct AgentRunResult {
 enum AgentError: Error, LocalizedError {
     case invalidURL
     case api(Int, String)
+    /// 日次利用回数の上限に達した（関連値はユーザーに見せるメッセージ）。
+    case rateLimited(String)
 
     var errorDescription: String? {
         switch self {
@@ -76,6 +120,8 @@ enum AgentError: Error, LocalizedError {
             return "エージェントの URL が不正なのだ"
         case .api(let code, let body):
             return "エージェントAPIエラー(\(code)): \(body)"
+        case .rateLimited(let message):
+            return message
         }
     }
 }

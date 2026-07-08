@@ -38,7 +38,6 @@ func main() {
 	}
 
 	orch := orchestrator.New(gemini)
-	agentHandler := handler.NewAgentHandler(orch)
 
 	// Firestore（電話予約・端末トークンの保存先）を初期化（ADC でキーレス認証）。
 	st, err := store.New(ctx, cfg.GCPProjectID)
@@ -46,6 +45,7 @@ func main() {
 		log.Fatalf("failed to init Firestore client: %v", err)
 	}
 	defer st.Close()
+	agentHandler := handler.NewAgentHandler(orch, st, cfg.AgentDailyLimit)
 
 	// APNs クライアント。未設定・不正なら nil にして /internal/dispatch だけ 503 を返す
 	//（キーの不備で /agent まで落とさない）。
