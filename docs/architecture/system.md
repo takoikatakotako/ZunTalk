@@ -99,9 +99,9 @@
 - `POST /internal/dispatch`: Scheduler 専用（OIDC 検証）
 
 #### ツール（capability）と EventKit
-- 端末はリクエストで実行可能な capability を申告する（本番は `calendar` のみ、開発は Google 連携済みなら `gmail` も）
+- 端末はリクエストで実行可能な capability を申告する（現状は `calendar` のみ）
 - **カレンダーは EventKit で端末内の iOS 標準カレンダーを読む**（Google OAuth 審査が不要。Google アカウント同期済みの予定も読める）
-- Gmail は Google OAuth のテストモード運用（開発者専用、Debug ビルド限定）
+- Gmail 連携は廃止済み（アプリからも planner の capability からも削除）
 
 #### 利用回数制限
 - deviceId ごとに `/agent` を日次 `AGENT_DAILY_LIMIT` 回（デフォルト50、JST 0時リセット）まで。超過は 429
@@ -155,7 +155,7 @@
 ### エージェント会話フロー（2巡構造）
 
 1. **1巡目（計画）**: 端末 → `POST /agent {message, capabilities, deviceId}` → planner（Gemini）が実行計画を返す（ツール不要なら即最終応答）
-2. **端末ツール実行**: 計画の各ステップを端末で実行（calendar は EventKit、gmail は Gmail API を端末のトークンで直接）
+2. **端末ツール実行**: 計画の各ステップを端末で実行（calendar は EventKit で端末内カレンダーを読む）
 3. **2巡目（応答）**: 端末 → `POST /agent {message, results}` → responder（Gemini）がずんだもん口調の返答と感情を返す → VOICEVOX で再生
 
 ### 電話予約フロー

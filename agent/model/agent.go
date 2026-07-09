@@ -5,19 +5,16 @@ type Capability string
 
 const (
 	CapabilityCalendar Capability = "calendar"
-	CapabilityGmail    Capability = "gmail"
 )
 
 // AgentRequest は /agent エンドポイントへのリクエスト。
 //
 // ステートレス設計: 端末(iOS)が会話を駆動する。
 //   - 1巡目: Message のみ送る → サーバーは計画(Plan)を返す
-//   - 端末は Plan の各ステップを「自分の Keychain のトークン」で実行（Gmail/Calendar API は端末から叩く）
+//   - 端末は Plan の各ステップを実行（カレンダーは EventKit で端末内から読む）
 //   - 2巡目: Message ＋ Results（端末での実行結果）を送る → サーバーは最終応答(Reply)を返す
-//
-// ユーザーの Google トークンはサーバーに一切渡さない。
 type AgentRequest struct {
-	// Message はユーザーの発話（例: 「予定とメールを確認して」）。
+	// Message はユーザーの発話（例: 「今日の予定を教えて」）。
 	Message string `json:"message"`
 	// Results は端末がツールを実行した結果（2巡目以降のみ）。空なら計画フェーズ。
 	Results []StepResult `json:"results,omitempty"`

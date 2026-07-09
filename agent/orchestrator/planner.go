@@ -13,11 +13,10 @@ import (
 // capabilityDescriptions は planner のプロンプトに載せるツール説明。
 var capabilityDescriptions = map[model.Capability]string{
 	model.CapabilityCalendar: "カレンダーの予定を調べる（端末の標準カレンダー）",
-	model.CapabilityGmail:    "Gmailのメールを調べる",
 }
 
 // allCapabilities は既定のツール一覧（クライアントが capabilities を送らない場合の後方互換）。
-var allCapabilities = []model.Capability{model.CapabilityCalendar, model.CapabilityGmail}
+var allCapabilities = []model.Capability{model.CapabilityCalendar}
 
 // normalizeCapabilities はクライアント申告の capabilities を検証して返す。
 // 空・欠落なら全ツール（後方互換）、未知の値は除外する。
