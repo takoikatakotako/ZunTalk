@@ -16,12 +16,17 @@ func TestNormalizeCapabilities(t *testing.T) {
 		{
 			name:      "empty falls back to all capabilities",
 			requested: nil,
-			want:      []model.Capability{model.CapabilityCalendar, model.CapabilityGmail},
+			want:      []model.Capability{model.CapabilityCalendar},
 		},
 		{
 			name:      "unknown values are removed",
 			requested: []model.Capability{model.Capability("unknown"), model.CapabilityCalendar},
 			want:      []model.Capability{model.CapabilityCalendar},
+		},
+		{
+			name:      "removed gmail capability is treated as unknown",
+			requested: []model.Capability{model.Capability("gmail")},
+			want:      []model.Capability{},
 		},
 		{
 			name:      "only unknown values yield no capabilities",

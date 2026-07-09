@@ -2,13 +2,14 @@
 
 ずんだもんの「エージェントモード」用バックエンド。ユーザーの発話に対し、
 
-1. **planner**（Gemini）が必要なツール（Gmail / Calendar）を計画
-2. **端末(iOS)** がその計画を実行（Calendar は EventKit、Gmail API は端末から直接叩く）
+1. **planner**（Gemini）が必要なツール（カレンダー）を計画
+2. **端末(iOS)** がその計画を実行（カレンダーは EventKit で端末内から読む）
 3. **responder**（Gemini）が結果を踏まえてずんだもん口調で応答
 
 を行う、AI オーケストレーション専任のサーバー（Go + Echo + Vertex AI）。
 
-> **セキュリティ方針**: ユーザーの Google アクセストークンはサーバーに一切保存しない。
+> **セキュリティ方針**: ユーザーの個人データ（カレンダー等）はサーバーに保存しない。
+> ツールは端末内で実行し、AI 応答生成に必要な結果テキストだけをサーバーに渡す。
 > サーバーが持つ秘密は自分の GCP/Vertex 権限のみ。
 
 ## 構成
@@ -32,33 +33,30 @@ orchestrator/          planner / responder（司令塔）
 ```jsonc
 // リクエスト
 {
-  "message": "予定とメールを確認して",
+  "message": "今日の予定を教えて",
   "capabilities": ["calendar"],
   "deviceId": "device-uuid"
 }
 // レスポンス
 { "type": "tool_calls",
   "plan": [
-    { "capability": "calendar", "query": "今日と明日の予定" },
-    { "capability": "gmail",    "query": "最近の重要なメール" }
+    { "capability": "calendar", "query": "今日と明日の予定" }
   ] }
 ```
 
 **2巡目（応答）** — 端末がツールを実行した結果を添えて再送
 ```jsonc
 // リクエスト
-{ "message": "予定とメールを確認して",
+{ "message": "今日の予定を教えて",
   "results": [
-    { "capability": "calendar", "content": "14:00 歯医者 / 18:00 MTG" },
-    { "capability": "gmail",    "content": "請求書の確認依頼が1件" }
+    { "capability": "calendar", "content": "14:00 歯医者 / 18:00 MTG" }
   ] }
 // レスポンス
 { "type": "final", "reply": "今日は14時に歯医者なのだ！…" }
 ```
 
-`capabilities` は端末が実行できるツールの申告。Production iOS は `calendar` のみ、
-Development iOS は Google 連携済みの場合に `gmail` も追加する。
-未指定の場合は後方互換として `calendar` / `gmail` の両方を利用可能とみなす。
+`capabilities` は端末が実行できるツールの申告。現状は `calendar`（EventKit）のみ。
+未指定の場合は後方互換として全ツール（= `calendar`）を利用可能とみなす。
 `deviceId` は日次利用回数制限に使う。
 
 雑談（ツール不要）の場合は1巡目で即 `type: "final"` が返る。
@@ -91,7 +89,7 @@ go run .
 # 4. 動作確認
 curl -XPOST localhost:8080/agent \
   -H 'Content-Type: application/json' \
-  -d '{"message":"予定とメールを確認して"}'
+  -d '{"message":"今日の予定を教えて"}'
 ```
 
 事前に対象プロジェクトで Vertex AI API を有効化しておくこと
