@@ -64,7 +64,7 @@ GitHub で PR を作成し、CI が通ったら `main` へマージします。`
 `main` の最新コミット（リリースに含めたい変更がすべてマージ済みの状態）から Archive します。
 
 1. `git checkout main && git pull` で最新に同期
-2. Xcode でスキームを **Release** に変更
+2. Xcode でスキームを **ZunTalk-Production** に変更（Dev と取り違えない）
 3. ターゲットを **Any iOS Device (arm64)** に設定
 4. **Product > Archive** を実行
 5. Organizer で **Distribute App → App Store Connect → Upload**

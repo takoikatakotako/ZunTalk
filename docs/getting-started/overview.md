@@ -41,7 +41,7 @@
 - **音声認識**: iOS Speech Framework
 - **音声合成**: VOICEVOX Core
 - **UI**: SwiftUI
-- **最小iOS**: 17.0
+- **最小iOS**: 18.0
 
 #### バックエンド
 - **フレームワーク**: Echo v4

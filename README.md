@@ -33,8 +33,8 @@ open ios/ZunTalk.xcodeproj
 ## 開発環境
 
 ### iOS
-- Xcode 15.0以上
-- iOS 17.0以上
+- Xcode 16以上
+- iOS 18.0以上
 - AWS CLI（VOICEVOXリソースのダウンロード用）
 
 ### Backend
