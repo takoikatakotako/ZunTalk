@@ -55,7 +55,7 @@ ZunTalk/
 ### iOS
 - **言語**: Swift
 - **UI**: SwiftUI
-- **最小iOS**: 17.0
+- **最小iOS**: 18.0
 - **音声合成**: VOICEVOX Core（C言語フレームワーク）
 - **音声認識**: Speech Framework
 - **テスト**: Swift Testing framework
@@ -210,6 +210,6 @@ GitHub Actionsから手動実行可能:
 ## 注意事項
 
 - VOICEVOXフレームワーク、Open JTalk辞書、音声モデル（.vvm）はGit管理外
-- iOS最小バージョン: 17.0、Xcode: 15.0以上
+- iOS最小バージョン: 18.0、Xcode: 16以上
 - Lambda Function URLはパブリックアクセス（CORS全許可）
 - Terraform stateはS3に保存、DynamoDBでロック管理
